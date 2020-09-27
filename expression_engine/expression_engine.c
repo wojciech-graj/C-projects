@@ -45,12 +45,15 @@ bool in_array(char value, const char *array, const int length)
 	return false;
 }
 
+//TODO: optimize
 char get_node_type(char *value)
 {
 	if(in_array(value[0], L1BINOPS, OPSLEN[0])) {
 		return '1';
 	} else if(in_array(value[0], L2BINOPS, OPSLEN[1])){
 		return '2';
+	} else if(in_array(value[0], L3BINOPS, OPSLEN[2])){
+		return '3';
 	} else {
 		return 'n';
 	}
@@ -71,6 +74,9 @@ void set_binary_operation(Node *node, char *value)
 			break;
 		case '/':
 			node->bin_op = *divide;
+			break;
+		case '^':
+			node->bin_op = *pow;
 			break;
 	}
 }
@@ -170,7 +176,7 @@ int main(int argc, char *argv[])
 	double result = head->val;
 	free(head);
 
-	printf("%f\n", result);
+	printf("%g\n", result);
 
 	return 0;
 }
