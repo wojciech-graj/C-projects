@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+typedef struct Node Node;
+
 const char L1BINOPS[] = {'+', '-'};
 const char L2BINOPS[] = {'/', '*'};
 const int OPSLEN[] = {2, 2};

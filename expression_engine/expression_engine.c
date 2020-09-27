@@ -5,19 +5,11 @@
 //multipurpose node structure. types: 'n' number, '1' L1 binary operation, '2' L2 binary operation
 typedef struct Node {
 	char type;
-	double *val_l; //pointer to (double)val of left Node
-	double *val_r;
-	double (*bin_op)(double, double); //pointer to function which contains the binary operation
+	Node *node_l;
+	Node *node_r;
+	double (*bin_op)(double, double);
 	double val;
 } Node;
-
-void eval_node(Node *node)
-{
-	double result = (node->bin_op)(*(node->val_l), *(node->val_r));
-	node->val = result;
-	*(node->val_l) = result;
-	*(node->val_r) = result;
-}
 
 void tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
 {
@@ -53,28 +45,21 @@ bool in_array(char value, const char *array, const int length)
 	return false;
 }
 
-void set_node_type(Node *node, char *value)
+char get_node_type(char *value)
 {
 	if(in_array(value[0], L1BINOPS, OPSLEN[0])) {
-		node->type = '1';
+		return '1';
 	} else if(in_array(value[0], L2BINOPS, OPSLEN[1])){
-		node->type = '2';
+		return '2';
 	} else {
-		node->type = 'n';
+		return 'n';
 	}
 }
 
-void assign_node_values(Node *node, double *val_l, double *val_r, double val) //double (*bin_op)(double, double)
-{
-	node->val_l = val_l;
-	node->val_r = val_r;
-	node->bin_op = NULL;
-	node->val = val;
-}
 
-void set_binary_operation(Node *node, char value)
+void set_binary_operation(Node *node, char *value)
 {
-	switch(value) {
+	switch(value[0]) {
 		case '+':
 			node->bin_op = *add;
 			break;
@@ -93,7 +78,7 @@ void set_binary_operation(Node *node, char value)
 
 int main()
 {
-	char input[] = "3 + 4 * 2";
+	char input[] = "2 - 5 * 4";
 	int i;
 
 	//get tokens from input and store in smallest possible array
@@ -109,39 +94,77 @@ int main()
 	}
 	free(tokensbuf);
 
-	//create array of nodes and fill their parameters
-	Node (*nodes)[tokens_size[0]] = malloc(1000); //TODO: change from array to linked list
+	//create double linked list of nodes
+	Node *head = malloc(sizeof(Node));
+	Node *prev_node = head;
+
+	head->node_l = NULL;
+
+	for(i = 1; i < tokens_size[0]; i++)
+	{
+		Node *cur_node = malloc(sizeof(Node));
+
+		prev_node->node_r = cur_node;
+		cur_node->node_l = prev_node;
+		cur_node->node_r = NULL;
+
+		prev_node = cur_node;
+	}
+
+	//fill parameters
+	Node *cur_node = head;
 	for(i = 0; i < tokens_size[0]; i++)
 	{
 		char *value = (*tokens)[i];
-		set_node_type(nodes[i], value);
-		if(nodes[i]->type == 'n') {
-			assign_node_values(nodes[i], NULL, NULL, atof(value));
+		cur_node->type = get_node_type(value);
+		if(cur_node->type == 'n') {
+			cur_node->bin_op = NULL;
+			cur_node->val = atof(value);
 		}
-		if(nodes[i]->type != 'n') {
-			assign_node_values(nodes[i], &nodes[i-1]->val, &nodes[i+1]->val, 0);
-			set_binary_operation(nodes[i], value[0]);
+		if(cur_node->type != 'n') {
+			set_binary_operation(cur_node, value);
+			cur_node->val = 0;
 		}
+		cur_node = cur_node->node_r;
 	}
 
 	//evaluate nodes in accordance with ORDEROPS
-	Node *result_node;
 	for(i = 1; i < ORDEROPSLEN; i++) //skip n, which are already evaluated
 	{
-		int j;
-		for(j = 0; j < tokens_size[0]; j++)
+		cur_node = head;
+		while(cur_node)
 		{
-			if(nodes[j]->type == ORDEROPS[i]) {
-				eval_node(nodes[j]);
-				result_node = nodes[j];
+			if(cur_node->type == ORDEROPS[i]) {
+				cur_node->val = (cur_node->bin_op)(cur_node->node_l->val, cur_node->node_r->val);
+
+				//delete neighboring nodes
+				Node *del_node = cur_node->node_r;
+				if(cur_node->node_r->node_r) {
+					cur_node->node_r = cur_node->node_r->node_r;
+					cur_node->node_r->node_l = cur_node;
+				} else {
+					cur_node->node_r = NULL;
+				}
+				free(del_node);
+
+				del_node = cur_node->node_l;
+				if(cur_node->node_l->node_l) {
+					cur_node->node_l = cur_node->node_l->node_l;
+					cur_node->node_l->node_r = cur_node;
+				} else {
+					cur_node->node_l = NULL;
+					head = cur_node;
+				}
+				free(del_node);
 			}
+			cur_node = cur_node->node_r;
 		}
 	}
 
-	double result = result_node->val;
-	free(nodes);
+	double result = head->val;
+	free(head);
 
-	printf("RESULT: %f\n", result);
+	printf("%f\n", result);
 
 	return 0;
 }
