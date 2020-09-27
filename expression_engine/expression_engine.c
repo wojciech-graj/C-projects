@@ -76,9 +76,15 @@ void set_binary_operation(Node *node, char *value)
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
-	char input[] = "2 - 5 * 4";
+	if(argc != 2)
+	{
+		printf("ERROR: No argument provided.\n");
+		return 0;
+	}
+
+	char *input = argv[1];
 	int i;
 
 	//get tokens from input and store in smallest possible array
