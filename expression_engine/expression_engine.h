@@ -9,13 +9,16 @@
 
 typedef struct Node Node;
 
-const char L1BINOPS[] = {'+', '-'};
-const char L2BINOPS[] = {'/', '*'};
-const char L3BINOPS[] = {'^'};
-const int OPSLEN[] = {2, 2, 1};
+//binary
+const char L5OPS[] = {'+', '-'};
+const char L4OPS[] = {'/', '*'};
+const char L3OPS[] = {'^'};
+//unary
+const char L2OPS[] = {'!'};
 
-const char ORDEROPS[] = {'n', '3', '2', '1'};
-const int ORDEROPSLEN = 4;
+const int OPSLEN[] = {0, 0, 1, 1, 2, 2};
+
+const int NUMLEVELS = 5;
 
 const int TOKEN_LENGTH = 5;
 const int TOKEN_AMOUNT = 10;

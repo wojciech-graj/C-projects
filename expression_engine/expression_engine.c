@@ -2,9 +2,9 @@
 #include "math_functions.h"
 
 //Possible improvement: have multiple different node structures
-//multipurpose node structure. types: 'n' number, '1' L1 binary operation, '2' L2 binary operation
+//multipurpose node structure. types: 0:number, 1:L1OPS, 2:L2OPS,
 typedef struct Node {
-	char type;
+	int type;
 	Node *node_l;
 	Node *node_r;
 	double (*bin_op)(double, double);
@@ -45,17 +45,18 @@ bool in_array(char value, const char *array, const int length)
 	return false;
 }
 
-//TODO: optimize
-char get_node_type(char *value)
+int get_node_type(char *value)
 {
-	if(in_array(value[0], L1BINOPS, OPSLEN[0])) {
-		return '1';
-	} else if(in_array(value[0], L2BINOPS, OPSLEN[1])){
-		return '2';
-	} else if(in_array(value[0], L3BINOPS, OPSLEN[2])){
-		return '3';
+	if(in_array(value[0], L5OPS, OPSLEN[5])) {
+		return 5;
+	}else if(in_array(value[0], L4OPS, OPSLEN[4])) {
+		return 4;
+	} else if(in_array(value[0], L3OPS, OPSLEN[3])){
+		return 3;
+	} else if(in_array(value[0], L2OPS, OPSLEN[2])){
+		return 2;
 	} else {
-		return 'n';
+		return 0;
 	}
 }
 
@@ -129,24 +130,24 @@ int main(int argc, char *argv[])
 	{
 		char *value = (*tokens)[i];
 		cur_node->type = get_node_type(value);
-		if(cur_node->type == 'n') {
+		if(cur_node->type == 0) {
 			cur_node->bin_op = NULL;
 			cur_node->val = atof(value);
 		}
-		if(cur_node->type != 'n') {
+		if(cur_node->type != 0) {
 			set_binary_operation(cur_node, value);
 			cur_node->val = 0;
 		}
 		cur_node = cur_node->node_r;
 	}
 
-	//evaluate nodes in accordance with ORDEROPS
-	for(i = 1; i < ORDEROPSLEN; i++) //skip n, which are already evaluated
+	//evaluate nodes in accordance with order of operations
+	for(i = 2; i <= NUMLEVELS; i++) //skip L0 and L1
 	{
 		cur_node = head;
 		while(cur_node)
 		{
-			if(cur_node->type == ORDEROPS[i]) {
+			if(cur_node->type == i) {
 				cur_node->val = (cur_node->bin_op)(cur_node->node_l->val, cur_node->node_r->val);
 
 				//delete neighboring nodes
