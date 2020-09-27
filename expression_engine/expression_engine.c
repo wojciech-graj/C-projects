@@ -1,13 +1,12 @@
 #include "expression_engine.h"
 #include "math_functions.h"
 
-//Possible improvement: have multiple different node structures
 //multipurpose node structure. types: 0:number, 1:L1OPS, 2:L2OPS,
 typedef struct Node {
 	int type;
 	Node *node_l;
 	Node *node_r;
-	double (*bin_op)(double, double);
+	double (*operation)(double, double);
 	double val;
 } Node;
 
@@ -45,6 +44,7 @@ bool in_array(char value, const char *array, const int length)
 	return false;
 }
 
+//TODO:OPTIMIZE
 int get_node_type(char *value)
 {
 	if(in_array(value[0], L5OPS, OPSLEN[5])) {
@@ -60,28 +60,42 @@ int get_node_type(char *value)
 	}
 }
 
-
-void set_binary_operation(Node *node, char *value)
+void set_operation(Node *node, char *value)
 {
 	switch(value[0]) {
 		case '+':
-			node->bin_op = *add;
+			node->operation = *add;
 			break;
 		case '-':
-			node->bin_op = *subtract;
+			node->operation = *subtract;
 			break;
 		case '*':
-			node->bin_op = *multiply;
+			node->operation = *multiply;
 			break;
 		case '/':
-			node->bin_op = *divide;
+			node->operation = *divide;
 			break;
 		case '^':
-			node->bin_op = *pow;
+			node->operation = *pow;
+			break;
+		case '!':
+			node->operation = *factorial;
 			break;
 	}
 }
 
+void delete_node(Node *node, Node **head)
+{
+	if(node->node_r) {
+		node->node_r->node_l = node->node_l;
+	}
+	if(node->node_l) {
+		node->node_l->node_r = node->node_r;
+	} else {
+		*head = node->node_r;
+	}
+	free(node);
+}
 
 int main(int argc, char *argv[])
 {
@@ -131,11 +145,11 @@ int main(int argc, char *argv[])
 		char *value = (*tokens)[i];
 		cur_node->type = get_node_type(value);
 		if(cur_node->type == 0) {
-			cur_node->bin_op = NULL;
+			cur_node->operation = NULL;
 			cur_node->val = atof(value);
 		}
 		if(cur_node->type != 0) {
-			set_binary_operation(cur_node, value);
+			set_operation(cur_node, value);
 			cur_node->val = 0;
 		}
 		cur_node = cur_node->node_r;
@@ -148,27 +162,11 @@ int main(int argc, char *argv[])
 		while(cur_node)
 		{
 			if(cur_node->type == i) {
-				cur_node->val = (cur_node->bin_op)(cur_node->node_l->val, cur_node->node_r->val);
+				cur_node->val = (cur_node->operation)(cur_node->node_l->val, cur_node->node_r->val);
 
 				//delete neighboring nodes
-				Node *del_node = cur_node->node_r;
-				if(cur_node->node_r->node_r) {
-					cur_node->node_r = cur_node->node_r->node_r;
-					cur_node->node_r->node_l = cur_node;
-				} else {
-					cur_node->node_r = NULL;
-				}
-				free(del_node);
-
-				del_node = cur_node->node_l;
-				if(cur_node->node_l->node_l) {
-					cur_node->node_l = cur_node->node_l->node_l;
-					cur_node->node_l->node_r = cur_node;
-				} else {
-					cur_node->node_l = NULL;
-					head = cur_node;
-				}
-				free(del_node);
+				delete_node(cur_node->node_l, &head);
+				delete_node(cur_node->node_r, &head);
 			}
 			cur_node = cur_node->node_r;
 		}
