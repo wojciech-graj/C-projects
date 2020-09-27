@@ -162,11 +162,13 @@ int main(int argc, char *argv[])
 		while(cur_node)
 		{
 			if(cur_node->type == i) {
-				cur_node->val = (cur_node->operation)(cur_node->node_l->val, cur_node->node_r->val);
-
-				//delete neighboring nodes
+				if (cur_node->type == 2) {//if unary
+					cur_node->val = (cur_node->operation)(cur_node->node_l->val, 0);
+				} else {
+					cur_node->val = (cur_node->operation)(cur_node->node_l->val, cur_node->node_r->val);
+					delete_node(cur_node->node_r, &head);
+				}
 				delete_node(cur_node->node_l, &head);
-				delete_node(cur_node->node_r, &head);
 			}
 			cur_node = cur_node->node_r;
 		}
