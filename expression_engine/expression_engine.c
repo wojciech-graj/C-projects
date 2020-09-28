@@ -1,7 +1,7 @@
 #include "expression_engine.h"
 #include "math_functions.h"
 
-//multipurpose node structure. types: 0:number, 1:L1OPS, 2:L2OPS,
+//multipurpose node structure. types: -1: number, 0:constant, 1:L1OPS, 2:L2OPS, etc.
 typedef struct Node {
 	int type;
 	Node *node_l;
@@ -44,20 +44,42 @@ bool in_array(char value, const char *array, const int length)
 	return false;
 }
 
-//TODO:OPTIMIZE
-int get_node_type(char *value)
+bool in_string_array(char *value, const char *array[], const int length)
 {
-	if(in_array(value[0], L5OPS, OPSLEN[5])) {
-		return 5;
-	}else if(in_array(value[0], L4OPS, OPSLEN[4])) {
-		return 4;
-	} else if(in_array(value[0], L3OPS, OPSLEN[3])){
-		return 3;
-	} else if(in_array(value[0], L2OPS, OPSLEN[2])){
-		return 2;
-	} else {
-		return 0;
+	int i;
+	for(i = 0; i < length; i++)
+	{
+		if(! strcmp(value, array[i])) return true;
 	}
+	return false;
+}
+
+//TODO:OPTIMIZE
+char get_node_type(char *value)
+{
+	if(in_char_array(value[0], L5OPS, OPSLEN[5])) {
+		return 5;
+	}else if(in_char_array(value[0], L4OPS, OPSLEN[4])) {
+		return 4;
+	} else if(in_char_array(value[0], L3OPS, OPSLEN[3])) {
+		return 3;
+	} else if(in_char_array(value[0], L2OPS, OPSLEN[2])) {
+		return 2;
+	} else if(in_string_array(value, MATHCONSTS, MATHCONSTSLEN)) {
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+double get_math_constant(char *value)
+{
+	int i;
+	for(i = 0; i < MATHCONSTSLEN; i++)
+	{
+		if(! strcmp(value, MATHCONSTS[i])) return MATHCONSTVALS[i];
+	}
+	return 0;
 }
 
 void set_operation(Node *node, char *value)
@@ -144,11 +166,13 @@ int main(int argc, char *argv[])
 	{
 		char *value = (*tokens)[i];
 		cur_node->type = get_node_type(value);
-		if(cur_node->type == 0) {
+		if(cur_node->type == -1) {
 			cur_node->operation = NULL;
 			cur_node->val = atof(value);
-		}
-		if(cur_node->type != 0) {
+		} else if(cur_node->type == 0) {
+			cur_node->operation = NULL;
+			cur_node->val = get_math_constant(value);
+		} else {
 			set_operation(cur_node, value);
 			cur_node->val = 0;
 		}
