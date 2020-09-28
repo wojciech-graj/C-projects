@@ -20,6 +20,12 @@ double divide(double a, double b)
 	return a / b;
 }
 
+double square_root(double a, double b)
+{
+	(void)a;
+	return sqrt(b);
+}
+
 double factorial(double a, double b)
 {
 	(void)b;
