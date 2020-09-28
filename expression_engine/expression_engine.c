@@ -1,9 +1,9 @@
 #include "expression_engine.h"
 #include "math_functions.h"
 
-//multipurpose node structure. types: -1: number, 0:constant, 1:L1OPS, 2:L2OPS, etc.
+//multipurpose node structure. types: 'n':number, 'c':const, '(', ')', '2':L2OP
 typedef struct Node {
-	int type;
+	char type;
 	Node *node_l;
 	Node *node_r;
 	double (*operation)(double, double);
@@ -48,17 +48,19 @@ bool in_array(char *value, const char *array[], const int length)
 char get_node_type(char *value)
 {
 	if(in_array(value, L5OPS, OPSLEN[5])) {
-		return 5;
+		return OPTYPES[5];
 	}else if(in_array(value, L4OPS, OPSLEN[4])) {
-		return 4;
+		return OPTYPES[4];
 	} else if(in_array(value, L3OPS, OPSLEN[3])) {
-		return 3;
+		return OPTYPES[3];
 	} else if(in_array(value, L2OPS, OPSLEN[2])) {
-		return 2;
+		return OPTYPES[2];
+	} else if(in_array(value, L1OPS, OPSLEN[1])) {
+		return value[0];
 	} else if(in_array(value, L0OPS, OPSLEN[0])) {
-		return 0;
+		return OPTYPES[0];
 	} else {
-		return -1;
+		return 'n';
 	}
 }
 
@@ -111,6 +113,57 @@ void delete_node(Node *node, Node **head)
 	free(node);
 }
 
+//a node group starts with the first value, not '('
+//node group e.g. (node types) {'n', '5', 'n', ')'}
+//does not have to end in ')'. If it does, ')' node is deleted
+void evaluate_node_group(Node **head)
+{
+	Node *cur_node = *head;
+	Node *group_end_node = NULL;
+	while(cur_node)
+	{
+		if(cur_node->type == '(') {
+			Node *del_node = cur_node;
+			cur_node = cur_node->node_r;
+			delete_node(del_node, head);
+			evaluate_node_group(&cur_node);
+		} else if(cur_node->type == ')') {
+			group_end_node = cur_node->node_l;
+			delete_node(cur_node, head);
+			break;
+		} else if(cur_node->node_r == NULL) {
+			group_end_node = cur_node;
+			break;
+		} else {
+			cur_node = cur_node->node_r;
+		}
+	}
+
+	int i;
+	for(i = 2; i < NUMOPTYPES; i++) //skip L0 and L1
+	{
+		cur_node = *head;
+		while(cur_node != group_end_node->node_r)
+		{
+			if(cur_node->type == OPTYPES[i]) {
+				//TODO:rework
+				if (cur_node->type == OPTYPES[2]) {//if left-unary
+					cur_node->val = (cur_node->operation)(cur_node->node_l->val, 0);
+					delete_node(cur_node->node_l, head);
+				} else if (cur_node->type == OPTYPES[3] && cur_node->operation == *square_root) { //if right-unary
+					cur_node->val = (cur_node->operation)(0, cur_node->node_r->val);
+					delete_node(cur_node->node_r, head);
+				} else { //if binary
+					cur_node->val = (cur_node->operation)(cur_node->node_l->val, cur_node->node_r->val);
+					delete_node(cur_node->node_l, head);
+					delete_node(cur_node->node_r, head);
+				}
+			}
+			cur_node = cur_node->node_r;
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	if(argc != 2)
@@ -148,6 +201,7 @@ int main(int argc, char *argv[])
 		prev_node->node_r = cur_node;
 		cur_node->node_l = prev_node;
 		cur_node->node_r = NULL;
+		cur_node->operation = NULL;
 
 		prev_node = cur_node;
 	}
@@ -158,11 +212,10 @@ int main(int argc, char *argv[])
 	{
 		char *value = (*tokens)[i];
 		cur_node->type = get_node_type(value);
-		if(cur_node->type == -1) {
-			cur_node->operation = NULL;
+		if(cur_node->type == 'n') {
 			cur_node->val = atof(value);
-		} else if(cur_node->type == 0) {
-			cur_node->operation = NULL;
+		} else if(cur_node->type == 'c') {
+
 			cur_node->val = get_math_constant(value);
 		} else {
 			set_operation(cur_node, value);
@@ -171,29 +224,9 @@ int main(int argc, char *argv[])
 		cur_node = cur_node->node_r;
 	}
 
-	//evaluate nodes in accordance with order of operations
-	for(i = 2; i <= NUMLEVELS; i++) //skip L0 and L1
-	{
-		cur_node = head;
-		while(cur_node)
-		{
-			if(cur_node->type == i) {
-				//TODO:rework
-				if (cur_node->type == 2) {//if left-unary
-					cur_node->val = (cur_node->operation)(cur_node->node_l->val, 0);
-					delete_node(cur_node->node_l, &head);
-				} else if (cur_node->type == 3 && cur_node->operation == *square_root) { //if right-unary
-					cur_node->val = (cur_node->operation)(0, cur_node->node_r->val);
-					delete_node(cur_node->node_r, &head);
-				} else { //if binary
-					cur_node->val = (cur_node->operation)(cur_node->node_l->val, cur_node->node_r->val);
-					delete_node(cur_node->node_l, &head);
-					delete_node(cur_node->node_r, &head);
-				}
-			}
-			cur_node = cur_node->node_r;
-		}
-	}
+	//Evaluate nodes in accordance with order of operations
+	if(head->type == '(') delete_node(head, &head); //Delete first node if it is '(' because a node group cannot start with '('
+	evaluate_node_group(&head);
 
 	double result = head->val;
 	free(head);
