@@ -34,17 +34,7 @@ void get_tokens_size(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], int *tokens_siz
 	}
 }
 
-bool in_array(char value, const char *array, const int length)
-{
-	int i;
-	for(i = 0; i < length; i++)
-	{
-		if(value == array[i]) return true;
-	}
-	return false;
-}
-
-bool in_string_array(char *value, const char *array[], const int length)
+bool in_array(char *value, const char *array[], const int length)
 {
 	int i;
 	for(i = 0; i < length; i++)
@@ -54,18 +44,18 @@ bool in_string_array(char *value, const char *array[], const int length)
 	return false;
 }
 
-//TODO:OPTIMIZE
+//TODO?:OPTIMIZE
 char get_node_type(char *value)
 {
-	if(in_char_array(value[0], L5OPS, OPSLEN[5])) {
+	if(in_array(value, L5OPS, OPSLEN[5])) {
 		return 5;
-	}else if(in_char_array(value[0], L4OPS, OPSLEN[4])) {
+	}else if(in_array(value, L4OPS, OPSLEN[4])) {
 		return 4;
-	} else if(in_char_array(value[0], L3OPS, OPSLEN[3])) {
+	} else if(in_array(value, L3OPS, OPSLEN[3])) {
 		return 3;
-	} else if(in_char_array(value[0], L2OPS, OPSLEN[2])) {
+	} else if(in_array(value, L2OPS, OPSLEN[2])) {
 		return 2;
-	} else if(in_string_array(value, MATHCONSTS, MATHCONSTSLEN)) {
+	} else if(in_array(value, L0OPS, OPSLEN[0])) {
 		return 0;
 	} else {
 		return -1;
@@ -75,9 +65,9 @@ char get_node_type(char *value)
 double get_math_constant(char *value)
 {
 	int i;
-	for(i = 0; i < MATHCONSTSLEN; i++)
+	for(i = 0; i < OPSLEN[0]; i++)
 	{
-		if(! strcmp(value, MATHCONSTS[i])) return MATHCONSTVALS[i];
+		if(! strcmp(value, L0OPS[i])) return L0OPVALS[i];
 	}
 	return 0;
 }
@@ -103,6 +93,8 @@ void set_operation(Node *node, char *value)
 		case '!':
 			node->operation = *factorial;
 			break;
+		default:
+			if(! strcmp(value, "sqrt")) node->operation = *square_root;
 	}
 }
 
@@ -186,13 +178,18 @@ int main(int argc, char *argv[])
 		while(cur_node)
 		{
 			if(cur_node->type == i) {
-				if (cur_node->type == 2) {//if unary
+				//TODO:rework
+				if (cur_node->type == 2) {//if left-unary
 					cur_node->val = (cur_node->operation)(cur_node->node_l->val, 0);
-				} else {
+					delete_node(cur_node->node_l, &head);
+				} else if (cur_node->type == 3 && cur_node->operation == *square_root) { //if right-unary
+					cur_node->val = (cur_node->operation)(0, cur_node->node_r->val);
+					delete_node(cur_node->node_r, &head);
+				} else { //if binary
 					cur_node->val = (cur_node->operation)(cur_node->node_l->val, cur_node->node_r->val);
+					delete_node(cur_node->node_l, &head);
 					delete_node(cur_node->node_r, &head);
 				}
-				delete_node(cur_node->node_l, &head);
 			}
 			cur_node = cur_node->node_r;
 		}

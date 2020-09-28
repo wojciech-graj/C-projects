@@ -9,18 +9,17 @@
 
 typedef struct Node Node;
 
-//binary
-const char L5OPS[] = {'+', '-'};
-const char L4OPS[] = {'/', '*'};
-const char L3OPS[] = {'^'};
-//unary
-const char L2OPS[] = {'!'};
+const char *L5OPS[] = {"+", "-"};
+const char *L4OPS[] = {"/", "*"};
+const char *L3OPS[] = {"^", "sqrt"};
+const char *L2OPS[] = {"!"};
+//math constants
+const char *L0OPS[] = {"pi", "e", "phi"};
+const double L0OPVALS[] = {M_PI, M_E, (1+sqrt(5))/2};
 
-const int OPSLEN[] = {0, 0, 1, 1, 2, 2};
+const int OPSLEN[] = {3, 0, 1, 2, 2, 2};
 
-const char *MATHCONSTS[] = {"pi", "e", "phi"};
-const double MATHCONSTVALS[] = {M_PI, M_E, (1+sqrt(5))/2};
-const int MATHCONSTSLEN = 3;
+
 
 const int NUMLEVELS = 5;
 
