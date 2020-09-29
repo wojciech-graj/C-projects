@@ -56,16 +56,6 @@ char get_node_type(char *value)
 	}
 }
 
-double get_math_constant(char *value)
-{
-	int i;
-	for(i = 0; i < OPSLEN[0]; i++)
-	{
-		if(! strcmp(value, L0OPS[i])) return L0OPVALS[i];
-	}
-	return 0;
-}
-
 void set_operation(Node *node, char *value)
 {
 	switch(value[0]) {
@@ -110,6 +100,56 @@ void set_operation(Node *node, char *value)
 			} else if (! strcmp(value, "tanh")) {
 				node->un_op = *tanh;
 			}
+	}
+}
+
+double get_math_constant(char *value)
+{
+	int i;
+	for(i = 0; i < OPSLEN[0]; i++)
+	{
+		if(! strcmp(value, L0OPS[i])) return L0OPVALS[i];
+	}
+	return 0;
+}
+
+void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], int tokens_amount)
+{
+	//create doubly-linked list of blank nodes
+	*head = malloc(sizeof(Node));
+	Node *prev_node = *head;
+
+	(*head)->node_l = NULL;
+
+	int i;
+	for(i = 1; i < tokens_amount; i++)
+	{
+		Node *cur_node = malloc(sizeof(Node));
+
+		prev_node->node_r = cur_node;
+		cur_node->node_l = prev_node;
+		cur_node->un_op = NULL;
+		cur_node->bin_op = NULL;
+
+		prev_node = cur_node;
+	}
+	prev_node->node_r = NULL;
+
+	//fill nodes with information from tokens
+	Node *cur_node = *head;
+	for(i = 0; i < tokens_amount; i++)
+	{
+		char *value = (*tokens)[i];
+		cur_node->type = get_node_type(value);
+		if(cur_node->type == 'n') {
+			cur_node->val = atof(value);
+		} else if(cur_node->type == 'c') {
+			cur_node->val = get_math_constant(value);
+		} else {
+			set_operation(cur_node, value);
+			cur_node->val = 0;
+		}
+		cur_node = cur_node->node_r;
 	}
 }
 
@@ -187,46 +227,6 @@ void copy_node_params(Node *dest, Node *src)
 	dest->val = src->val;
 }
 
-void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], int tokens_amount)
-{
-	//create doubly-linked list of blank nodes
-	*head = malloc(sizeof(Node));
-	Node *prev_node = *head;
-
-	(*head)->node_l = NULL;
-
-	int i;
-	for(i = 1; i < tokens_amount; i++)
-	{
-		Node *cur_node = malloc(sizeof(Node));
-
-		prev_node->node_r = cur_node;
-		cur_node->node_l = prev_node;
-		cur_node->un_op = NULL;
-		cur_node->bin_op = NULL;
-
-		prev_node = cur_node;
-	}
-	prev_node->node_r = NULL;
-
-	//fill nodes with information from tokens
-	Node *cur_node = *head;
-	for(i = 0; i < tokens_amount; i++)
-	{
-		char *value = (*tokens)[i];
-		cur_node->type = get_node_type(value);
-		if(cur_node->type == 'n') {
-			cur_node->val = atof(value);
-		} else if(cur_node->type == 'c') {
-			cur_node->val = get_math_constant(value);
-		} else {
-			set_operation(cur_node, value);
-			cur_node->val = 0;
-		}
-		cur_node = cur_node->node_r;
-	}
-}
-
 //CURRENTLY UNUSED _ WILL BE USED FOR EVALUATING FOR X
 void duplicate_nodes(Node **dest, Node *src)
 {
@@ -261,13 +261,17 @@ int main(int argc, char *argv[])
 
 	char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
 	int tokens_amount = tokenize(tokens, input);
-	tokens = realloc(tokens, tokens_amount * TOKEN_LENGTH * sizeof(char));
+	tokens = realloc(tokens, tokens_amount * TOKEN_LENGTH * sizeof(char)); //technically, tokens contains TOKEN_AMOUNT values, however only memory for tokens_amount has been now allocated. Size of tokens is not sizeof(tokens) but tokens_amount
 
 	Node *head;
 	convert_tokens_to_nodes(&head, tokens, tokens_amount);
 	free(tokens);
 
-	if(head->type == '(') delete_node(head, &head); //Delete first node if it is '(' because a node group cannot start with '('
+	while (head->type == '(') //Delete first node if it is '(' because a node group cannot start with '('
+	{
+		delete_node(head, &head);
+	}
+
 	evaluate_node_group(&head);
 	double result = head->val;
 	free(head);
