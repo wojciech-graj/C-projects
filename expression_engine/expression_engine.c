@@ -187,6 +187,35 @@ void evaluate_node_group(Node **head)
 	}
 }
 
+//DOES NOT COPY POINTERS TO NEIGHBORS
+void copy_node_params(Node *dest, Node *src)
+{
+	dest->type = src->type;
+	dest->bin_op = src->bin_op;
+	dest->un_op = src->un_op;
+	dest->val = src->val;
+}
+
+void duplicate_nodes(Node **dest, Node *src)
+{
+	*dest = malloc(sizeof(Node));
+	copy_node_params(*dest, src);
+	(*dest)->node_l = NULL;
+	Node *cur_dest_node = *dest;
+	Node *cur_src_node = src->node_r;
+	while(cur_src_node)
+	{
+		Node *node = malloc(sizeof(Node));
+		copy_node_params(node, cur_src_node);
+		node->node_l = cur_dest_node;
+		cur_dest_node->node_r = node;
+		cur_dest_node = node;
+
+		cur_src_node = cur_src_node->node_r;
+	}
+	cur_dest_node->node_r = NULL;
+}
+
 int main(int argc, char *argv[])
 {
 	if(argc != 2)
@@ -250,6 +279,7 @@ int main(int argc, char *argv[])
 
 	//Evaluate nodes in accordance with order of operations and store result
 	if(head->type == '(') delete_node(head, &head); //Delete first node if it is '(' because a node group cannot start with '('
+
 	evaluate_node_group(&head);
 	double result = head->val;
 	free(head);
