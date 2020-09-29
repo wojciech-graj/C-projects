@@ -11,7 +11,8 @@ typedef struct Node {
 	double val;
 } Node;
 
-void tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
+//store tokenized input in *tokens, return amount of tokens
+int tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
 {
 	int i = 0;
 
@@ -22,17 +23,7 @@ void tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
 		i++;
 		p = strtok(NULL, " ");
 	}
-}
-
-//set tokens_size to (length, token size). tokens_size[0] must = 0
-void get_tokens_size(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], int *tokens_size)
-{
-	while((*tokens)[tokens_size[0]][0])
-	{
-		int len = strlen((*tokens)[tokens_size[0]]);
-		if (len > tokens_size[1]) tokens_size[1] = len;
-		tokens_size[0]++;
-	}
+	return i;
 }
 
 bool in_array(char *value, const char *array[], const int length)
@@ -227,18 +218,11 @@ int main(int argc, char *argv[])
 	char *input = argv[1];
 	int i;
 
-	//get tokens from input and store in smallest possible array
-	char (*tokensbuf)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
-	tokenize(tokensbuf, input);
-	int tokens_size[] = {0,0};
-	get_tokens_size(tokensbuf, tokens_size);
-	tokens_size[1] += 1; //add space for '\0'
-	char (*tokens)[tokens_size[0]][tokens_size[1]] = malloc(tokens_size[0] * tokens_size[1] * sizeof(char));
-	for(i = 0; i < tokens_size[0]; i++)
-	{
-		strncpy((*tokens)[i], (*tokensbuf)[i], tokens_size[1]);
-	}
-	free(tokensbuf);
+	//get tokens from input and store in shortest array
+	char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
+	int tokens_amount = tokenize(tokens, input);
+	printf("%d\n", tokens_amount);
+	tokens = realloc(tokens, tokens_amount * TOKEN_LENGTH * sizeof(char));
 
 	//create double linked list of nodes
 	Node *head = malloc(sizeof(Node));
@@ -246,7 +230,7 @@ int main(int argc, char *argv[])
 
 	head->node_l = NULL;
 
-	for(i = 1; i < tokens_size[0]; i++)
+	for(i = 1; i < tokens_amount; i++)
 	{
 		Node *cur_node = malloc(sizeof(Node));
 
@@ -261,7 +245,7 @@ int main(int argc, char *argv[])
 
 	//fill parameters
 	Node *cur_node = head;
-	for(i = 0; i < tokens_size[0]; i++)
+	for(i = 0; i < tokens_amount; i++)
 	{
 		char *value = (*tokens)[i];
 		cur_node->type = get_node_type(value);
@@ -276,6 +260,8 @@ int main(int argc, char *argv[])
 		}
 		cur_node = cur_node->node_r;
 	}
+
+	free(tokens);
 
 	//Evaluate nodes in accordance with order of operations and store result
 	if(head->type == '(') delete_node(head, &head); //Delete first node if it is '(' because a node group cannot start with '('
