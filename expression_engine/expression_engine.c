@@ -187,6 +187,46 @@ void copy_node_params(Node *dest, Node *src)
 	dest->val = src->val;
 }
 
+void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], int tokens_amount)
+{
+	//create doubly-linked list of blank nodes
+	*head = malloc(sizeof(Node));
+	Node *prev_node = *head;
+
+	(*head)->node_l = NULL;
+
+	int i;
+	for(i = 1; i < tokens_amount; i++)
+	{
+		Node *cur_node = malloc(sizeof(Node));
+
+		prev_node->node_r = cur_node;
+		cur_node->node_l = prev_node;
+		cur_node->un_op = NULL;
+		cur_node->bin_op = NULL;
+
+		prev_node = cur_node;
+	}
+	prev_node->node_r = NULL;
+
+	//fill nodes with information from tokens
+	Node *cur_node = *head;
+	for(i = 0; i < tokens_amount; i++)
+	{
+		char *value = (*tokens)[i];
+		cur_node->type = get_node_type(value);
+		if(cur_node->type == 'n') {
+			cur_node->val = atof(value);
+		} else if(cur_node->type == 'c') {
+			cur_node->val = get_math_constant(value);
+		} else {
+			set_operation(cur_node, value);
+			cur_node->val = 0;
+		}
+		cur_node = cur_node->node_r;
+	}
+}
+
 //CURRENTLY UNUSED _ WILL BE USED FOR EVALUATING FOR X
 void duplicate_nodes(Node **dest, Node *src)
 {
@@ -219,53 +259,15 @@ int main(int argc, char *argv[])
 	char *input = argv[1];
 	int i;
 
-	//get tokens from input and store in shortest array
 	char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
 	int tokens_amount = tokenize(tokens, input);
 	tokens = realloc(tokens, tokens_amount * TOKEN_LENGTH * sizeof(char));
 
-	//create double linked list of nodes
-	Node *head = malloc(sizeof(Node));
-	Node *prev_node = head;
-
-	head->node_l = NULL;
-
-	for(i = 1; i < tokens_amount; i++)
-	{
-		Node *cur_node = malloc(sizeof(Node));
-
-		prev_node->node_r = cur_node;
-		cur_node->node_l = prev_node;
-		cur_node->un_op = NULL;
-		cur_node->bin_op = NULL;
-
-		prev_node = cur_node;
-	}
-	prev_node->node_r = NULL;
-
-	//fill parameters
-	Node *cur_node = head;
-	for(i = 0; i < tokens_amount; i++)
-	{
-		char *value = (*tokens)[i];
-		cur_node->type = get_node_type(value);
-		if(cur_node->type == 'n') {
-			cur_node->val = atof(value);
-		} else if(cur_node->type == 'c') {
-
-			cur_node->val = get_math_constant(value);
-		} else {
-			set_operation(cur_node, value);
-			cur_node->val = 0;
-		}
-		cur_node = cur_node->node_r;
-	}
-
+	Node *head;
+	convert_tokens_to_nodes(&head, tokens, tokens_amount);
 	free(tokens);
 
-	//Evaluate nodes in accordance with order of operations and store result
 	if(head->type == '(') delete_node(head, &head); //Delete first node if it is '(' because a node group cannot start with '('
-
 	evaluate_node_group(&head);
 	double result = head->val;
 	free(head);
