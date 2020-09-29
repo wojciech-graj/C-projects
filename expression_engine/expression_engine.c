@@ -14,16 +14,16 @@ typedef struct Node {
 //store tokenized input in *tokens, return amount of tokens
 int tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
 {
-	int i = 0;
+	int token_num = 0;
 
 	char *p = strtok(input, " ");
 	while(p != NULL)
 	{
-		strncpy((*tokens)[i], p, TOKEN_LENGTH);
-		i++;
+		strncpy((*tokens)[token_num], p, TOKEN_LENGTH);
+		token_num++;
 		p = strtok(NULL, " ");
 	}
-	return i;
+	return token_num;
 }
 
 bool in_array(char *value, const char *array[], const int length)
@@ -187,6 +187,7 @@ void copy_node_params(Node *dest, Node *src)
 	dest->val = src->val;
 }
 
+//CURRENTLY UNUSED _ WILL BE USED FOR EVALUATING FOR X
 void duplicate_nodes(Node **dest, Node *src)
 {
 	*dest = malloc(sizeof(Node));
@@ -221,7 +222,6 @@ int main(int argc, char *argv[])
 	//get tokens from input and store in shortest array
 	char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
 	int tokens_amount = tokenize(tokens, input);
-	printf("%d\n", tokens_amount);
 	tokens = realloc(tokens, tokens_amount * TOKEN_LENGTH * sizeof(char));
 
 	//create double linked list of nodes
@@ -236,12 +236,12 @@ int main(int argc, char *argv[])
 
 		prev_node->node_r = cur_node;
 		cur_node->node_l = prev_node;
-		cur_node->node_r = NULL;
 		cur_node->un_op = NULL;
 		cur_node->bin_op = NULL;
 
 		prev_node = cur_node;
 	}
+	prev_node->node_r = NULL;
 
 	//fill parameters
 	Node *cur_node = head;
