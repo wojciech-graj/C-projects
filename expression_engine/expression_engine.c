@@ -6,7 +6,8 @@ typedef struct Node {
 	char type;
 	Node *node_l;
 	Node *node_r;
-	double (*operation)(double, double);
+	double (*bin_op)(double, double);
+	double (*un_op)(double);
 	double val;
 } Node;
 
@@ -78,25 +79,46 @@ void set_operation(Node *node, char *value)
 {
 	switch(value[0]) {
 		case '+':
-			node->operation = *add;
+			node->bin_op = *add;
 			break;
 		case '-':
-			node->operation = *subtract;
+			node->bin_op = *subtract;
 			break;
 		case '*':
-			node->operation = *multiply;
+			node->bin_op = *multiply;
 			break;
 		case '/':
-			node->operation = *divide;
+			node->bin_op = *divide;
+			break;
+		case '%':
+			node->bin_op = *modulo;
 			break;
 		case '^':
-			node->operation = *pow;
+			node->bin_op = *pow;
 			break;
 		case '!':
-			node->operation = *factorial;
+			node->un_op = *factorial;
 			break;
 		default:
-			if(! strcmp(value, "sqrt")) node->operation = *square_root;
+			if(! strcmp(value, "sqrt")) {
+				node->un_op = *sqrt;
+			} else if (! strcmp(value, "ln")) {
+				node->un_op = *log;
+			} else if (! strcmp(value, "log")) {
+				node->un_op = *log10;
+			} else if (! strcmp(value, "sin")) {
+				node->un_op = *sin;
+			} else if (! strcmp(value, "cos")) {
+				node->un_op = *cos;
+			} else if (! strcmp(value, "tan")) {
+				node->un_op = *tan;
+			} else if (! strcmp(value, "sinh")) {
+				node->un_op = *sinh;
+			} else if (! strcmp(value, "cosh")) {
+				node->un_op = *cosh;
+			} else if (! strcmp(value, "tanh")) {
+				node->un_op = *tanh;
+			}
 	}
 }
 
@@ -146,17 +168,18 @@ void evaluate_node_group(Node **head)
 		while(cur_node != group_end_node->node_r)
 		{
 			if(cur_node->type == OPTYPES[i]) {
-				//TODO:rework
-				if (cur_node->type == OPTYPES[2]) {//if left-unary
-					cur_node->val = (cur_node->operation)(cur_node->node_l->val, 0);
-					delete_node(cur_node->node_l, head);
-				} else if (cur_node->type == OPTYPES[3] && cur_node->operation == *square_root) { //if right-unary
-					cur_node->val = (cur_node->operation)(0, cur_node->node_r->val);
-					delete_node(cur_node->node_r, head);
-				} else { //if binary
-					cur_node->val = (cur_node->operation)(cur_node->node_l->val, cur_node->node_r->val);
+				if (cur_node->bin_op) { //if binary
+					cur_node->val = (cur_node->bin_op)(cur_node->node_l->val, cur_node->node_r->val);
 					delete_node(cur_node->node_l, head);
 					delete_node(cur_node->node_r, head);
+				} else { //if unary
+					if (cur_node->un_op == *factorial) { //if left-unary
+						cur_node->val = (cur_node->un_op)(cur_node->node_l->val);
+						delete_node(cur_node->node_l, head);
+					} else { //if right-unary
+						cur_node->val = (cur_node->un_op)(cur_node->node_r->val);
+						delete_node(cur_node->node_r, head);
+					}
 				}
 			}
 			cur_node = cur_node->node_r;
@@ -201,7 +224,8 @@ int main(int argc, char *argv[])
 		prev_node->node_r = cur_node;
 		cur_node->node_l = prev_node;
 		cur_node->node_r = NULL;
-		cur_node->operation = NULL;
+		cur_node->un_op = NULL;
+		cur_node->bin_op = NULL;
 
 		prev_node = cur_node;
 	}
@@ -224,10 +248,9 @@ int main(int argc, char *argv[])
 		cur_node = cur_node->node_r;
 	}
 
-	//Evaluate nodes in accordance with order of operations
+	//Evaluate nodes in accordance with order of operations and store result
 	if(head->type == '(') delete_node(head, &head); //Delete first node if it is '(' because a node group cannot start with '('
 	evaluate_node_group(&head);
-
 	double result = head->val;
 	free(head);
 
