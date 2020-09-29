@@ -20,15 +20,13 @@ double divide(double a, double b)
 	return a / b;
 }
 
-double square_root(double a, double b)
+double modulo(double a, double b)
 {
-	(void)a;
-	return sqrt(b);
+	return (double) ((int) a % (int) b);
 }
 
-double factorial(double a, double b)
+double factorial(double a)
 {
-	(void)b;
 	double product = 1;
 	for(;a > 1; a--)
 	{
