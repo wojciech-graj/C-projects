@@ -5,26 +5,32 @@
 #include "../expression_engine/expression_engine.h"
 #include <string.h>
 
-const int SCREEN_SIZE[] = {320, 320};
-int x_min;
-int x_max;
+int screen_size[2];
+double x_min;
+double x_max;
 
 Node *head;
 
 void draw_graph(void) {
 
+	double dx = (x_max - x_min) / screen_size[0];
+
+	glClearColor (1.0f, 1.0f, 1.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	substitute_variable(head, 'x', x_min-1);
 	double prev_y = evaluate_tree(head);
-	int x;
-	for(x = x_min; x <= x_max; x++)
+	double x;
+	glLineWidth(3.0f);
+	glEnable(GL_LINE_SMOOTH);
+	for(x = x_min; x <= x_max; x += dx)
 	{
 		substitute_variable(head, 'x', x);
 		double y = evaluate_tree(head);
 		glBegin(GL_LINES);
-			glColor3f(1.0f, 1.0f, 1.0f);
-			glVertex2f(x - 1, prev_y);
+
+			glColor3f(1.0f, 0.0f, 0.0f);
+			glVertex2f(x - dx, prev_y);
 			glColor3f(1.0f, 1.0f, 1.0f);
 			glVertex2f(x, y);
 		glEnd();
@@ -36,14 +42,16 @@ void draw_graph(void) {
 
 int main(int argc, char *argv[])
 {
-	if(argc != 6) {
-		printf("ARGUMENTS: \"expression\" x_min x_max y_min y_max\n");
+	if(argc != 8) {
+		printf("ARGUMENTS: \"expression\" screen_size_x screen_size y x_min x_max y_min y_max\n");
 		return 0;
 	}
 
 	char *input = argv[1];
-	x_min = atoi(argv[2]);
-	x_max = atoi(argv[3]);
+	x_min = atof(argv[4]);
+	x_max = atof(argv[5]);
+	screen_size[0] = atoi(argv[2]);
+	screen_size[1] = atoi(argv[3]);
 
 	//expression_engine
 	char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
@@ -55,11 +63,12 @@ int main(int argc, char *argv[])
 	char * glut_argv[1] = {" "};
 	glutInit(&glut_argc, glut_argv);
 	/*glutInitWindowPosition(-1, -1);*/
-	glutInitWindowSize(SCREEN_SIZE[0], SCREEN_SIZE[1]);
+	glutInitWindowSize(screen_size[0], screen_size[1]);
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE | GLUT_DEPTH);
 	glutCreateWindow("Graph2d");
-	gluOrtho2D(x_min, x_max, atoi(argv[4]), atoi(argv[5]));
+	gluOrtho2D(x_min, x_max, atoi(argv[6]), atoi(argv[7]));
 	glutDisplayFunc(draw_graph);
+
 
 	glutMainLoop();
 
