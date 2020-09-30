@@ -16,7 +16,7 @@ typedef struct ListNode {
 	ListNode *node_prev;
 	ListNode *node_next;
 	Node *node;
-	bool linked;
+	bool linked; //whether or not the contained node has had its adjacent nodes defined
 } ListNode;
 
 //store tokenized input in *tokens, return amount of tokens
@@ -261,6 +261,19 @@ void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LEN
 	free(tokens);
 }
 
+void substitute_variable(Node *node, char var, int val)
+{
+	if(node->node_l) {
+		substitute_variable(node->node_l, var, val);
+	}
+	if(node->node_r) {
+		substitute_variable(node->node_r, var, val);
+	}
+	if(node->type == var) {
+		node->val = val;
+	}
+}
+
 double evaluate_tree(Node *node)
 {
 	if(node->bin_op) {
@@ -279,19 +292,6 @@ double evaluate_tree(Node *node)
 	return node->val;
 }
 
-void substitute_variable(Node *node, char var, int val)
-{
-	if(node->node_l) {
-		substitute_variable(node->node_l, var, val);
-	}
-	if(node->node_r) {
-		substitute_variable(node->node_r, var, val);
-	}
-	if(node->type == var) {
-		node->val = val;
-	}
-}
-
 void delete_tree(Node *node)
 {
 	if(node->node_r) {
@@ -303,7 +303,7 @@ void delete_tree(Node *node)
 	free(node);
 }
 
-int main(int argc, char *argv[])
+static int main(int argc, char *argv[])
 {
 	if(argc < 2)
 	{
