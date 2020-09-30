@@ -24,4 +24,18 @@ const int NUMOPTYPES = 6;
 const int TOKEN_LENGTH = 6;
 const int TOKEN_AMOUNT = 30;
 
+int tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[]);
+bool string_in_array(char *value, const char *array[], const int length);
+char get_node_type(char *value);
+void set_operation(Node *node, char *value);
+double get_math_constant(char *value);
+void delete_listnode(ListNode *node, ListNode **head, bool delete_child);
+bool is_left_unary(double (*un_op)(double));
+void create_tree(ListNode **list_head);
+void create_linked_list(ListNode **list_head, int length);
+void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], int tokens_amount);
+void substitute_variable(Node *node, char var, int val);
+double evaluate_tree(Node *node);
+void delete_tree(Node *node);
+
 #endif
