@@ -261,7 +261,7 @@ void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LEN
 	free(tokens);
 }
 
-void substitute_variable(Node *node, char var, int val)
+void substitute_variable(Node *node, char var, double val)
 {
 	if(node->node_l) {
 		substitute_variable(node->node_l, var, val);
@@ -303,7 +303,7 @@ void delete_tree(Node *node)
 	free(node);
 }
 
-static int main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	if(argc < 2)
 	{
