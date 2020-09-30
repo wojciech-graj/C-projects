@@ -8,6 +8,7 @@
 #include <math.h>
 
 typedef struct Node Node;
+typedef struct ListNode ListNode;
 
 const char *L5OPS[] = {"+", "-"};
 const char *L4OPS[] = {"/", "*", "%"};
