@@ -276,6 +276,19 @@ void evaluate_tree(Node *node)
 	}
 }
 
+void substitute_variable(Node *node, char var, int val)
+{
+	if(node->node_l) {
+		substitute_variable(node->node_l, var, val);
+	}
+	if(node->node_r) {
+		substitute_variable(node->node_r, var, val);
+	}
+	if(node->type == var) {
+		node->val = val;
+	}
+}
+
 void delete_tree(Node *node)
 {
 	if(node->node_r) {
@@ -289,7 +302,7 @@ void delete_tree(Node *node)
 
 int main(int argc, char *argv[])
 {
-	if(argc != 2)
+	if(argc < 2)
 	{
 		printf("ERROR: No argument provided.\n");
 		return 0;
@@ -305,6 +318,13 @@ int main(int argc, char *argv[])
 	Node *head;
 	convert_tokens_to_nodes(&head, tokens, tokens_amount);
 	free(tokens);
+
+	if(argc > 2) {
+		substitute_variable(head, 'x', atof(argv[2]));
+	}
+	if(argc > 3) {
+		substitute_variable(head, 'y', atof(argv[3]));
+	}
 
 	evaluate_tree(head);
 	double result = head->val;
