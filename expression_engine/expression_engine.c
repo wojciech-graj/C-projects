@@ -31,6 +31,7 @@ int tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
 		token_num++;
 		p = strtok(NULL, " ");
 	}
+	tokens = realloc(tokens, token_num * TOKEN_LENGTH * sizeof(char)); //technically, tokens contains TOKEN_AMOUNT values, however only memory for tokens_amount has been now allocated. Size of tokens is not sizeof(tokens) but tokens_amount
 	return token_num;
 }
 
@@ -257,23 +258,25 @@ void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LEN
 
 	*head = list_head->node;
 	free(list_head);
+	free(tokens);
 }
 
-void evaluate_tree(Node *node)
+double evaluate_tree(Node *node)
 {
 	if(node->bin_op) {
-		evaluate_tree(node->node_l);
-		evaluate_tree(node->node_r);
+		(void) evaluate_tree(node->node_l);
+		(void) evaluate_tree(node->node_r);
 		node->val = (node->bin_op)(node->node_l->val, node->node_r->val);
 	} else if(node->un_op) {
 		if (is_left_unary(node->un_op)) { //if left-unary
-			evaluate_tree(node->node_l);
+			(void) evaluate_tree(node->node_l);
 			node->val = (node->un_op)(node->node_l->val);
 		} else { //if right-unary
-			evaluate_tree(node->node_r);
+			(void) evaluate_tree(node->node_r);
 			node->val = (node->un_op)(node->node_r->val);
 		}
 	}
+	return node->val;
 }
 
 void substitute_variable(Node *node, char var, int val)
@@ -309,15 +312,12 @@ int main(int argc, char *argv[])
 	}
 
 	char *input = argv[1];
-	int i;
 
 	char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
 	int tokens_amount = tokenize(tokens, input);
-	tokens = realloc(tokens, tokens_amount * TOKEN_LENGTH * sizeof(char)); //technically, tokens contains TOKEN_AMOUNT values, however only memory for tokens_amount has been now allocated. Size of tokens is not sizeof(tokens) but tokens_amount
 
 	Node *head;
 	convert_tokens_to_nodes(&head, tokens, tokens_amount);
-	free(tokens);
 
 	if(argc > 2) {
 		substitute_variable(head, 'x', atof(argv[2]));
@@ -326,8 +326,7 @@ int main(int argc, char *argv[])
 		substitute_variable(head, 'y', atof(argv[3]));
 	}
 
-	evaluate_tree(head);
-	double result = head->val;
+	double result = evaluate_tree(head);
 	delete_tree(head);
 	printf("%f\n", result);
 
