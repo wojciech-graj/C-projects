@@ -6,6 +6,8 @@ Maxx 5
 Miny 0
 Maxy 5
 
+A 50
+
 F x ^ 2
 C RED
 F x ^ 3

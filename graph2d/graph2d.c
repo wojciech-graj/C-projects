@@ -5,6 +5,7 @@
 #include "../expression_engine/expression_engine.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct ConfigFunction ConfigFunction;
 
@@ -27,15 +28,22 @@ typedef struct ConfigData {
 	double min_y;
 	double max_x;
 	double max_y;
+	double dx;
+	double dy;
+	int axis_offset;
 	ConfigFunction *func_head;
 } ConfigData;
 
 ConfigData *config;
 
+void RenderString(float x, float y, void *font, const char* string)
+{
+  glRasterPos2f(x, y);
+
+  glutBitmapString(font, string);
+}
+
 void draw_graph(void) {
-
-	double dx = (config->max_x - config->min_x) / config->screen_size_x;
-
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -47,7 +55,7 @@ void draw_graph(void) {
 	{
 		glBegin(GL_LINE_STRIP);
 			glColor3f(cur_function->color[0], cur_function->color[1], cur_function->color[2]);
-			for(x = config->min_x - dx; x <= config->max_x; x += dx)
+			for(x = config->min_x - config->dx; x <= config->max_x; x += config->dx)
 			{
 				substitute_variable(cur_function->head, 'x', x);
 				double y = evaluate_tree(cur_function->head);
@@ -57,6 +65,18 @@ void draw_graph(void) {
 		cur_function = cur_function->func_next;
 	}
 
+	glBegin(GL_LINES);
+		glColor3f(0.0f, 0.0f, 0.0f);
+		//x-axis
+		glVertex2f(config->min_x, config->min_y);
+		glVertex2f(config->max_x, config->min_y);
+		//y-axis
+		glVertex2f(config->min_x, config->min_y);
+		glVertex2f(config->min_x, config->max_y);
+	glEnd();
+
+	//RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "text");
+
 	glutSwapBuffers();
 }
 
@@ -64,8 +84,12 @@ void draw_graph(void) {
 void read_config(char *filename)
 {
 	FILE *f = fopen(filename, "r");
+	
 	char *buf = malloc(BUFFER_SIZE);
+
 	config = malloc(sizeof(ConfigData));
+	config->axis_offset = 50;
+
 	ConfigFunction *cur_function = NULL;
 	while(fgets(buf, BUFFER_SIZE, f)) {
 		(void) strtok(buf, "\n");
@@ -87,8 +111,7 @@ void read_config(char *filename)
 				cur_function->func_next = function;
 			}
 			cur_function = function;
-		}
-		if(buf[0] == 'S') {
+		} else if(buf[0] == 'S') {
 			if(buf[1] == 'x') {
 				memmove(buf, buf+3, strlen(buf));
 				config->screen_size_x = atoi(buf);
@@ -96,8 +119,7 @@ void read_config(char *filename)
 				memmove(buf, buf+3, strlen(buf));
 				config->screen_size_y = atoi(buf);
 			}
-		}
-		if(buf[0] == 'M') {
+		} else if(buf[0] == 'M') {
 			if(buf[1] == 'i') {
 				if(buf[3] == 'x') {
 					memmove(buf, buf+5, strlen(buf));
@@ -115,8 +137,7 @@ void read_config(char *filename)
 					config->max_y = atof(buf);
 				}
 			}
-		}
-		if(buf[0] == 'C') {
+		} else if(buf[0] == 'C') {
 			memmove(buf, buf+2, strlen(buf));
 			if(! strcmp(buf, "RED")) {
 				cur_function->color = RED;
@@ -125,8 +146,13 @@ void read_config(char *filename)
 			} else if(! strcmp(buf, "BLUE")) {
 				cur_function->color = BLUE;
 			}
+		} else if(buf[0] == 'A') {
+			memmove(buf, buf+2, strlen(buf));
+			config->axis_offset = atoi(buf);
 		}
 	}
+	config->dx = (config->max_x - config->min_x) / config->screen_size_x;
+	config->dy = (config->max_y - config->min_y) / config->screen_size_y;
 	fclose(f);
 	free(buf);
 }
@@ -139,11 +165,10 @@ int main(int argc, char *argv[])
 	int glut_argc = 1;
 	char * glut_argv[1] = {" "};
 	glutInit(&glut_argc, glut_argv);
-	/*glutInitWindowPosition(-1, -1);*/
 	glutInitWindowSize(config->screen_size_x, config->screen_size_y);
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE | GLUT_DEPTH);
 	glutCreateWindow("Graph2d");
-	gluOrtho2D(config->min_x, config->max_x, config->min_y, config->max_y);
+	gluOrtho2D(config->min_x - config->dx * config->axis_offset, config->max_x, config->min_y - config->dy * config->axis_offset, config->max_y);
 	glutDisplayFunc(draw_graph);
 
 	glutMainLoop();
