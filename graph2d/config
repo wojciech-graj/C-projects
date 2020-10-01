@@ -1,0 +1,14 @@
+Sx 800
+Sy 800
+
+Minx 0
+Maxx 5
+Miny 0
+Maxy 5
+
+F x ^ 2
+C RED
+F x ^ 3
+C BLUE
+F sin x
+C GREEN
