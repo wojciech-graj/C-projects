@@ -1,12 +1,15 @@
-Sx 800
-Sy 800
+Xres 800
+Yres 800
 
-Minx 0
-Maxx 5
-Miny 0
-Maxy 5
+Xmin 0
+Xmax 5
+Ymin 0
+Ymax 5
 
-A 50
+Xscl 0.3
+Yscl 0.3
+Xdig 2
+Ydig 2
 
 F x ^ 2
 C RED

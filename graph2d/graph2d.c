@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define max(x, y) ((x) >= (y)) ? (x) : (y)
+
 typedef struct ConfigFunction ConfigFunction;
 
 const int BUFFER_SIZE = 255;
@@ -30,17 +32,22 @@ typedef struct ConfigData {
 	double max_y;
 	double dx;
 	double dy;
+	double scale_x;
+	double scale_y;
+	int digits_x;
+	int digits_y;
 	int axis_offset;
 	ConfigFunction *func_head;
 } ConfigData;
 
 ConfigData *config;
 
-void RenderString(float x, float y, void *font, const char* string)
+void RenderFloat(float x, float y, void *font, double num, int digits)
 {
-  glRasterPos2f(x, y);
-
-  glutBitmapString(font, string);
+	char string[BUFFER_SIZE];
+	gcvt(num,digits,string);
+	glRasterPos2f(x, y);
+    glutBitmapString(font, string);
 }
 
 void draw_graph(void) {
@@ -65,6 +72,7 @@ void draw_graph(void) {
 		cur_function = cur_function->func_next;
 	}
 
+	double i;
 	glBegin(GL_LINES);
 		glColor3f(0.0f, 0.0f, 0.0f);
 		//x-axis
@@ -73,9 +81,31 @@ void draw_graph(void) {
 		//y-axis
 		glVertex2f(config->min_x, config->min_y);
 		glVertex2f(config->min_x, config->max_y);
+
+		//x-axis ticks
+		for(i = config->min_x; i < config->max_x; i += config->scale_x)
+		{
+			glVertex2f(i, config->min_y);
+			glVertex2f(i, config->min_y + config->dy * 12);
+		}
+		//y-axis ticks
+		for(i = config->min_y; i < config->max_y; i += config->scale_y)
+		{
+			glVertex2f(config->min_x, i);
+			glVertex2f(config->min_x + config->dx * 12, i);
+		}
 	glEnd();
 
-	//RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "text");
+	//x-axis labels
+	for(i = config->min_x; i < config->max_x; i += config->scale_x)
+	{
+		RenderFloat(i - 6 * config->dx, -24 * config->dy, GLUT_BITMAP_TIMES_ROMAN_24, i, config->digits_x);
+	}
+	//y-axis labels
+	for(i = config->min_y; i < config->max_y; i += config->scale_y)
+	{
+		RenderFloat(config->dx * -1 * config->axis_offset, i - 6 * config->dy, GLUT_BITMAP_TIMES_ROMAN_24, i, config->digits_y);
+	}
 
 	glutSwapBuffers();
 }
@@ -84,13 +114,10 @@ void draw_graph(void) {
 void read_config(char *filename)
 {
 	FILE *f = fopen(filename, "r");
-	
 	char *buf = malloc(BUFFER_SIZE);
-
 	config = malloc(sizeof(ConfigData));
-	config->axis_offset = 50;
-
 	ConfigFunction *cur_function = NULL;
+
 	while(fgets(buf, BUFFER_SIZE, f)) {
 		(void) strtok(buf, "\n");
 		if(buf[0] == 'F') {
@@ -111,31 +138,39 @@ void read_config(char *filename)
 				cur_function->func_next = function;
 			}
 			cur_function = function;
-		} else if(buf[0] == 'S') {
-			if(buf[1] == 'x') {
-				memmove(buf, buf+3, strlen(buf));
+		} else if(buf[0] == 'X') {
+			if(buf[1] == 'r') {
+				memmove(buf, buf+5, strlen(buf));
 				config->screen_size_x = atoi(buf);
-			} else if(buf[1] == 'y') {
-				memmove(buf, buf+3, strlen(buf));
-				config->screen_size_y = atoi(buf);
+			} else if(buf[3] == 'x') {
+				memmove(buf, buf+5, strlen(buf));
+				config->max_x = atof(buf);
+			} else if(buf[3] == 'n') {
+				memmove(buf, buf+5, strlen(buf));
+				config->min_x = atof(buf);
+			} else if(buf[1] == 's') {
+				memmove(buf, buf+5, strlen(buf));
+				config->scale_x = atof(buf);
+			} else if(buf[1] == 'd') {
+				memmove(buf, buf+5, strlen(buf));
+				config->digits_x = atof(buf);
 			}
-		} else if(buf[0] == 'M') {
-			if(buf[1] == 'i') {
-				if(buf[3] == 'x') {
-					memmove(buf, buf+5, strlen(buf));
-					config->min_x = atof(buf);
-				} else if(buf[3] == 'y') {
-					memmove(buf, buf+5, strlen(buf));
-					config->min_y = atof(buf);
-				}
-			} else if(buf[1] == 'a') {
-				if(buf[3] == 'x') {
-					memmove(buf, buf+5, strlen(buf));
-					config->max_x = atof(buf);
-				} else if(buf[3] == 'y') {
-					memmove(buf, buf+5, strlen(buf));
-					config->max_y = atof(buf);
-				}
+		} else if(buf[0] == 'Y') {
+			if(buf[1] == 'r') {
+				memmove(buf, buf+5, strlen(buf));
+				config->screen_size_y = atoi(buf);
+			} else if(buf[3] == 'x') {
+				memmove(buf, buf+5, strlen(buf));
+				config->max_y = atof(buf);
+			} else if(buf[3] == 'n') {
+				memmove(buf, buf+5, strlen(buf));
+				config->min_y = atof(buf);
+			} else if(buf[1] == 's') {
+				memmove(buf, buf+5, strlen(buf));
+				config->scale_y = atof(buf);
+			} else if(buf[1] == 'd') {
+				memmove(buf, buf+5, strlen(buf));
+				config->digits_y = atoi(buf);
 			}
 		} else if(buf[0] == 'C') {
 			memmove(buf, buf+2, strlen(buf));
@@ -146,13 +181,11 @@ void read_config(char *filename)
 			} else if(! strcmp(buf, "BLUE")) {
 				cur_function->color = BLUE;
 			}
-		} else if(buf[0] == 'A') {
-			memmove(buf, buf+2, strlen(buf));
-			config->axis_offset = atoi(buf);
 		}
 	}
 	config->dx = (config->max_x - config->min_x) / config->screen_size_x;
 	config->dy = (config->max_y - config->min_y) / config->screen_size_y;
+	config->axis_offset = 14 * config->digits_y + 18;
 	fclose(f);
 	free(buf);
 }
