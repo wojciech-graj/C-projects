@@ -28,10 +28,10 @@ ConfigData *config;
 
 void RenderFloat(float x, float y, void *font, double num, int digits)
 {
-	char string[BUFFER_SIZE];
-	gcvt(num,digits,string);
+	char buf[BUFFER_SIZE];
+	snprintf(buf, digits + 1, "%f", num);
 	glRasterPos2f(x, y);
-    glutBitmapString(font, string);
+    glutBitmapString(font, buf);
 }
 
 void draw_graph(void) {
