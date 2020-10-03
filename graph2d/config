@@ -1,7 +1,7 @@
 Xres 800
 Yres 800
 
-Xmin 1.5
+Xmin 0
 Xmax 5
 Ymin 0
 Ymax 5
@@ -11,9 +11,11 @@ Yscl 0.3
 Xdig 2
 Ydig 2
 
-F ( x ^ 2 ) + 2
+Lnwidth 3
+
+F ( x ^ 1.5 ) + 1
 C RED
-F ( x ^ 2 )
+F sin x
 C BLUE
 F log x
 C GREEN
