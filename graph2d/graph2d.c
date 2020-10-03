@@ -62,6 +62,7 @@ void draw_graph(void) {
 			glColor3f(cur_function->color[0], cur_function->color[1], cur_function->color[2]);
 			for(x = config->min_x - config->dx; x <= config->max_x; x += config->dx)
 			{
+
 				substitute_variable(cur_function->head, 'x', x);
 				double y = evaluate_tree(cur_function->head);
 				glVertex2f(x, y);
