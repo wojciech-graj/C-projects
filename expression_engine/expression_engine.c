@@ -168,7 +168,9 @@ void create_tree(ListNode **list_head)
 		}
 	}
 
-	group_end_node = group_end_node->node_next;
+	if(group_end_node) {
+		group_end_node = group_end_node->node_next;
+	}
 
 	int i;
 	for(i = 2; i < NUMOPTYPES; i++) //skip L0 and L1
@@ -235,16 +237,14 @@ void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LEN
 		cur_node->linked = false;
 		node->node_l = NULL;
 		node->node_r = NULL;
+		node->bin_op = NULL;
+		node->un_op = NULL;
 
 		node->type = get_node_type(value);
 		if(node->type == 'n') {
 			node->val = atof(value);
-			node->bin_op = NULL;
-			node->un_op = NULL;
 		} else if(node->type == 'c') {
 			node->val = get_math_constant(value);
-			node->bin_op = NULL;
-			node->un_op = NULL;
 		} else {
 			set_operation(node, value);
 			node->val = 0;
