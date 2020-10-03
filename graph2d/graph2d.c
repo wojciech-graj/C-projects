@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define max(x, y) ((x) >= (y)) ? (x) : (y)
-
 typedef struct ConfigFunction ConfigFunction;
 
 const int BUFFER_SIZE = 255;
@@ -117,6 +115,7 @@ void read_config(char *filename)
 	char *buf = malloc(BUFFER_SIZE);
 	config = malloc(sizeof(ConfigData));
 	ConfigFunction *cur_function = NULL;
+
 
 	while(fgets(buf, BUFFER_SIZE, f)) {
 		(void) strtok(buf, "\n");

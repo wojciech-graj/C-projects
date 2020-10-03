@@ -129,7 +129,8 @@ void delete_listnode(ListNode *node, ListNode **head, bool delete_child)
 	}
 	if(node->node_prev) {
 		node->node_prev->node_next = node->node_next;
-	} else {
+	}
+	if((! node->node_prev ) || node == *head){
 		*head = node->node_next;
 	}
 	if(delete_child) {
@@ -167,11 +168,13 @@ void create_tree(ListNode **list_head)
 		}
 	}
 
+	group_end_node = group_end_node->node_next;
+
 	int i;
 	for(i = 2; i < NUMOPTYPES; i++) //skip L0 and L1
 	{
 		cur_node = *list_head;
-		while(cur_node != group_end_node->node_next)
+		while(cur_node != group_end_node)
 		{
 			if(cur_node->node->type == OPTYPES[i] && cur_node->linked == false) {
 				cur_node->linked = true;

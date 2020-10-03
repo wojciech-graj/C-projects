@@ -13,7 +13,7 @@ Ydig 2
 
 F x ^ 2
 C RED
-F x ^ 3
+F x ^ 2
 C BLUE
 F sin x
 C GREEN
