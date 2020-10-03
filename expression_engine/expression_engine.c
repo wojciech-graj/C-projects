@@ -257,7 +257,10 @@ void convert_tokens_to_nodes(Node **head, char (*tokens)[TOKEN_AMOUNT][TOKEN_LEN
 		delete_listnode(list_head, &list_head, true);
 	}
 
-	create_tree(&list_head);
+	while(list_head->node_next)
+	{
+		create_tree(&list_head);
+	}
 
 	*head = list_head->node;
 	free(list_head);
