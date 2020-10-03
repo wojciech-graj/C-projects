@@ -1,19 +1,4 @@
-#include <GL/gl.h>
-#include <GL/glut.h>
-#include <GL/glu.h>
-
-#include "../expression_engine/expression_engine.h"
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-typedef struct ConfigFunction ConfigFunction;
-
-const int BUFFER_SIZE = 255;
-const float BLACK[3] = {0.0, 0.0, 0.0};
-const float RED[3] = {1.0, 0.0, 0.0};
-const float GREEN[3] = {0.0, 1.0, 0.0};
-const float BLUE[3] = {0.0, 0.0, 1.0};
+#include "graph2d.h"
 
 typedef struct ConfigFunction {
 	Node *head;
@@ -35,6 +20,7 @@ typedef struct ConfigData {
 	int digits_x;
 	int digits_y;
 	int axis_offset;
+	int line_width;
 	ConfigFunction *func_head;
 } ConfigData;
 
@@ -53,7 +39,7 @@ void draw_graph(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	double x;
-	glLineWidth(3.0f);
+	glLineWidth(config->line_width);
 	ConfigFunction *cur_function = config->func_head;
 
 	while(cur_function)
@@ -109,85 +95,83 @@ void draw_graph(void) {
 	glutSwapBuffers();
 }
 
-//TODO:REWORK
 void read_config(char *filename)
 {
 	FILE *f = fopen(filename, "r");
-	char *buf = malloc(BUFFER_SIZE);
+	char buf[BUFFER_SIZE];
 	config = malloc(sizeof(ConfigData));
 	ConfigFunction *cur_function = NULL;
 
-
 	while(fgets(buf, BUFFER_SIZE, f)) {
-		(void) strtok(buf, "\n");
-		if(buf[0] == 'F') {
-			memmove(buf, buf+2, strlen(buf));
-
-			Node *head;
-			char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
-			int tokens_amount = tokenize(tokens, buf);
-			convert_tokens_to_nodes(&head, tokens, tokens_amount);
-
-			ConfigFunction *function = malloc(sizeof(ConfigFunction));
-			function->head = head;
-			function->func_next = NULL;
-			function->color = BLACK;
-			if(! cur_function) {
-				config->func_head = function;
-			} else {
-				cur_function->func_next = function;
-			}
-			cur_function = function;
-		} else if(buf[0] == 'X') {
-			if(buf[1] == 'r') {
+		if(strcmp(buf, "\n")) { //if not empty line
+			strtok(buf, "\n");
+			if(strspn(buf, "Xres") == 4) {
 				memmove(buf, buf+5, strlen(buf));
 				config->screen_size_x = atoi(buf);
-			} else if(buf[3] == 'x') {
-				memmove(buf, buf+5, strlen(buf));
-				config->max_x = atof(buf);
-			} else if(buf[3] == 'n') {
-				memmove(buf, buf+5, strlen(buf));
-				config->min_x = atof(buf);
-			} else if(buf[1] == 's') {
-				memmove(buf, buf+5, strlen(buf));
-				config->scale_x = atof(buf);
-			} else if(buf[1] == 'd') {
-				memmove(buf, buf+5, strlen(buf));
-				config->digits_x = atof(buf);
-			}
-		} else if(buf[0] == 'Y') {
-			if(buf[1] == 'r') {
+			} else if(strspn(buf, "Yres") == 4) {
 				memmove(buf, buf+5, strlen(buf));
 				config->screen_size_y = atoi(buf);
-			} else if(buf[3] == 'x') {
+			} else if(strspn(buf, "Xmin") == 4) {
 				memmove(buf, buf+5, strlen(buf));
-				config->max_y = atof(buf);
-			} else if(buf[3] == 'n') {
+				config->min_x = atof(buf);
+			} else if(strspn(buf, "Xmax") == 4) {
+				memmove(buf, buf+5, strlen(buf));
+				config->max_x = atof(buf);
+			} else if(strspn(buf, "Ymin") == 4) {
 				memmove(buf, buf+5, strlen(buf));
 				config->min_y = atof(buf);
-			} else if(buf[1] == 's') {
+			} else if(strspn(buf, "Ymax") == 4) {
+				memmove(buf, buf+5, strlen(buf));
+				config->max_y= atof(buf);
+			} else if(strspn(buf, "Xscl") == 4) {
+				memmove(buf, buf+5, strlen(buf));
+				config->scale_x = atof(buf);
+			} else if(strspn(buf, "Yscl") == 4) {
 				memmove(buf, buf+5, strlen(buf));
 				config->scale_y = atof(buf);
-			} else if(buf[1] == 'd') {
+			} else if(strspn(buf, "Xdig") == 4) {
+				memmove(buf, buf+5, strlen(buf));
+				config->digits_x = atoi(buf);
+			} else if(strspn(buf, "Ydig") == 4) {
 				memmove(buf, buf+5, strlen(buf));
 				config->digits_y = atoi(buf);
-			}
-		} else if(buf[0] == 'C') {
-			memmove(buf, buf+2, strlen(buf));
-			if(! strcmp(buf, "RED")) {
-				cur_function->color = RED;
-			} else if(! strcmp(buf, "GREEN")) {
-				cur_function->color = GREEN;
-			} else if(! strcmp(buf, "BLUE")) {
-				cur_function->color = BLUE;
+			} else if(strspn(buf, "Lnwidth") == 7) {
+				memmove(buf, buf+8, strlen(buf));
+				config->line_width = atoi(buf);
+			} else if(buf[0] == 'F') {
+				memmove(buf, buf+2, strlen(buf));
+
+				Node *head;
+				char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
+				int tokens_amount = tokenize(tokens, buf);
+				convert_tokens_to_nodes(&head, tokens, tokens_amount);
+
+				ConfigFunction *function = malloc(sizeof(ConfigFunction));
+				function->head = head;
+				function->func_next = NULL;
+				function->color = BLACK;
+				if(! cur_function) {
+					config->func_head = function;
+				} else {
+					cur_function->func_next = function;
+				}
+				cur_function = function;
+			} else if(buf[0] == 'C') {
+				memmove(buf, buf+2, strlen(buf));
+				if(! strcmp(buf, "RED")) {
+					cur_function->color = RED;
+				} else if(! strcmp(buf, "GREEN")) {
+					cur_function->color = GREEN;
+				} else if(! strcmp(buf, "BLUE")) {
+					cur_function->color = BLUE;
+				}
 			}
 		}
 	}
 	config->dx = (config->max_x - config->min_x) / config->screen_size_x;
 	config->dy = (config->max_y - config->min_y) / config->screen_size_y;
-	config->axis_offset = 14 * config->digits_y + 18;
+	config->axis_offset = 14 * config->digits_y + 18; // 14:width of character 4:width of dot
 	fclose(f);
-	free(buf);
 }
 
 int main(int argc, char *argv[])
@@ -196,7 +180,7 @@ int main(int argc, char *argv[])
 
 	//GLUT
 	int glut_argc = 1;
-	char * glut_argv[1] = {" "};
+	char *glut_argv[1] = {" "};
 	glutInit(&glut_argc, glut_argv);
 	glutInitWindowSize(config->screen_size_x, config->screen_size_y);
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE | GLUT_DEPTH);
