@@ -38,4 +38,22 @@ void substitute_variable(Node *node, char var, double val);
 double evaluate_tree(Node *node);
 void delete_tree(Node *node);
 
+//multipurpose node structure out of which tree is created. types: 'n':number, 'c':const, '(', ')', '2':L2OP
+typedef struct Node {
+	char type;
+	Node *node_l;
+	Node *node_r;
+	double (*bin_op)(double, double);
+	double (*un_op)(double);
+	double val;
+} Node;
+
+//doubly linked list structure used when creating tree
+typedef struct ListNode {
+	ListNode *node_prev;
+	ListNode *node_next;
+	Node *node;
+	bool linked; //whether or not the contained node has had its adjacent nodes defined
+} ListNode;
+
 #endif

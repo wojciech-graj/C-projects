@@ -1,24 +1,6 @@
 #include "expression_engine.h"
 #include "math_functions.h"
 
-//multipurpose node structure out of which tree is created. types: 'n':number, 'c':const, '(', ')', '2':L2OP
-typedef struct Node {
-	char type;
-	Node *node_l;
-	Node *node_r;
-	double (*bin_op)(double, double);
-	double (*un_op)(double);
-	double val;
-} Node;
-
-//doubly linked list structure used when creating tree
-typedef struct ListNode {
-	ListNode *node_prev;
-	ListNode *node_next;
-	Node *node;
-	bool linked; //whether or not the contained node has had its adjacent nodes defined
-} ListNode;
-
 //store tokenized input in *tokens, return amount of tokens
 int tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
 {
