@@ -95,7 +95,7 @@ void draw_graph(void) {
 	glutSwapBuffers();
 }
 
-void read_config(char *filename)
+void parse_config(char *filename)
 {
 	FILE *f = fopen(filename, "r");
 	char buf[BUFFER_SIZE];
@@ -174,9 +174,65 @@ void read_config(char *filename)
 	fclose(f);
 }
 
+Node *get_nth_func(int n)
+{
+	int i;
+	ConfigFunction *cur_func = config->func_head;
+	for(i = 0; i < n; i++)
+	{
+		cur_func = cur_func->func_next;
+	}
+	return cur_func->head;
+}
+
+void parse_input() {
+	char buf[BUFFER_SIZE];
+	printf("> ");
+	fgets(buf, BUFFER_SIZE, stdin);
+	strtok(buf, "\n");
+	char *p = strtok(buf, " ");
+	if(! strcmp(p, "help")) {
+		printf("LIST OF FUNCTIONS:\nexit\nintersect f1 f2 guess iterations\n");
+	} else if(! strcmp(p, "exit")) {
+		exit(0);
+	}else if(! strcmp(p, "intersect")) {
+		Node *head = malloc(sizeof(Node));
+		head->bin_op = *subtract;
+		head->un_op = NULL;
+
+		p = strtok(NULL, " ");
+		head->node_l = get_nth_func(atoi(p));
+
+		p = strtok(NULL, " ");
+		head->node_r = get_nth_func(atoi(p));
+
+		p = strtok(NULL, " ");
+		double x = atof(p);
+
+		p = strtok(NULL, " ");
+
+		//calculate intersection using newton's method
+		int i;
+		for(i = 0; i < atoi(p); i++)
+		{
+			substitute_variable(head, 'x', x);
+			double y = evaluate_tree(head);
+			substitute_variable(head, 'x', x + config->dx / 2);
+			double gradient = evaluate_tree(head);
+			substitute_variable(head, 'x', x - config->dx / 2);
+			gradient = (gradient - evaluate_tree(head)) / config->dx;
+			x -= y / gradient;
+		}
+
+		printf("Intersect x: %f\n", x);
+
+		free(head);
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	read_config("config");
+	parse_config("config");
 
 	//GLUT
 	int glut_argc = 1;
@@ -187,6 +243,7 @@ int main(int argc, char *argv[])
 	glutCreateWindow("Graph2d");
 	gluOrtho2D(config->min_x - config->dx * config->axis_offset, config->max_x, config->min_y - config->dy * config->axis_offset, config->max_y);
 	glutDisplayFunc(draw_graph);
+	glutIdleFunc(parse_input);
 
 	glutMainLoop();
 

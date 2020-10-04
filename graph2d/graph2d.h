@@ -10,6 +10,7 @@
 #include <GL/glu.h>
 
 #include "../expression_engine/expression_engine.h"
+#include "../expression_engine/math_functions.h"
 
 typedef struct ConfigFunction ConfigFunction;
 typedef struct ConfigData ConfigData;
