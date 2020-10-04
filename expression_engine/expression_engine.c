@@ -13,7 +13,7 @@ int tokenize(char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH], char input[])
 		token_num++;
 		p = strtok(NULL, " ");
 	}
-	tokens = realloc(tokens, token_num * TOKEN_LENGTH * sizeof(char)); //technically, tokens contains TOKEN_AMOUNT values, however only memory for tokens_amount has been now allocated. Size of tokens is not sizeof(tokens) but tokens_amount
+
 	return token_num;
 }
 
