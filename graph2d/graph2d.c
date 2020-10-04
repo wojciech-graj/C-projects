@@ -193,7 +193,16 @@ void parse_input() {
 	char *p = strtok(buf, " ");
 	if(! strcmp(p, "help")) {
 		printf("LIST OF FUNCTIONS:\nexit\nintersect f1 f2 guess iterations\n");
-	} else if(! strcmp(p, "exit")) {
+	} else if(! strcmp(p, "exit")) { //Free memory properly
+		ConfigFunction *cur_func = config->func_head;
+		while(cur_func)
+		{
+			ConfigFunction *next_func = cur_func->func_next;
+			delete_tree(cur_func->head);
+			free(cur_func);
+			cur_func = next_func;
+		}
+		free(config);
 		exit(0);
 	}else if(! strcmp(p, "intersect")) {
 		Node *head = malloc(sizeof(Node));
@@ -224,7 +233,9 @@ void parse_input() {
 			x -= y / gradient;
 		}
 
-		printf("Intersect x: %f\n", x);
+		substitute_variable(head->node_r, 'x', x);
+		double y = evaluate_tree(head->node_r);
+		printf("x=%f, y=%f\n", x, y);
 
 		free(head);
 	}
@@ -247,6 +258,5 @@ int main(int argc, char *argv[])
 
 	glutMainLoop();
 
-	free(config);
 	return 0;
 }
