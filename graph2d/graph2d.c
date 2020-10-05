@@ -216,7 +216,7 @@ void parse_input() {
 	strtok(buf, "\n");
 	char *p = strtok(buf, " ");
 	if(! strcmp(p, "help")) {
-		printf("LIST OF FUNCTIONS:\nexit\nintersect f1 f2 guess iterations\nintegral f right_bound lest_bound\ngradient f x\nmax f left_bound right_bound");
+		printf("LIST OF FUNCTIONS:\nexit\nintersect f1 f2 guess iterations\nintegral f right_bound lest_bound\ngradient f x\nmax f left_bound right_bound\nmin f left_bound right_bound\n");
 	} else if(! strcmp(p, "exit")) { //Free memory properly
 		ConfigFunction *cur_func = config->func_head;
 		while(cur_func)
@@ -229,127 +229,108 @@ void parse_input() {
 		free(config);
 
 		exit(0);
-	} else if(! strcmp(p, "intersect")) {
-		Node *head = malloc(sizeof(Node));
-		head->bin_op = *subtract;
-		head->un_op = NULL;
-
+	} else {
+		char *argv[4];
+		argv[0] = p;
 		p = strtok(NULL, " ");
-		head->node_l = get_nth_func(atoi(p));
-
-		p = strtok(NULL, " ");
-		head->node_r = get_nth_func(atoi(p));
-
-		p = strtok(NULL, " ");
-		double x = atof(p);
-
-		p = strtok(NULL, " ");
-
-		//calculate intersection using newton's method
-		int i;
-		for(i = 0; i < atoi(p); i++)
+		Node *f = get_nth_func(atoi(p));
+		int i = 1;
+		while(p)
 		{
-			substitute_variable(head, 'x', x);
-			double y = evaluate_tree(head);
-			substitute_variable(head, 'x', x + config->dx / 2);
-			double gradient = evaluate_tree(head);
-			substitute_variable(head, 'x', x - config->dx / 2);
-			gradient = (gradient - evaluate_tree(head)) / config->dx;
-			x -= y / gradient;
+			p = strtok(NULL, " ");
+			argv[i] = p;
+			i++;
 		}
+		if(! strcmp(argv[0], "intersect")) {
+			Node *head = malloc(sizeof(Node));
+			head->bin_op = *subtract;
+			head->un_op = NULL;
+			head->node_l = f;
+			head->node_r = get_nth_func(atoi(argv[1]));
+			double x = atof(argv[2]);
 
-		substitute_variable(head->node_r, 'x', x);
-		double y = evaluate_tree(head->node_r);
-		printf("x=%f, y=%f\n", x, y);
-
-		free(head);
-	} else if(! strcmp(p, "integral")) {
-		p = strtok(NULL, " ");
-		Node *head = get_nth_func(atoi(p));
-
-		p = strtok(NULL, " ");
-		double r_bound = atof(p);
-
-		p = strtok(NULL, " ");
-		double l_bound = atof(p);
-
-		double area = 0;
-		substitute_variable(head, 'x', l_bound);
-		double prev_y = evaluate_tree(head);
-		double x;
-		for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
-		{
-			substitute_variable(head, 'x', x);
-			double y = evaluate_tree(head);
-			area += y + prev_y;
-			prev_y = y;
-		}
-		area *= config->dx / 2;
-		printf("%f\n", area);
-	} else if(! strcmp(p, "gradient")) {
-		p = strtok(NULL, " ");
-		Node *head = get_nth_func(atoi(p));
-
-		p = strtok(NULL, " ");
-		double x = atof(p);
-
-		substitute_variable(head, 'x', x + config->dx / 2);
-		double gradient = evaluate_tree(head);
-		substitute_variable(head, 'x', x - config->dx / 2);
-		gradient = (gradient - evaluate_tree(head)) / config->dx;
-
-		printf("%f\n", gradient);
-	} else if(! strcmp(p, "min")) {
-		p = strtok(NULL, " ");
-		Node *head = get_nth_func(atoi(p));
-
-		p = strtok(NULL, " ");
-		double l_bound = atof(p);
-
-		p = strtok(NULL, " ");
-		double r_bound = atof(p);
-
-		substitute_variable(head, 'x', l_bound);
-
-		double min_y = evaluate_tree(head);
-		double min_x = l_bound;
-		double x;
-		for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
-		{
-			substitute_variable(head, 'x', x);
-			double y = evaluate_tree(head);
-			if(y < min_y) {
-				min_x = x;
-				min_y = y;
+			//calculate intersection using newton's method
+			for(i = 0; i < atoi(argv[3]); i++)
+			{
+				substitute_variable(head, 'x', x);
+				double y = evaluate_tree(head);
+				substitute_variable(head, 'x', x + config->dx / 2);
+				double gradient = evaluate_tree(head);
+				substitute_variable(head, 'x', x - config->dx / 2);
+				gradient = (gradient - evaluate_tree(head)) / config->dx;
+				x -= y / gradient;
 			}
-		}
-		printf("(%f, %f)\n", min_x, min_y);
-	} else if(! strcmp(p, "max")) {
-		p = strtok(NULL, " ");
-		Node *head = get_nth_func(atoi(p));
 
-		p = strtok(NULL, " ");
-		double l_bound = atof(p);
+			substitute_variable(head->node_r, 'x', x);
+			double y = evaluate_tree(head->node_r);
+			printf("x=%f, y=%f\n", x, y);
 
-		p = strtok(NULL, " ");
-		double r_bound = atof(p);
+			free(head);
+		} else if(! strcmp(argv[0], "integral")) {
+			double r_bound = atof(argv[1]);
+			double l_bound = atof(argv[2]);
 
-		substitute_variable(head, 'x', l_bound);
-
-		double max_y = evaluate_tree(head);
-		double max_x = l_bound;
-		double x;
-		for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
-		{
-			substitute_variable(head, 'x', x);
-			double y = evaluate_tree(head);
-			if(y > max_y) {
-				max_x = x;
-				max_y = y;
+			double area = 0;
+			substitute_variable(f, 'x', l_bound);
+			double prev_y = evaluate_tree(f);
+			double x;
+			for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
+			{
+				substitute_variable(f, 'x', x);
+				double y = evaluate_tree(f);
+				area += y + prev_y;
+				prev_y = y;
 			}
+			area *= config->dx / 2;
+			printf("%f\n", area);
+		} else if(! strcmp(argv[0], "gradient")) {
+			double x = atof(argv[1]);
+
+			substitute_variable(f, 'x', x + config->dx / 2);
+			double gradient = evaluate_tree(f);
+			substitute_variable(f, 'x', x - config->dx / 2);
+			gradient = (gradient - evaluate_tree(f)) / config->dx;
+
+			printf("%f\n", gradient);
+		} else if(! strcmp(argv[0], "min")) {
+			double l_bound = atof(argv[1]);
+			double r_bound = atof(argv[2]);
+
+			substitute_variable(f, 'x', l_bound);
+			double min_y = evaluate_tree(f);
+			double min_x = l_bound;
+			double x;
+			for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
+			{
+				substitute_variable(f, 'x', x);
+				double y = evaluate_tree(f);
+				if(y < min_y) {
+					min_x = x;
+					min_y = y;
+				}
+			}
+			printf("x=%f, y=%f\n", min_x, min_y);
+		} else if(! strcmp(argv[0], "max")) {
+			double l_bound = atof(argv[1]);
+			double r_bound = atof(argv[2]);
+
+			substitute_variable(f, 'x', l_bound);
+			double max_y = evaluate_tree(f);
+			double max_x = l_bound;
+			double x;
+			for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
+			{
+				substitute_variable(f, 'x', x);
+				double y = evaluate_tree(f);
+				if(y > max_y) {
+					max_x = x;
+					max_y = y;
+				}
+			}
+			printf("x=%f, y=%f\n", max_x, max_y);
 		}
-		printf("(%f, %f)\n", max_x, max_y);
 	}
+
 }
 
 int main(int argc, char *argv[])
