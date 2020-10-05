@@ -105,66 +105,90 @@ void parse_config(char *filename)
 	while(fgets(buf, BUFFER_SIZE, f)) {
 		if(strcmp(buf, "\n")) { //if not empty line
 			strtok(buf, "\n");
-			if(strspn(buf, "Xres") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->screen_size_x = atoi(buf);
-			} else if(strspn(buf, "Yres") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->screen_size_y = atoi(buf);
-			} else if(strspn(buf, "Xmin") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->min_x = atof(buf);
-			} else if(strspn(buf, "Xmax") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->max_x = atof(buf);
-			} else if(strspn(buf, "Ymin") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->min_y = atof(buf);
-			} else if(strspn(buf, "Ymax") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->max_y= atof(buf);
-			} else if(strspn(buf, "Xscl") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->scale_x = atof(buf);
-			} else if(strspn(buf, "Yscl") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->scale_y = atof(buf);
-			} else if(strspn(buf, "Xdig") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->digits_x = atoi(buf);
-			} else if(strspn(buf, "Ydig") == 4) {
-				memmove(buf, buf+5, strlen(buf));
-				config->digits_y = atoi(buf);
-			} else if(strspn(buf, "Lnwidth") == 7) {
-				memmove(buf, buf+8, strlen(buf));
-				config->line_width = atoi(buf);
-			} else if(buf[0] == 'F') {
-				memmove(buf, buf+2, strlen(buf));
+			int hash = buf[0];
+			int i;
+			for(i = 1; i < 4; i++)
+			{
+				hash <<= i;
+				hash ^= buf[i];
 
-				Node *head;
-				char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
-				int tokens_amount = tokenize(tokens, buf);
-				convert_tokens_to_nodes(&head, tokens, tokens_amount);
+			}
+			switch(hash)
+			{
 
-				ConfigFunction *function = malloc(sizeof(ConfigFunction));
-				function->head = head;
-				function->func_next = NULL;
-				function->color = BLACK;
-				if(! cur_function) {
-					config->func_head = function;
-				} else {
-					cur_function->func_next = function;
-				}
-				cur_function = function;
-			} else if(buf[0] == 'C') {
-				memmove(buf, buf+2, strlen(buf));
-				if(! strcmp(buf, "RED")) {
+				case 6939: //Xres
+					memmove(buf, buf+5, strlen(buf));
+					config->screen_size_x = atoi(buf);
+					break;
+				case 7003: //Yres
+					memmove(buf, buf+5, strlen(buf));
+					config->screen_size_y = atoi(buf);
+					break;
+				case 6278: //Xmin
+					memmove(buf, buf+5, strlen(buf));
+					config->min_x = atof(buf);
+					break;
+				case 6352: //Xmax
+					memmove(buf, buf+5, strlen(buf));
+					config->max_x = atof(buf);
+					break;
+				case 6342: //Ymin
+					memmove(buf, buf+5, strlen(buf));
+					config->min_y = atof(buf);
+					break;
+				case 6288: //Ymax
+					memmove(buf, buf+5, strlen(buf));
+					config->max_y= atof(buf);
+					break;
+				case 6932: //Xscl
+					memmove(buf, buf+5, strlen(buf));
+					config->scale_x = atof(buf);
+					break;
+				case 6996: //Yscl
+					memmove(buf, buf+5, strlen(buf));
+					config->scale_y = atof(buf);
+					break;
+				case 6575: //Xdig
+					memmove(buf, buf+5, strlen(buf));
+					config->digits_x = atof(buf);
+					break;
+				case 6639: //Ydig
+					memmove(buf, buf+5, strlen(buf));
+					config->digits_y = atoi(buf);
+					break;
+				case 7441: //Lnwi .. dth
+					memmove(buf, buf+8, strlen(buf));
+					config->line_width = atoi(buf);
+					break;
+				case 5653: //C RE .. D
 					cur_function->color = RED;
-				} else if(! strcmp(buf, "GREEN")) {
-					cur_function->color = GREEN;
-				} else if(! strcmp(buf, "BLUE")) {
+					break;
+				case 5788: //C BL .. UE
 					cur_function->color = BLUE;
-				}
+					break;
+				case 5802: //C GR .. EEN
+					cur_function->color = GREEN;
+					break;
+				default:
+					if(buf[0] == 'F') {
+						memmove(buf, buf+2, strlen(buf));
+
+						Node *head;
+						char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
+						int tokens_amount = tokenize(tokens, buf);
+						convert_tokens_to_nodes(&head, tokens, tokens_amount);
+
+						ConfigFunction *function = malloc(sizeof(ConfigFunction));
+						function->head = head;
+						function->func_next = NULL;
+						function->color = BLACK;
+						if(! cur_function) {
+							config->func_head = function;
+						} else {
+							cur_function->func_next = function;
+						}
+						cur_function = function;
+					}
 			}
 		}
 	}
@@ -192,7 +216,7 @@ void parse_input() {
 	strtok(buf, "\n");
 	char *p = strtok(buf, " ");
 	if(! strcmp(p, "help")) {
-		printf("LIST OF FUNCTIONS:\nexit\nintersect f1 f2 guess iterations\n");
+		printf("LIST OF FUNCTIONS:\nexit\nintersect f1 f2 guess iterations\nintegral f right_bound lest_bound\ngradient f x\nmax f left_bound right_bound");
 	} else if(! strcmp(p, "exit")) { //Free memory properly
 		ConfigFunction *cur_func = config->func_head;
 		while(cur_func)
@@ -203,8 +227,9 @@ void parse_input() {
 			cur_func = next_func;
 		}
 		free(config);
+
 		exit(0);
-	}else if(! strcmp(p, "intersect")) {
+	} else if(! strcmp(p, "intersect")) {
 		Node *head = malloc(sizeof(Node));
 		head->bin_op = *subtract;
 		head->un_op = NULL;
@@ -238,6 +263,92 @@ void parse_input() {
 		printf("x=%f, y=%f\n", x, y);
 
 		free(head);
+	} else if(! strcmp(p, "integral")) {
+		p = strtok(NULL, " ");
+		Node *head = get_nth_func(atoi(p));
+
+		p = strtok(NULL, " ");
+		double r_bound = atof(p);
+
+		p = strtok(NULL, " ");
+		double l_bound = atof(p);
+
+		double area = 0;
+		substitute_variable(head, 'x', l_bound);
+		double prev_y = evaluate_tree(head);
+		double x;
+		for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
+		{
+			substitute_variable(head, 'x', x);
+			double y = evaluate_tree(head);
+			area += y + prev_y;
+			prev_y = y;
+		}
+		area *= config->dx / 2;
+		printf("%f\n", area);
+	} else if(! strcmp(p, "gradient")) {
+		p = strtok(NULL, " ");
+		Node *head = get_nth_func(atoi(p));
+
+		p = strtok(NULL, " ");
+		double x = atof(p);
+
+		substitute_variable(head, 'x', x + config->dx / 2);
+		double gradient = evaluate_tree(head);
+		substitute_variable(head, 'x', x - config->dx / 2);
+		gradient = (gradient - evaluate_tree(head)) / config->dx;
+
+		printf("%f\n", gradient);
+	} else if(! strcmp(p, "min")) {
+		p = strtok(NULL, " ");
+		Node *head = get_nth_func(atoi(p));
+
+		p = strtok(NULL, " ");
+		double l_bound = atof(p);
+
+		p = strtok(NULL, " ");
+		double r_bound = atof(p);
+
+		substitute_variable(head, 'x', l_bound);
+
+		double min_y = evaluate_tree(head);
+		double min_x = l_bound;
+		double x;
+		for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
+		{
+			substitute_variable(head, 'x', x);
+			double y = evaluate_tree(head);
+			if(y < min_y) {
+				min_x = x;
+				min_y = y;
+			}
+		}
+		printf("(%f, %f)\n", min_x, min_y);
+	} else if(! strcmp(p, "max")) {
+		p = strtok(NULL, " ");
+		Node *head = get_nth_func(atoi(p));
+
+		p = strtok(NULL, " ");
+		double l_bound = atof(p);
+
+		p = strtok(NULL, " ");
+		double r_bound = atof(p);
+
+		substitute_variable(head, 'x', l_bound);
+
+		double max_y = evaluate_tree(head);
+		double max_x = l_bound;
+		double x;
+		for(x = l_bound + config->dx; x <= r_bound; x += config->dx)
+		{
+			substitute_variable(head, 'x', x);
+			double y = evaluate_tree(head);
+			if(y > max_y) {
+				max_x = x;
+				max_y = y;
+			}
+		}
+		printf("(%f, %f)\n", max_x, max_y);
 	}
 }
 

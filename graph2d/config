@@ -13,9 +13,9 @@ Ydig 3
 
 Lnwidth 3
 
-F ( x ^ 1.5 ) + 1
+F x ^ 2
 C RED
 F sin x
 C BLUE
-F log x
+F cos x
 C GREEN
