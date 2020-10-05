@@ -31,7 +31,7 @@ void RenderFloat(float x, float y, void *font, double num, int digits)
 	char buf[BUFFER_SIZE];
 	snprintf(buf, digits + 1, "%f", num);
 	glRasterPos2f(x, y);
-    glutBitmapString(font, buf);
+	glutBitmapString(font, buf);
 }
 
 void draw_graph(void) {
@@ -84,12 +84,12 @@ void draw_graph(void) {
 	//x-axis labels
 	for(i = config->min_x; i < config->max_x; i += config->scale_x)
 	{
-		RenderFloat(i - 6 * config->dx, -24 * config->dy, GLUT_BITMAP_TIMES_ROMAN_24, i, config->digits_x);
+		RenderFloat(i - 6 * config->dx, config->min_y - 24 * config->dy, GLUT_BITMAP_TIMES_ROMAN_24, i, config->digits_x);
 	}
 	//y-axis labels
 	for(i = config->min_y; i < config->max_y; i += config->scale_y)
 	{
-		RenderFloat(config->dx * -1 * config->axis_offset, i - 6 * config->dy, GLUT_BITMAP_TIMES_ROMAN_24, i, config->digits_y);
+		RenderFloat(config->min_y - config->axis_offset * config->dx, i - 6 * config->dy, GLUT_BITMAP_TIMES_ROMAN_24, i, config->digits_y);
 	}
 
 	glutSwapBuffers();
