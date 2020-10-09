@@ -3,8 +3,6 @@
 const int FPS = 30;
 const double FRAME_DELAY = 1000 / FPS;
 
-bool redraw = true;
-
 typedef struct ConfigData {
 	int screen_size_x;
 	int screen_size_y;
@@ -21,21 +19,22 @@ typedef struct ConfigData {
 
 ConfigData *config;
 
-float ang_hor = 0.0;
-float ang_ver = 0.0;
-float rad = 10;
+bool redraw = true;
+float azimuth = 0.0;
+float inclination = 0.0;
+float radius = 10;
 float offset[3] = {0.0, 0.0, 0.0};
 
-void draw_graph(void) {
+void draw_graph(void)
+{
 	redraw = false;
-	printf("draw\n");
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 
 	glLoadIdentity();
-	gluLookAt(rad * sin(ang_ver) * cos(ang_hor) + offset[0],
-			rad * sin(ang_hor) * sin(ang_ver) + offset[1],
-			rad * cos(ang_ver) + offset[2],
+	gluLookAt(radius * sin(inclination) * cos(azimuth) + offset[0],
+			radius * sin(azimuth) * sin(inclination) + offset[1],
+			radius * cos(inclination) + offset[2],
 			offset[0], offset[1],  offset[2],
 			0.0f, 0.0f,  1.0f);
 
@@ -44,7 +43,7 @@ void draw_graph(void) {
 	int loc_x;
 	int loc_y;
 	glColor3f(0.0f, 1.0f, 0.0f);
-	
+
 	loc_x = 0;
 	for(x = config->min_x; x <= config->max_x; x+=config->dx)
 	{
@@ -92,6 +91,7 @@ Node *parse_config(char *filename)
 				hash ^= buf[i];
 
 			}
+			//printf("%d : %s\n", hash, buf);
 			switch(hash)
 			{
 
@@ -127,18 +127,29 @@ Node *parse_config(char *filename)
 						int tokens_amount = tokenize(tokens, buf);
 						convert_tokens_to_nodes(&head, tokens, tokens_amount);
 					}
+					if(buf[0] == 'd') {
+						if(buf[1] == 'X') {
+							memmove(buf, buf+3, strlen(buf));
+							config->dx = atof(buf);
+						} else if(buf[1] == 'Y') {
+							memmove(buf, buf+3, strlen(buf));
+							config->dy = atof(buf);
+						}
+					}
 			}
 		}
 	}
-	config->dx = 1;
-	config->dy = 1;
-	config->num_x = 11;
-	config->num_y = 11;
+	config->num_x = abs(config->max_x - config->min_x) / config->dx + 1;
+	config->num_y = abs(config->max_y - config->min_y) / config->dy + 1;
+	//set offset to middle of graph
+	offset[0] = (config->max_x + config->min_x) / 2;
+	offset[1] = (config->max_y + config->min_y) / 2;
 	fclose(f);
 	return head;
 }
 
-void reshape(GLsizei width, GLsizei height) {
+void reshape(GLsizei width, GLsizei height)
+{
 	if (height == 0) height = 1;
 	GLfloat aspect = (GLfloat)width / (GLfloat)height;
 	glViewport(0, 0, width, height);
@@ -147,7 +158,8 @@ void reshape(GLsizei width, GLsizei height) {
 	gluPerspective(45.0f, aspect, 0.1f, 100.0f);
 }
 
-void init_gl(void) {
+void init_gl(void)
+{
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Set background color to black and opaque
    glClearDepth(1.0f);                   // Set background depth to farthest
    glEnable(GL_DEPTH_TEST);   // Enable depth testing for z-culling
@@ -156,7 +168,8 @@ void init_gl(void) {
    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Nice perspective corrections
 }
 
-void timer(int value) {
+void timer(int value)
+{
 	if(redraw) glutPostRedisplay();
 	glutTimerFunc(FRAME_DELAY, timer, 0);
 }
@@ -172,10 +185,10 @@ void keyboard_func(unsigned char Key, int x, int y)
 		case 's':
 			offset[0] -= 0.5;
 			break;
-		case 'a':
+		case 'd':
 			offset[1] += 0.5;
 			break;
-		case 'd':
+		case 'a':
 			offset[1] -= 0.5;
 			break;
 		case 'r':
@@ -185,31 +198,32 @@ void keyboard_func(unsigned char Key, int x, int y)
 			offset[2] -= 0.5;
 			break;
 		case '+':
-			rad -= 0.5;
+			radius -= 0.5;
 			break;
 		case '-':
-			rad += 0.5;
+			radius += 0.5;
 			break;
 		default:
 			redraw = false;
 	}
 }
 
-void special_keyboard_func(int key, int x, int y) {
+void special_keyboard_func(int key, int x, int y)
+{
 	redraw = true;
 	switch(key)
 	{
 		case GLUT_KEY_UP:
-			ang_ver += 0.1;
+			inclination += 0.1;
 			break;
 		case GLUT_KEY_DOWN:
-			ang_ver -= 0.1;
+			inclination -= 0.1;
 			break;
 		case GLUT_KEY_LEFT:
-			ang_hor += 0.1;
+			azimuth += 0.1;
 			break;
 		case GLUT_KEY_RIGHT:
-			ang_hor -= 0.1;
+			azimuth -= 0.1;
 			break;
 		default:
 			redraw = false;
@@ -220,6 +234,7 @@ int main(int argc, char *argv[])
 {
 	Node *head = parse_config("config");
 
+	//calculate all points on graph
 	config->z_values = malloc(sizeof(double[config->num_x*config->num_y]));
 	double x;
 	double y;
@@ -246,13 +261,10 @@ int main(int argc, char *argv[])
 	glutCreateWindow("Graph3d");
 	init_gl();
 	glutDisplayFunc(draw_graph);
-
 	glutReshapeFunc(reshape);
-
 	glutKeyboardFunc(keyboard_func);
 	glutSpecialFunc(special_keyboard_func);
 	glutTimerFunc(0, timer, 0);
-
 
 	glutMainLoop();
 
