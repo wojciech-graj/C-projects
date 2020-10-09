@@ -1,0 +1,9 @@
+Xres 640
+Yres 480
+
+Xmin -5
+Xmax 5
+Ymin -5
+Ymax 5
+
+F x ^ 2 + y ^ 2
