@@ -6,6 +6,7 @@ const double FRAME_DELAY = 1000 / FPS;
 typedef struct AdaptiveColor {
 	double min_z;
 	double max_z;
+	float blend; //value between 0-1 which indicated how blended colors on graph should be. Recommended 0.5-0.8
 } AdaptiveColor;
 
 typedef struct ConfigData {
@@ -33,10 +34,16 @@ float radius = 10;
 float offset[3] = {0.0, 0.0, 0.0};
 
 void set_rgb(double z) {
+	float inv_blend = 1 / config->adaptive_color->blend;
 	float frac_color = (z - config->adaptive_color->min_z) / (config->adaptive_color->max_z - config->adaptive_color->min_z);
-	double g = -2 * abs(z - 0.5) + 1;
-	double r = (frac_color > 0.5) ? 0 : (abs(2 * z - 1) + 1);
-	double b = (frac_color < 0.5) ? 0 : (abs(2 * z - 1) + 1);
+
+	double r = inv_blend * frac_color - inv_blend + 1;
+	double g = -2 * inv_blend * fabs(frac_color - 0.5) + 1;
+	double b = -1 * inv_blend * frac_color + 1;
+
+	r = (r + fabs(r))/2; //only return positive values
+	g = (g + fabs(g))/2;
+	b = (b + fabs(b))/2;
 	glColor3f(r, g, b);
 }
 
@@ -117,7 +124,6 @@ Node *parse_config(char *filename)
 				hash ^= buf[i];
 
 			}
-			//printf("%d : %s\n", hash, buf);
 			switch(hash)
 			{
 
@@ -154,10 +160,12 @@ Node *parse_config(char *filename)
 				case 5802: //C GR .. EEN
 					config->color = GREEN;
 					break;
-				case 5772:
+				case 5772:// C AD ..  APTIVE
+					memmove(buf, buf+11, strlen(buf));
 					config->adaptive_color = malloc(sizeof(AdaptiveColor));
 					config->adaptive_color->min_z = DBL_MAX;
 					config->adaptive_color->max_z = -DBL_MAX;
+					config->adaptive_color->blend = atof(buf);
 					break;
 				default:
 					if(buf[0] == 'F') {

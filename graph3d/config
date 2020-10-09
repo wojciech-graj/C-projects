@@ -1,9 +1,13 @@
-Xres 640
-Yres 480
+Xres 800
+Yres 800
 
 Xmin -5
 Xmax 5
 Ymin -5
 Ymax 5
 
-F x ^ 2 + y ^ 2
+dX 0.05
+dY 0.05
+
+F sin ( x ^ 2 + y ^ 2 )
+C ADAPTIVE 0.5
