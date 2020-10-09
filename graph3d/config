@@ -9,5 +9,8 @@ Ymax 5
 dX 0.05
 dY 0.05
 
+dAngle 0.392
+dOffset 1
+
 F sin ( x ^ 2 + y ^ 2 )
 C ADAPTIVE 0.5

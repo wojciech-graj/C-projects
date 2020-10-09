@@ -17,6 +17,8 @@ typedef struct ConfigData {
 	double dy;
 	int num_x;
 	int num_y;
+	double doffset;
+	double dangle;
 	double *z_values;
 	const float *color;
 	AdaptiveColor *adaptive_color;
@@ -104,6 +106,9 @@ Node *parse_config(char *filename)
 	config = malloc(sizeof(ConfigData));
 	Node *head;
 
+
+	config->doffset = 1;
+	config->dangle = M_PI / 6;
 	config->color = WHITE;
 	config->adaptive_color = NULL;
 
@@ -144,6 +149,14 @@ Node *parse_config(char *filename)
 				case 6288: //Ymax
 					memmove(buf, buf+5, strlen(buf));
 					config->max_y= atof(buf);
+					break;
+				case 4663: //dAng .. le
+					memmove(buf, buf+7, strlen(buf));
+					config->dangle = atof(buf);
+					break;
+				case 5046: //dOff .. set
+					memmove(buf, buf+8, strlen(buf));
+					config->doffset = atof(buf);
 					break;
 				case 5653: //C RE .. D
 					config->color = RED;
@@ -221,28 +234,32 @@ void keyboard_func(unsigned char Key, int x, int y)
 	switch(Key)
 	{
 		case 'w':
-			offset[0] += 0.5;
+			offset[0] -= config->doffset * cos(azimuth);
+			offset[1] -= config->doffset * sin(azimuth);
 			break;
 		case 's':
-			offset[0] -= 0.5;
+			offset[0] += config->doffset * cos(azimuth);
+			offset[1] += config->doffset * sin(azimuth);
 			break;
 		case 'd':
-			offset[1] += 0.5;
+			offset[0] -= config->doffset * sin(azimuth);
+			offset[1] += config->doffset * cos(azimuth);
 			break;
 		case 'a':
-			offset[1] -= 0.5;
+			offset[0] += config->doffset * sin(azimuth);
+			offset[1] -= config->doffset * cos(azimuth);
 			break;
 		case 'r':
-			offset[2] += 0.5;
+			offset[2] += config->doffset;
 			break;
 		case 'f':
-			offset[2] -= 0.5;
+			offset[2] -= config->doffset;
 			break;
 		case '+':
-			radius -= 0.5;
+			radius -= config->doffset;
 			break;
 		case '-':
-			radius += 0.5;
+			radius += config->doffset;
 			break;
 		default:
 			redraw = false;
@@ -255,16 +272,16 @@ void special_keyboard_func(int key, int x, int y)
 	switch(key)
 	{
 		case GLUT_KEY_UP:
-			inclination += 0.1;
+			inclination += config->dangle;
 			break;
 		case GLUT_KEY_DOWN:
-			inclination -= 0.1;
+			inclination -= config->dangle;
 			break;
 		case GLUT_KEY_LEFT:
-			azimuth += 0.1;
+			azimuth += config->dangle;
 			break;
 		case GLUT_KEY_RIGHT:
-			azimuth -= 0.1;
+			azimuth -= config->dangle;
 			break;
 		default:
 			redraw = false;
