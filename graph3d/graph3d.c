@@ -3,6 +3,11 @@
 const int FPS = 30;
 const double FRAME_DELAY = 1000 / FPS;
 
+typedef struct AdaptiveColor {
+	double min_z;
+	double max_z;
+} AdaptiveColor;
+
 typedef struct ConfigData {
 	int screen_size_x;
 	int screen_size_y;
@@ -15,6 +20,8 @@ typedef struct ConfigData {
 	int num_x;
 	int num_y;
 	double *z_values;
+	const float *color;
+	AdaptiveColor *adaptive_color;
 } ConfigData;
 
 ConfigData *config;
@@ -24,6 +31,14 @@ float azimuth = 0.0;
 float inclination = 0.0;
 float radius = 10;
 float offset[3] = {0.0, 0.0, 0.0};
+
+void set_rgb(double z) {
+	float frac_color = (z - config->adaptive_color->min_z) / (config->adaptive_color->max_z - config->adaptive_color->min_z);
+	double g = -2 * abs(z - 0.5) + 1;
+	double r = (frac_color > 0.5) ? 0 : (abs(2 * z - 1) + 1);
+	double b = (frac_color < 0.5) ? 0 : (abs(2 * z - 1) + 1);
+	glColor3f(r, g, b);
+}
 
 void draw_graph(void)
 {
@@ -42,7 +57,7 @@ void draw_graph(void)
 	double y;
 	int loc_x;
 	int loc_y;
-	glColor3f(0.0f, 1.0f, 0.0f);
+	if(! config->adaptive_color) glColor3f(config->color[0], config->color[1], config->color[2]);
 
 	loc_x = 0;
 	for(x = config->min_x; x <= config->max_x; x+=config->dx)
@@ -50,7 +65,11 @@ void draw_graph(void)
 		loc_y = 0;
 		glBegin(GL_LINE_STRIP);
 			for(y = config->min_y; y <= config->max_y; y+=config->dy) {
-				glVertex3f(x, y, (config->z_values)[config->num_x*loc_x+loc_y]);
+				double z = config->z_values[config->num_x*loc_x+loc_y];
+				if(config->adaptive_color) {
+					set_rgb(z);
+				}
+				glVertex3f(x, y, z);
 				loc_y += 1;
 			}
 		glEnd();
@@ -63,7 +82,11 @@ void draw_graph(void)
 		loc_x = 0;
 		glBegin(GL_LINE_STRIP);
 			for(x = config->min_x; x <= config->max_x; x+=config->dx) {
-				glVertex3f(x, y, (config->z_values)[config->num_x*loc_x+loc_y]);
+				double z = config->z_values[config->num_x*loc_x+loc_y];
+				if(config->adaptive_color) {
+					set_rgb(z);
+				}
+				glVertex3f(x, y, z);
 				loc_x += 1;
 			}
 		glEnd();
@@ -79,6 +102,9 @@ Node *parse_config(char *filename)
 	char buf[BUFFER_SIZE];
 	config = malloc(sizeof(ConfigData));
 	Node *head;
+
+	config->color = GREEN;
+	config->adaptive_color = NULL;
 
 	while(fgets(buf, BUFFER_SIZE, f)) {
 		if(strcmp(buf, "\n")) { //if not empty line
@@ -119,6 +145,20 @@ Node *parse_config(char *filename)
 					memmove(buf, buf+5, strlen(buf));
 					config->max_y= atof(buf);
 					break;
+				case 5653: //C RE .. D
+					config->color = RED;
+					break;
+				case 5788: //C BL .. UE
+					config->color = BLUE;
+					break;
+				case 5802: //C GR .. EEN
+					config->color = GREEN;
+					break;
+				case 5772:
+					config->adaptive_color = malloc(sizeof(AdaptiveColor));
+					config->adaptive_color->min_z = DBL_MAX;
+					config->adaptive_color->max_z = -DBL_MAX;
+					break;
 				default:
 					if(buf[0] == 'F') {
 						memmove(buf, buf+2, strlen(buf));
@@ -126,8 +166,7 @@ Node *parse_config(char *filename)
 						char (*tokens)[TOKEN_AMOUNT][TOKEN_LENGTH] = malloc(TOKEN_AMOUNT * TOKEN_LENGTH * sizeof(char));
 						int tokens_amount = tokenize(tokens, buf);
 						convert_tokens_to_nodes(&head, tokens, tokens_amount);
-					}
-					if(buf[0] == 'd') {
+					} else if(buf[0] == 'd') {
 						if(buf[1] == 'X') {
 							memmove(buf, buf+3, strlen(buf));
 							config->dx = atof(buf);
@@ -245,7 +284,12 @@ int main(int argc, char *argv[])
 		for(y = config->min_y; y <= config->max_y; y+=config->dy) {
 			substitute_variable(head, 'x', x);
 			substitute_variable(head, 'y', y);
-			(config->z_values)[config->num_x*loc_x+loc_y] = evaluate_tree(head);
+			double z = evaluate_tree(head);
+			config->z_values[config->num_x*loc_x+loc_y] = z;
+			if(config->adaptive_color) {
+				if(z > config->adaptive_color->max_z) config->adaptive_color->max_z = z;
+				if(z < config->adaptive_color->min_z) config->adaptive_color->min_z = z;
+			}
 			loc_y += 1;
 		}
 		loc_x += 1;
