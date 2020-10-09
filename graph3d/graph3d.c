@@ -1,8 +1,5 @@
 #include "graph3d.h"
 
-const int FPS = 30;
-const double FRAME_DELAY = 1000 / FPS;
-
 typedef struct AdaptiveColor {
 	double min_z;
 	double max_z;
@@ -33,7 +30,8 @@ float inclination = 0.0;
 float radius = 10;
 float offset[3] = {0.0, 0.0, 0.0};
 
-void set_rgb(double z) {
+void set_rgb(double z)
+{
 	float inv_blend = 1 / config->adaptive_color->blend;
 	float frac_color = (z - config->adaptive_color->min_z) / (config->adaptive_color->max_z - config->adaptive_color->min_z);
 
@@ -47,7 +45,7 @@ void set_rgb(double z) {
 	glColor3f(r, g, b);
 }
 
-void draw_graph(void)
+void draw(void)
 {
 	redraw = false;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -73,9 +71,7 @@ void draw_graph(void)
 		glBegin(GL_LINE_STRIP);
 			for(y = config->min_y; y <= config->max_y; y+=config->dy) {
 				double z = config->z_values[config->num_x*loc_x+loc_y];
-				if(config->adaptive_color) {
-					set_rgb(z);
-				}
+				if(config->adaptive_color) set_rgb(z);
 				glVertex3f(x, y, z);
 				loc_y += 1;
 			}
@@ -90,9 +86,7 @@ void draw_graph(void)
 		glBegin(GL_LINE_STRIP);
 			for(x = config->min_x; x <= config->max_x; x+=config->dx) {
 				double z = config->z_values[config->num_x*loc_x+loc_y];
-				if(config->adaptive_color) {
-					set_rgb(z);
-				}
+				if(config->adaptive_color) set_rgb(z);
 				glVertex3f(x, y, z);
 				loc_x += 1;
 			}
@@ -110,7 +104,7 @@ Node *parse_config(char *filename)
 	config = malloc(sizeof(ConfigData));
 	Node *head;
 
-	config->color = GREEN;
+	config->color = WHITE;
 	config->adaptive_color = NULL;
 
 	while(fgets(buf, BUFFER_SIZE, f)) {
@@ -312,7 +306,7 @@ int main(int argc, char *argv[])
 	glutInitDisplayMode(GLUT_DOUBLE);
 	glutCreateWindow("Graph3d");
 	init_gl();
-	glutDisplayFunc(draw_graph);
+	glutDisplayFunc(draw);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard_func);
 	glutSpecialFunc(special_keyboard_func);
