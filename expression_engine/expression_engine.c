@@ -27,7 +27,6 @@ bool string_in_array(char *value, const char *array[], const int length)
 	return false;
 }
 
-//TODO?:OPTIMIZE
 char get_node_type(char *value)
 {
 	if(string_in_array(value, L5OPS, OPSLEN[5])) {
@@ -90,6 +89,8 @@ void set_operation(Node *node, char *value)
 				node->un_op = *cosh;
 			} else if (! strcmp(value, "tanh")) {
 				node->un_op = *tanh;
+			} else if (! strcmp(value, "abs")) {
+				node->un_op = *fabs;
 			}
 	}
 }

@@ -13,10 +13,10 @@ typedef struct ListNode ListNode;
 static const char *L5OPS[] = {"+", "-"};
 static const char *L4OPS[] = {"/", "*", "%"};
 static const char *L3OPS[] = {"^"};
-static const char *L2OPS[] = {"!", "ln", "log", "sqrt", "sin", "cos", "tan", "sinh", "cosh", "tanh"};
+static const char *L2OPS[] = {"!", "ln", "log", "sqrt", "sin", "cos", "tan", "sinh", "cosh", "tanh", "abs"};
 static const char *L1OPS[] = {"(", ")", "x", "y"};
 static const char *L0OPS[] = {"pi", "e", "phi"};
-static const int OPSLEN[] = {3, 4, 10, 1, 3, 2};
+static const int OPSLEN[] = {3, 4, 11, 1, 3, 2};
 static const double L0OPVALS[] = {M_PI, M_E, (1+sqrt(5))/2};
 static const char OPTYPES[] = {'c', '\0', '2', '3', '4', '5'};
 static const int NUMOPTYPES = 6;
@@ -38,7 +38,7 @@ void substitute_variable(Node *node, char var, double val);
 double evaluate_tree(Node *node);
 void delete_tree(Node *node);
 
-//multipurpose node structure out of which tree is created. types: 'n':number, 'c':const, '(', ')', '2':L2OP
+//multipurpose node structure out of which tree is created. types: 'n':number, 'c':const, '(', ')', 'x', '2':L2OP
 typedef struct Node {
 	char type;
 	Node *node_l;
