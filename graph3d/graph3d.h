@@ -14,7 +14,6 @@
 #include "../expression_engine/expression_engine.h"
 #include "../expression_engine/math_functions.h"
 
-typedef struct AdaptiveColor AdaptiveColor;
 typedef struct ConfigData ConfigData;
 
 const int BUFFER_SIZE = 255;

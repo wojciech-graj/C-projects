@@ -1,11 +1,5 @@
 #include "graph3d.h"
 
-typedef struct AdaptiveColor {
-	double min_z;
-	double max_z;
-	float blend; //value between 0-1 which indicated how blended colors on graph should be. Recommended 0.5-0.8
-} AdaptiveColor;
-
 typedef struct ConfigData {
 	int screen_size_x;
 	int screen_size_y;
@@ -13,6 +7,8 @@ typedef struct ConfigData {
 	double min_y;
 	double max_x;
 	double max_y;
+	double min_z;
+	double max_z;
 	double dx;
 	double dy;
 	int num_x;
@@ -20,8 +16,11 @@ typedef struct ConfigData {
 	double doffset;
 	double dangle;
 	double *z_values;
+	double axis_x;
+	double axis_y;
+	double axis_z;
+	double blend; //color blend when using adaptive color
 	const float *color;
-	AdaptiveColor *adaptive_color;
 } ConfigData;
 
 ConfigData *config;
@@ -34,8 +33,8 @@ float offset[3] = {0.0, 0.0, 0.0};
 
 void set_rgb(double z)
 {
-	float inv_blend = 1 / config->adaptive_color->blend;
-	float frac_color = (z - config->adaptive_color->min_z) / (config->adaptive_color->max_z - config->adaptive_color->min_z);
+	float inv_blend = 1 / config->blend;
+	float frac_color = (z - config->min_z) / (config->max_z - config->min_z);
 
 	double r = inv_blend * frac_color - inv_blend + 1;
 	double g = -2 * inv_blend * fabs(frac_color - 0.5) + 1;
@@ -64,7 +63,7 @@ void draw(void)
 	double y;
 	int loc_x;
 	int loc_y;
-	if(! config->adaptive_color) glColor3f(config->color[0], config->color[1], config->color[2]);
+	if(config->blend == DBL_MAX) glColor3f(config->color[0], config->color[1], config->color[2]);
 
 	loc_x = 0;
 	for(x = config->min_x; x <= config->max_x; x+=config->dx)
@@ -73,7 +72,7 @@ void draw(void)
 		glBegin(GL_LINE_STRIP);
 			for(y = config->min_y; y <= config->max_y; y+=config->dy) {
 				double z = config->z_values[config->num_x*loc_x+loc_y];
-				if(config->adaptive_color) set_rgb(z);
+				if(config->blend != DBL_MAX) set_rgb(z);
 				glVertex3f(x, y, z);
 				loc_y += 1;
 			}
@@ -88,13 +87,25 @@ void draw(void)
 		glBegin(GL_LINE_STRIP);
 			for(x = config->min_x; x <= config->max_x; x+=config->dx) {
 				double z = config->z_values[config->num_x*loc_x+loc_y];
-				if(config->adaptive_color) set_rgb(z);
+				if(config->blend != DBL_MAX) set_rgb(z);
 				glVertex3f(x, y, z);
 				loc_x += 1;
 			}
 		glEnd();
 		loc_y += 1;
 	}
+
+	glColor3f(1, 1, 1);
+	glBegin(GL_LINES);
+		if(config->axis_x != DBL_MAX) {
+			glVertex3f(config->min_x, config->axis_y, config->axis_z);
+			glVertex3f(config->max_x, config->axis_y, config->axis_z);
+			glVertex3f(config->axis_x, config->min_y, config->axis_z);
+			glVertex3f(config->axis_x, config->max_y, config->axis_z);
+			glVertex3f(config->axis_x, config->axis_y, config->min_z);
+			glVertex3f(config->axis_x, config->axis_y, config->max_z);
+		}
+	glEnd();
 
 	glutSwapBuffers();
 }
@@ -106,11 +117,16 @@ Node *parse_config(char *filename)
 	config = malloc(sizeof(ConfigData));
 	Node *head;
 
-
+	//set default values
 	config->doffset = 1;
 	config->dangle = M_PI / 6;
 	config->color = WHITE;
-	config->adaptive_color = NULL;
+	config->blend = DBL_MAX;
+	config->axis_x = DBL_MAX;
+	config->axis_y = DBL_MAX;
+	config->axis_z = DBL_MAX;
+	config->min_z = DBL_MAX;
+	config->max_z = -DBL_MAX;
 
 	while(fgets(buf, BUFFER_SIZE, f)) {
 		if(strcmp(buf, "\n")) { //if not empty line
@@ -158,6 +174,18 @@ Node *parse_config(char *filename)
 					memmove(buf, buf+8, strlen(buf));
 					config->doffset = atof(buf);
 					break;
+				case 6537: //Xaxi .. s
+					memmove(buf, buf+6, strlen(buf));
+					config->axis_x = atof(buf);
+					break;
+				case 6601: //Yaxi .. s
+					memmove(buf, buf+6, strlen(buf));
+					config->axis_y = atof(buf);
+					break;
+				case 6409: //Zaxi .. s
+					memmove(buf, buf+6, strlen(buf));
+					config->axis_z = atof(buf);
+					break;
 				case 5653: //C RE .. D
 					config->color = RED;
 					break;
@@ -169,10 +197,7 @@ Node *parse_config(char *filename)
 					break;
 				case 5772:// C AD ..  APTIVE
 					memmove(buf, buf+11, strlen(buf));
-					config->adaptive_color = malloc(sizeof(AdaptiveColor));
-					config->adaptive_color->min_z = DBL_MAX;
-					config->adaptive_color->max_z = -DBL_MAX;
-					config->adaptive_color->blend = atof(buf);
+					config->blend = atof(buf);
 					break;
 				default:
 					if(buf[0] == 'F') {
@@ -214,12 +239,12 @@ void reshape(GLsizei width, GLsizei height)
 
 void init_gl(void)
 {
-   glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Set background color to black and opaque
-   glClearDepth(1.0f);                   // Set background depth to farthest
-   glEnable(GL_DEPTH_TEST);   // Enable depth testing for z-culling
-   glDepthFunc(GL_LEQUAL);    // Set the type of depth-test
-   glShadeModel(GL_SMOOTH);   // Enable smooth shading
-   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Nice perspective corrections
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   glClearDepth(1.0f);
+   glEnable(GL_DEPTH_TEST);
+   glDepthFunc(GL_LEQUAL);
+   glShadeModel(GL_SMOOTH);
+   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 }
 
 void timer(int value)
@@ -288,6 +313,12 @@ void special_keyboard_func(int key, int x, int y)
 	}
 }
 
+void free_memory(void)
+{
+	free(config->z_values);
+	free(config);
+}
+
 int main(int argc, char *argv[])
 {
 	Node *head = parse_config("config");
@@ -305,15 +336,13 @@ int main(int argc, char *argv[])
 			substitute_variable(head, 'y', y);
 			double z = evaluate_tree(head);
 			config->z_values[config->num_x*loc_x+loc_y] = z;
-			if(config->adaptive_color) {
-				if(z > config->adaptive_color->max_z) config->adaptive_color->max_z = z;
-				if(z < config->adaptive_color->min_z) config->adaptive_color->min_z = z;
-			}
+			if(z > config->max_z) config->max_z = z;
+			if(z < config->min_z) config->min_z = z;
 			loc_y += 1;
 		}
 		loc_x += 1;
 	}
-	free(head);
+	delete_tree(head);
 
 	//GLUT
 	int glut_argc = 1;
@@ -327,6 +356,7 @@ int main(int argc, char *argv[])
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard_func);
 	glutSpecialFunc(special_keyboard_func);
+	glutCloseFunc(free_memory);
 	glutTimerFunc(0, timer, 0);
 
 	glutMainLoop();

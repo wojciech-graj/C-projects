@@ -12,5 +12,9 @@ dY 0.05
 dAngle 0.392
 dOffset 1
 
+Xaxis 0
+Yaxis 0
+Zaxis 0
+
 F sin ( x ^ 2 + y ^ 2 )
-C ADAPTIVE 0.5
+C ADAPTIVE 0.6
