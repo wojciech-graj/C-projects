@@ -95,17 +95,18 @@ void draw(void)
 		loc_y += 1;
 	}
 
-	glColor3f(1, 1, 1);
-	glBegin(GL_LINES);
-		if(config->axis_x != DBL_MAX) {
+	if(config->axis_x != DBL_MAX) {
+		glColor3f(1, 1, 1);
+		glBegin(GL_LINES);
 			glVertex3f(config->min_x, config->axis_y, config->axis_z);
 			glVertex3f(config->max_x, config->axis_y, config->axis_z);
 			glVertex3f(config->axis_x, config->min_y, config->axis_z);
 			glVertex3f(config->axis_x, config->max_y, config->axis_z);
 			glVertex3f(config->axis_x, config->axis_y, config->min_z);
 			glVertex3f(config->axis_x, config->axis_y, config->max_z);
-		}
-	glEnd();
+		glEnd();
+	}
+
 
 	glutSwapBuffers();
 }
