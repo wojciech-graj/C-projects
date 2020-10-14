@@ -8,6 +8,17 @@
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
 
+//tree node
+typedef struct Node Node;
+
+typedef struct Node {
+	int piece;
+	int captured;
+	int destination;
+	Node *child;
+	Node *sibling;
+} Node;
+
 void print_board(int *board)
 {
 	printf("   1 2 3 4 5");
@@ -49,55 +60,58 @@ void print_board(int *board)
 	printf("\n");
 }
 
-void get_moves(int color, int *board)
+void init_node(Node **node) {
+	*node = malloc(sizeof(Node));
+	(*node)->child = NULL;
+	(*node)->sibling = NULL;
+}
+
+void get_forced_sequence(int color, int piece, int direction, int *board, Node *head)
 {
-	//find forced moves
-	int forced_moves[BUFFER_SIZE];
-	int list_index = 0;
+	int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
+	if(! ((piece < 9 && neighbor < piece)
+		|| (piece > 40 && neighbor > piece)
+		|| (piece % 5 == 0 && direction % 2 == 0)
+		|| (piece % 5 == 4 && direction % 2 == 1))) { //if not capturing over edge of board
+		int behind_neighbor = neighbor + NEIGHBORS[direction] - (neighbor % 10 > 4);
+		if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
+			&& board[behind_neighbor] == 0) { //if can capture neighbor
+				Node *node;
+				init_node(&node);
+				if(! head->child) {
+
+					head->child = node;
+				} else {
+					Node *cur_sibling = head->child;
+					while(cur_sibling->sibling)
+					{
+						cur_sibling = cur_sibling->sibling;
+					}
+					cur_sibling->sibling = node;
+				}
+				node->piece = piece;
+				node->captured = neighbor;
+				node->destination = behind_neighbor;
+		}
+	}
+}
+
+void get_moves(int color, int *board, Node *head)
+{
 	int piece;
+	Node *cur_sibling = NULL;
 	for(piece = 0; piece < BOARD_SIZE; piece++)
 	{
 		if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
 			int direction;
 			for(direction = 0; direction < 4; direction++)
 			{
-				int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
-				if(! ((piece < 9 && neighbor < piece)
-					|| (piece > 40 && neighbor > piece)
-					|| (piece % 5 == 0 && direction % 2 == 0)
-					|| (piece % 5 == 4 && direction % 2 == 1))) { //if not capturing over edge of board
-					int behind_neighbor = neighbor + NEIGHBORS[direction] - (neighbor % 10 > 4);
-					if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
-						&& board[behind_neighbor] == 0) { //if can capture neighbor
-							forced_moves[list_index] = piece;
-							forced_moves[list_index + 1] = neighbor;
-							list_index += 2;
-					}
-				}
+				get_forced_sequence(color, piece, direction, board, head);
 			}
 		}
 	}
 }
-/*
-void player_move(int player_color)
-{
-	print_board();
-	char buf[BUFFER_SIZE];
-	printf("Move? ");
-	scanf("%s", buf);
-	if(strchr(buf, '-')) {
-		char *start = strtok(buf, "-");
-		char *end = strtok(buf, "-");
-	} else if(strchr(buf, 'x')) {
 
-	} else {
-		printf("INVALID MOVE\n");
-		player_move(player_color);
-	}
-	int *forced_moves;
-	get_moves(player_color);
-}
-*/
 int main()
 {
 	int board[BOARD_SIZE];
@@ -112,6 +126,8 @@ int main()
 	int turn = 1;
 
 	board[21] = 1;
-	get_moves(player_color, board);
-	//player_move(player_color);
+	Node *head;
+	init_node(&head);
+	get_moves(player_color, board, head);
+	printf("%d\n", head->child->piece);
 }
