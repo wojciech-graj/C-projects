@@ -76,22 +76,32 @@ void get_forced_sequence(int color, int piece, int direction, int *board, Node *
 		int behind_neighbor = neighbor + NEIGHBORS[direction] - (neighbor % 10 > 4);
 		if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
 			&& board[behind_neighbor] == 0) { //if can capture neighbor
-				Node *node;
-				init_node(&node);
-				if(! head->child) {
-
-					head->child = node;
-				} else {
-					Node *cur_sibling = head->child;
-					while(cur_sibling->sibling)
-					{
-						cur_sibling = cur_sibling->sibling;
-					}
-					cur_sibling->sibling = node;
+			Node *node;
+			init_node(&node);
+			if(! head->child) {
+				head->child = node;
+			} else {
+				Node *cur_sibling = head->child;
+				while(cur_sibling->sibling)
+				{
+					cur_sibling = cur_sibling->sibling;
 				}
-				node->piece = piece;
-				node->captured = neighbor;
-				node->destination = behind_neighbor;
+				cur_sibling->sibling = node;
+			}
+			node->piece = piece;
+			node->captured = neighbor;
+			node->destination = behind_neighbor;
+
+			int new_board[BOARD_SIZE];
+			memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+			new_board[piece] = 0;
+			new_board[neighbor] = 0;
+			new_board[behind_neighbor] = board[piece];
+			int new_direction;
+			for(new_direction = 0; new_direction < 4; new_direction++)
+			{
+				if(new_direction != direction) get_forced_sequence(color, behind_neighbor, direction, new_board, node);
+			}
 		}
 	}
 }
@@ -125,9 +135,12 @@ int main()
 	int player_color = (buf[0] == 'W') ? 1 : -1;
 	int turn = 1;
 
-	board[21] = 1;
+	//board[21] = 1;
+	//board[38] = 0;
+
 	Node *head;
 	init_node(&head);
 	get_moves(player_color, board, head);
-	printf("%d\n", head->child->piece);
+
+	//printf("%d\n", head->child->child->destination);
 }
