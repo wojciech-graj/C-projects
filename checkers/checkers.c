@@ -2,22 +2,32 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-#define BOARD_SIZE  50
+#define BOARD_SIZE 50
 
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
 
 //tree node
 typedef struct Node Node;
+typedef struct ListNode ListNode;
+
+int get_moves(int color, int *board, int remaining_depth, bool return_board);
 
 typedef struct Node {
 	int piece;
 	int captured;
 	int destination;
+	Node *parent;
 	Node *child;
 	Node *sibling;
 } Node;
+
+typedef struct ListNode {
+	ListNode *node_next;
+	Node *node;
+} ListNode;
 
 void print_board(int *board)
 {
@@ -64,30 +74,32 @@ void init_node(Node **node) {
 	*node = malloc(sizeof(Node));
 	(*node)->child = NULL;
 	(*node)->sibling = NULL;
+	(*node)->parent = NULL;
 }
 
-void get_forced_sequence(int color, int piece, int direction, int *board, Node *head)
+int get_captures(int color, int piece, int direction, int depth, int *board, Node *head)
 {
+	int max_depth = depth - 1;
 	int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
-	if(! ((piece < 9 && neighbor < piece)
-		|| (piece > 40 && neighbor > piece)
-		|| (piece % 5 == 0 && direction % 2 == 0)
+	Node *cur_sibling;
+	if(! ((piece <= 9 && neighbor < piece)
+		|| (piece >= 40 && neighbor > piece)
+		|| (piece % 5 == 0 && direction % 2 == 0) //TODO:FIX
 		|| (piece % 5 == 4 && direction % 2 == 1))) { //if not capturing over edge of board
-		int behind_neighbor = neighbor + NEIGHBORS[direction] - (neighbor % 10 > 4);
+		int behind_neighbor = neighbor + NEIGHBORS[direction] - (int)(neighbor % 10 > 4);
 		if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
 			&& board[behind_neighbor] == 0) { //if can capture neighbor
 			Node *node;
 			init_node(&node);
 			if(! head->child) {
 				head->child = node;
+				max_depth++;
 			} else {
-				Node *cur_sibling = head->child;
-				while(cur_sibling->sibling)
-				{
-					cur_sibling = cur_sibling->sibling;
-				}
 				cur_sibling->sibling = node;
 			}
+			cur_sibling = node;
+
+			node->parent = head;
 			node->piece = piece;
 			node->captured = neighbor;
 			node->destination = behind_neighbor;
@@ -100,26 +112,135 @@ void get_forced_sequence(int color, int piece, int direction, int *board, Node *
 			int new_direction;
 			for(new_direction = 0; new_direction < 4; new_direction++)
 			{
-				if(new_direction != direction) get_forced_sequence(color, behind_neighbor, direction, new_board, node);
+				int cur_depth = get_captures(color, behind_neighbor, new_direction, depth + 1, new_board, node);
+				if(cur_depth > max_depth) max_depth = cur_depth;
 			}
+		}
+	}
+	return max_depth;
+}
+void get_deepest_nodes(Node *head, int depth, int target_depth, ListNode **captures)
+{
+	if(depth == target_depth) {
+		ListNode *node = malloc(sizeof(ListNode));
+		node->node_next = NULL;
+		node->node = head;
+		if(*captures) {
+			ListNode *cur_listnode = *captures;
+			while(cur_listnode->node_next)
+			{
+				cur_listnode = cur_listnode->node_next;
+			}
+			cur_listnode->node_next = node;
+		} else {
+			*captures = node;
+		}
+	} else if(head->child) {
+		get_deepest_nodes(head->child, depth + 1, target_depth, captures);
+	}
+	if(head->sibling) {
+		get_deepest_nodes(head->sibling, depth, target_depth, captures);
+	}
+}
+
+void evaluate_board(int color, int remaining_depth, bool return_board, int *evaluation, int *board, int *best_board){
+	int cur_evaluation = 0;
+	int piece;
+	if(remaining_depth == 0) {
+		for(piece = 0; piece < BOARD_SIZE; piece++)
+		{
+			cur_evaluation += board[piece];
+		}
+	} else {
+		cur_evaluation = get_moves(color * -1, board, remaining_depth - 1, false);
+	}
+	if((color < 0 && cur_evaluation < *evaluation) || (color > 0 && cur_evaluation > *evaluation)) {
+		*evaluation = cur_evaluation;
+		if(return_board) {
+			memcpy(best_board, board, BOARD_SIZE * sizeof(int));
 		}
 	}
 }
 
-void get_moves(int color, int *board, Node *head)
+int get_moves(int color, int *board, int remaining_depth, bool return_board)
 {
+	Node *head;
+	init_node(&head);
+
 	int piece;
-	Node *cur_sibling = NULL;
+	int max_depth = 0;
 	for(piece = 0; piece < BOARD_SIZE; piece++)
 	{
 		if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
 			int direction;
 			for(direction = 0; direction < 4; direction++)
 			{
-				get_forced_sequence(color, piece, direction, board, head);
+				int depth = get_captures(color, piece, direction, 1, board, head);
+				if(depth > max_depth) max_depth = depth;
 			}
 		}
 	}
+	int evaluation;
+	if(color < 0) {
+		evaluation = 100;
+	} else {
+		evaluation = -100;
+	}
+
+	int best_board[BOARD_SIZE];
+
+	if(! head->child) {//if no captures
+		int new_board[BOARD_SIZE];
+		for(piece = 0; piece < BOARD_SIZE; piece++)
+		{
+			if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
+				int direction;
+				for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
+				{
+					int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
+					if(! ((piece <= 4 && neighbor < piece)
+						|| (piece >= 45 && neighbor > piece)
+						|| (piece % 5 == 0 && direction % 2 == 0)
+						|| (piece % 5 == 4 && direction % 2 == 1))) {
+						if(board[neighbor] == 0) {
+							memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+							new_board[piece] = 0;
+							new_board[neighbor] = board[piece];
+							evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+						}
+					}
+				}
+			}
+		}
+	} else {
+		ListNode *captures = NULL;
+		get_deepest_nodes(head, 0, max_depth, &captures);
+		int new_board[BOARD_SIZE];
+		ListNode *cur_listhead = captures;
+		while(cur_listhead)
+		{
+			memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+
+			Node *cur_node = cur_listhead->node;
+			while(cur_node->parent)
+			{
+				new_board[cur_node->piece] = 0;
+				new_board[cur_node->captured] = 0;
+				if(! cur_node->parent->parent) {
+					new_board[cur_listhead->node->destination] = board[cur_node->piece];
+				}
+				cur_node = cur_node->parent;
+			}
+
+			evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+
+			cur_listhead = cur_listhead->node_next;
+		}
+	}
+	if(return_board) {
+		memcpy(board, best_board, BOARD_SIZE * sizeof(int));
+	}
+	return evaluation;
 }
 
 int main()
@@ -129,18 +250,18 @@ int main()
 	for(i=0; i<=19; i++) board[i] = -1;
 	for(i=20; i<=29; i++) board[i] = 0;
 	for(i=30; i<=49; i++) board[i] = 1;
+	board[21] = 1;
+	board[38] = 0;
 	char buf[BUFFER_SIZE];
 	printf("[White/Black]? ");
 	scanf("%s", buf);
 	int player_color = (buf[0] == 'W') ? 1 : -1;
 	int turn = 1;
+	print_board(board);
 
-	//board[21] = 1;
-	//board[38] = 0;
+	int evaluation = get_moves(player_color, board, 2, true);
 
-	Node *head;
-	init_node(&head);
-	get_moves(player_color, board, head);
+	print_board(board);
 
-	//printf("%d\n", head->child->child->destination);
+	printf("%d\n", evaluation);
 }
