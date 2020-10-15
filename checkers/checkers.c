@@ -1,34 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-#define BOARD_SIZE 50
-#define MIN_EVAL -100
-
-const int BUFFER_SIZE = 255;
-const int NEIGHBORS[] = {-5, -4, 5, 6};
-
-//tree node
-typedef struct Node Node;
-typedef struct ListNode ListNode;
-
-int get_moves(int color, int *board, int remaining_depth, bool return_board);
-
-typedef struct Node {
-	int piece;
-	int captured;
-	int destination;
-	Node *parent;
-	Node *child;
-	Node *sibling;
-} Node;
-
-typedef struct ListNode {
-	ListNode *node_next;
-	Node *node;
-} ListNode;
+#include "checkers.h"
 
 void print_board(int *board)
 {
@@ -153,7 +123,7 @@ void evaluate_board(int color, int remaining_depth, bool return_board, int *eval
 			cur_evaluation += board[piece];
 		}
 	} else {
-		cur_evaluation = get_moves(color * -1, board, remaining_depth - 1, false);
+		cur_evaluation = play_engine_move(color * -1, board, remaining_depth - 1, false);
 	}
 	if((color < 0 && cur_evaluation < *evaluation) || (color > 0 && cur_evaluation > *evaluation)) { //TODO:OPTIMIZE
 		*evaluation = cur_evaluation;
@@ -182,7 +152,7 @@ void delete_list(ListNode *node)
 	free(node);
 }
 
-int get_moves(int color, int *board, int remaining_depth, bool return_board)
+int play_engine_move(int color, int *board, int remaining_depth, bool return_board)
 {
 	Node *head;
 	init_node(&head);
@@ -279,17 +249,17 @@ int main()
 
 	print_board(board);
 
-	int evaluation = get_moves(player_color, board, 2, true);
+	int evaluation = play_engine_move(player_color, board, 2, true);
 
 	print_board(board);
 
 	printf("%d\n", evaluation);
 	*/
 	int turn = 1;
-	for(i = 0; i < 20; i++)
+	for(i = 0; i < 40; i++)
 	{
 		print_board(board);
-		(void) get_moves(turn, board, 6, true);
+		(void) play_engine_move(turn, board, 6, true);
 		turn *= -1;
 	}
 	print_board(board);
