@@ -154,12 +154,31 @@ void evaluate_board(int color, int remaining_depth, bool return_board, int *eval
 	} else {
 		cur_evaluation = get_moves(color * -1, board, remaining_depth - 1, false);
 	}
-	if((color < 0 && cur_evaluation < *evaluation) || (color > 0 && cur_evaluation > *evaluation)) {
+	if((color < 0 && cur_evaluation < *evaluation) || (color > 0 && cur_evaluation > *evaluation)) { //TODO:OPTIMIZE
 		*evaluation = cur_evaluation;
 		if(return_board) {
 			memcpy(best_board, board, BOARD_SIZE * sizeof(int));
 		}
 	}
+}
+
+void delete_tree(Node *node)
+{
+	if(node->sibling) {
+		delete_tree(node->sibling);
+	}
+	if(node->child) {
+		delete_tree(node->child);
+	}
+	free(node);
+}
+
+void delete_list(ListNode *node)
+{
+	if(node->node_next) {
+		delete_list(node->node_next);
+	}
+	free(node);
 }
 
 int get_moves(int color, int *board, int remaining_depth, bool return_board)
@@ -180,12 +199,8 @@ int get_moves(int color, int *board, int remaining_depth, bool return_board)
 			}
 		}
 	}
-	int evaluation;
-	if(color < 0) {
-		evaluation = 100;
-	} else {
-		evaluation = -100;
-	}
+
+	int evaluation = -100 * color;
 
 	int best_board[BOARD_SIZE];
 
@@ -236,7 +251,9 @@ int get_moves(int color, int *board, int remaining_depth, bool return_board)
 
 			cur_listhead = cur_listhead->node_next;
 		}
+		delete_list(captures);
 	}
+	delete_tree(head);
 	if(return_board) {
 		memcpy(board, best_board, BOARD_SIZE * sizeof(int));
 	}
