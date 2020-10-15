@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #define BOARD_SIZE 50
+#define MIN_EVAL -100
 
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
@@ -77,14 +78,14 @@ void init_node(Node **node) {
 	(*node)->parent = NULL;
 }
 
-int get_captures(int color, int piece, int direction, int depth, int *board, Node *head)
+int create_capture_tree(int color, int piece, int direction, int depth, int *board, Node *head)
 {
 	int max_depth = depth - 1;
 	int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
 	Node *cur_sibling;
 	if(! ((piece <= 9 && neighbor < piece)
 		|| (piece >= 40 && neighbor > piece)
-		|| (piece % 5 == 0 && direction % 2 == 0) //TODO:FIX
+		|| (piece % 5 == 0 && direction % 2 == 0)
 		|| (piece % 5 == 4 && direction % 2 == 1))) { //if not capturing over edge of board
 		int behind_neighbor = neighbor + NEIGHBORS[direction] - (int)(neighbor % 10 > 4);
 		if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
@@ -112,14 +113,14 @@ int get_captures(int color, int piece, int direction, int depth, int *board, Nod
 			int new_direction;
 			for(new_direction = 0; new_direction < 4; new_direction++)
 			{
-				int cur_depth = get_captures(color, behind_neighbor, new_direction, depth + 1, new_board, node);
+				int cur_depth = create_capture_tree(color, behind_neighbor, new_direction, depth + 1, new_board, node);
 				if(cur_depth > max_depth) max_depth = cur_depth;
 			}
 		}
 	}
 	return max_depth;
 }
-void get_deepest_nodes(Node *head, int depth, int target_depth, ListNode **captures)
+void get_nodes_at_depth(Node *head, int depth, int target_depth, ListNode **captures)
 {
 	if(depth == target_depth) {
 		ListNode *node = malloc(sizeof(ListNode));
@@ -136,10 +137,10 @@ void get_deepest_nodes(Node *head, int depth, int target_depth, ListNode **captu
 			*captures = node;
 		}
 	} else if(head->child) {
-		get_deepest_nodes(head->child, depth + 1, target_depth, captures);
+		get_nodes_at_depth(head->child, depth + 1, target_depth, captures);
 	}
 	if(head->sibling) {
-		get_deepest_nodes(head->sibling, depth, target_depth, captures);
+		get_nodes_at_depth(head->sibling, depth, target_depth, captures);
 	}
 }
 
@@ -186,6 +187,7 @@ int get_moves(int color, int *board, int remaining_depth, bool return_board)
 	Node *head;
 	init_node(&head);
 
+	//calculate forced moves
 	int piece;
 	int max_depth = 0;
 	for(piece = 0; piece < BOARD_SIZE; piece++)
@@ -194,18 +196,17 @@ int get_moves(int color, int *board, int remaining_depth, bool return_board)
 			int direction;
 			for(direction = 0; direction < 4; direction++)
 			{
-				int depth = get_captures(color, piece, direction, 1, board, head);
+				int depth = create_capture_tree(color, piece, direction, 1, board, head);
 				if(depth > max_depth) max_depth = depth;
 			}
 		}
 	}
 
-	int evaluation = -100 * color;
-
+	int evaluation = MIN_EVAL * color;
 	int best_board[BOARD_SIZE];
 
+	int new_board[BOARD_SIZE];
 	if(! head->child) {//if no captures
-		int new_board[BOARD_SIZE];
 		for(piece = 0; piece < BOARD_SIZE; piece++)
 		{
 			if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
@@ -215,8 +216,8 @@ int get_moves(int color, int *board, int remaining_depth, bool return_board)
 					int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
 					if(! ((piece <= 4 && neighbor < piece)
 						|| (piece >= 45 && neighbor > piece)
-						|| (piece % 5 == 0 && direction % 2 == 0)
-						|| (piece % 5 == 4 && direction % 2 == 1))) {
+						|| (piece % 10 == 0 && direction % 2 == 0)
+						|| (piece % 10 == 9 && direction % 2 == 1))) { //if not moving over edge of board
 						if(board[neighbor] == 0) {
 							memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 							new_board[piece] = 0;
@@ -229,8 +230,7 @@ int get_moves(int color, int *board, int remaining_depth, bool return_board)
 		}
 	} else {
 		ListNode *captures = NULL;
-		get_deepest_nodes(head, 0, max_depth, &captures);
-		int new_board[BOARD_SIZE];
+		get_nodes_at_depth(head, 0, max_depth, &captures);
 		ListNode *cur_listhead = captures;
 		while(cur_listhead)
 		{
