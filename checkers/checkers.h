@@ -27,6 +27,7 @@ typedef struct Node {
 	int piece;
 	int captured;
 	int destination;
+	int type;
 	Node *parent;
 	Node *child;
 	Node *sibling;

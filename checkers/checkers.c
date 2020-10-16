@@ -59,16 +59,21 @@ void append_tree(Node *head, int piece, int neighbor, int behind_neighbor, int *
 	}
 	*cur_sibling = node;
 
-	node->parent = head;
-	node->piece = piece;
-	node->captured = neighbor;
-	node->destination = behind_neighbor;
-
 	int new_board[BOARD_SIZE];
 	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 	new_board[piece] = 0;
 	new_board[neighbor] = 0;
 	new_board[behind_neighbor] = board[piece];
+
+	if(fabs(board[piece]) == 1 && (behind_neighbor >= 45 || behind_neighbor <= 4)) {//promote to queen
+		new_board[behind_neighbor] *= 2;
+	}
+
+	node->parent = head;
+	node->piece = piece;
+	node->captured = neighbor;
+	node->destination = behind_neighbor;
+	node->type = new_board[behind_neighbor];
 
 	int new_direction;
 	for(new_direction = 0; new_direction < 4; new_direction++)
@@ -100,6 +105,8 @@ int create_capture_tree(int color, int piece, int direction, int depth, int *boa
 						&& board[behind_neighbor] == 0)
 					{
 						append_tree(head, piece, neighbor, behind_neighbor, board, &cur_sibling, &max_depth, color, depth);
+						prev_behind_neighbor = behind_neighbor;
+						behind_neighbor += NEIGHBORS[direction] - (int)(behind_neighbor % 10 > 4);
 					}
 				}
 				if(board[neighbor] != 0) break;
@@ -195,25 +202,52 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 
 	int evaluation = MIN_EVAL * color;
 	int best_board[BOARD_SIZE];
-
+	//TODO:FUNCTION
 	int new_board[BOARD_SIZE];
 	if(! head->child) {//if no captures
 		for(piece = 0; piece < BOARD_SIZE; piece++)
 		{
 			if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
 				int direction;
-				for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
-				{
-					int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
-					if(NOT_OVER_EDGE(piece, neighbor, direction, 1)) {
-						if(board[neighbor] == 0) {
-							memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-							new_board[piece] = 0;
-							new_board[neighbor] = board[piece];
-							evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+				if(fabs(board[piece]) == 1) {//if not queen
+					for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
+					{
+						int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
+						if(NOT_OVER_EDGE(piece, neighbor, direction, 1)) {
+							if(board[neighbor] == 0) {
+								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+								new_board[piece] = 0;
+								new_board[neighbor] = board[piece];
+								if(fabs(board[piece]) == 1 && (neighbor >= 45 || neighbor <= 4)) {//promote to queen TODO:MACRO
+									new_board[neighbor] *= 2;
+								}
+								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+							}
+						}
+					}
+				} else {//if queen
+					for(direction = 0; direction < 4; direction++)
+					{
+						int prev_neighbor = piece;
+						int neighbor = prev_neighbor + NEIGHBORS[direction] - (int) (prev_neighbor % 10 > 4);
+						while(NOT_OVER_EDGE(prev_neighbor, neighbor, direction, 1)) {
+							if(board[neighbor] == 0) {
+								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+								new_board[piece] = 0;
+								new_board[neighbor] = board[piece];
+								if(fabs(board[piece]) == 1 && (neighbor >= 45 || neighbor <= 4)) {//promote to queen TODO:MACRO
+									new_board[neighbor] *= 2;
+								}
+								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+							} else {
+								break;
+							}
+							prev_neighbor = neighbor;
+							neighbor += NEIGHBORS[direction] - (int) (neighbor % 10 > 4);
 						}
 					}
 				}
+
 			}
 		}
 	} else { //if forced captures
@@ -225,13 +259,12 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 			memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 
 			Node *cur_node = cur_listhead->node;
+			new_board[cur_node->destination] = cur_node->type;
 			while(cur_node->parent)
 			{
 				new_board[cur_node->piece] = 0;
 				new_board[cur_node->captured] = 0;
-				if(! cur_node->parent->parent) {
-					new_board[cur_listhead->node->destination] = board[cur_node->piece];
-				}
+
 				cur_node = cur_node->parent;
 			}
 
@@ -275,24 +308,16 @@ int main()
 
 	printf("%d\n", evaluation);
 	*/
-	/*
-	for(i=0; i<50; i++) board[i] = 0;
-	board[12] = 1;
-	board[7] = -1;
-	//board[10] = -1;
-	print_board(board);
-	(void) play_engine_move(1, board, 1, true);
-	print_board(board);
-	*/
 
-	int turn = 1;
-	for(i = 0; i < 40; i++)
+	for(i = 0; i < 60; i++)
 	{
 		print_board(board);
-		(void) play_engine_move(turn, board, 6, true);
-		turn *= -1;
+		(void) play_engine_move(1, board, 6, true);
+		print_board(board);
+		(void) play_engine_move(-1, board, 2, true);
 	}
 	print_board(board);
+
 
 
 }
