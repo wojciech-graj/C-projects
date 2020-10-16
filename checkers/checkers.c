@@ -65,9 +65,7 @@ void append_tree(Node *head, int piece, int neighbor, int behind_neighbor, int *
 	new_board[neighbor] = 0;
 	new_board[behind_neighbor] = board[piece];
 
-	if(fabs(board[piece]) == 1 && (behind_neighbor >= 45 || behind_neighbor <= 4)) {//promote to queen
-		new_board[behind_neighbor] *= 2;
-	}
+	if(PROMOTING(board[piece], behind_neighbor)) new_board[behind_neighbor] *= 2;
 
 	node->parent = head;
 	node->piece = piece;
@@ -202,25 +200,23 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 
 	int evaluation = MIN_EVAL * color;
 	int best_board[BOARD_SIZE];
-	//TODO:FUNCTION
+	
 	int new_board[BOARD_SIZE];
 	if(! head->child) {//if no captures
 		for(piece = 0; piece < BOARD_SIZE; piece++)
 		{
 			if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
+				int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
 				int direction;
 				if(fabs(board[piece]) == 1) {//if not queen
 					for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
 					{
-						int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
 						if(NOT_OVER_EDGE(piece, neighbor, direction, 1)) {
 							if(board[neighbor] == 0) {
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 								new_board[piece] = 0;
 								new_board[neighbor] = board[piece];
-								if(fabs(board[piece]) == 1 && (neighbor >= 45 || neighbor <= 4)) {//promote to queen TODO:MACRO
-									new_board[neighbor] *= 2;
-								}
+								if(PROMOTING(board[piece], neighbor)) new_board[neighbor] *= 2;
 								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
 							}
 						}
@@ -229,15 +225,12 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 					for(direction = 0; direction < 4; direction++)
 					{
 						int prev_neighbor = piece;
-						int neighbor = prev_neighbor + NEIGHBORS[direction] - (int) (prev_neighbor % 10 > 4);
 						while(NOT_OVER_EDGE(prev_neighbor, neighbor, direction, 1)) {
 							if(board[neighbor] == 0) {
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 								new_board[piece] = 0;
 								new_board[neighbor] = board[piece];
-								if(fabs(board[piece]) == 1 && (neighbor >= 45 || neighbor <= 4)) {//promote to queen TODO:MACRO
-									new_board[neighbor] *= 2;
-								}
+								if(PROMOTING(board[piece], neighbor)) new_board[neighbor] *= 2;
 								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
 							} else {
 								break;
@@ -309,12 +302,12 @@ int main()
 	printf("%d\n", evaluation);
 	*/
 
-	for(i = 0; i < 60; i++)
+	for(i = 0; i < 80; i++)
 	{
 		print_board(board);
-		(void) play_engine_move(1, board, 6, true);
+		(void) play_engine_move(1, board, 5, true);
 		print_board(board);
-		(void) play_engine_move(-1, board, 2, true);
+		(void) play_engine_move(-1, board, 4, true);
 	}
 	print_board(board);
 

@@ -13,6 +13,8 @@
 	|| (piece % (10 / margin) == 10 - 5 * margin && direction % 2 == 0)\
 	|| (piece % (10 / margin) == 4 && direction % 2 == 1)))
 
+#define PROMOTING(type, piece) (type == -1 && piece >= 45 || type == 1 && piece <= 4)
+
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
 
