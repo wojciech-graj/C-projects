@@ -48,48 +48,69 @@ void init_node(Node **node) {
 	(*node)->parent = NULL;
 }
 
+void append_tree(Node *head, int piece, int neighbor, int behind_neighbor, int *board, Node **cur_sibling, int *max_depth, int color, int depth) {
+	Node *node;
+	init_node(&node);
+	if(! head->child) {
+		head->child = node;
+		(*max_depth)++;
+	} else {
+		(*cur_sibling)->sibling = node;
+	}
+	*cur_sibling = node;
+
+	node->parent = head;
+	node->piece = piece;
+	node->captured = neighbor;
+	node->destination = behind_neighbor;
+
+	int new_board[BOARD_SIZE];
+	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+	new_board[piece] = 0;
+	new_board[neighbor] = 0;
+	new_board[behind_neighbor] = board[piece];
+
+	int new_direction;
+	for(new_direction = 0; new_direction < 4; new_direction++)
+	{
+		int cur_depth = create_capture_tree(color, behind_neighbor, new_direction, depth + 1, new_board, node);
+		if(cur_depth > (*max_depth)) *max_depth = cur_depth;
+	}
+}
+
 int create_capture_tree(int color, int piece, int direction, int depth, int *board, Node *head)
 {
 	int max_depth = depth - 1;
-	int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
-	Node *cur_sibling;
-	if(! ((piece <= 9 && neighbor < piece)
-		|| (piece >= 40 && neighbor > piece)
-		|| (piece % 5 == 0 && direction % 2 == 0)
-		|| (piece % 5 == 4 && direction % 2 == 1))) { //if not capturing over edge of board
+	int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
+	if(NOT_OVER_EDGE(piece, neighbor, direction, 2)) {
+		Node *cur_sibling;
 		int behind_neighbor = neighbor + NEIGHBORS[direction] - (int)(neighbor % 10 > 4);
-		if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
-			&& board[behind_neighbor] == 0) { //if can capture neighbor
-			Node *node;
-			init_node(&node);
-			if(! head->child) {
-				head->child = node;
-				max_depth++;
-			} else {
-				cur_sibling->sibling = node;
+		if(fabs(board[piece]) == 1) { //if not queen
+			if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
+				&& board[behind_neighbor] == 0) { //if can capture neighbor
+				append_tree(head, piece, neighbor, behind_neighbor, board, &cur_sibling, &max_depth, color, depth);
 			}
-			cur_sibling = node;
-
-			node->parent = head;
-			node->piece = piece;
-			node->captured = neighbor;
-			node->destination = behind_neighbor;
-
-			int new_board[BOARD_SIZE];
-			memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-			new_board[piece] = 0;
-			new_board[neighbor] = 0;
-			new_board[behind_neighbor] = board[piece];
-			int new_direction;
-			for(new_direction = 0; new_direction < 4; new_direction++)
+		} else { //if queen
+			while(NOT_OVER_EDGE(neighbor, behind_neighbor, direction, 1)
+				&& ! (board[neighbor] != 0 && board[behind_neighbor] != 0))
 			{
-				int cur_depth = create_capture_tree(color, behind_neighbor, new_direction, depth + 1, new_board, node);
-				if(cur_depth > max_depth) max_depth = cur_depth;
+				if((board[neighbor] ^ color) < 0 && board[neighbor] != 0) {
+					int prev_behind_neighbor = neighbor;
+					while(NOT_OVER_EDGE(prev_behind_neighbor, behind_neighbor, direction, 1)
+						&& board[behind_neighbor] == 0)
+					{
+						append_tree(head, piece, neighbor, behind_neighbor, board, &cur_sibling, &max_depth, color, depth);
+					}
+				}
+				if(board[neighbor] != 0) break;
+				neighbor = behind_neighbor;
+				behind_neighbor += NEIGHBORS[direction] - (int)(behind_neighbor % 10 > 4);
 			}
 		}
 	}
 	return max_depth;
 }
+
 void get_nodes_at_depth(Node *head, int depth, int target_depth, ListNode **captures)
 {
 	if(depth == target_depth) {
@@ -184,10 +205,7 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 				for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
 				{
 					int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4); //subtract 1 every other row.
-					if(! ((piece <= 4 && neighbor < piece)
-						|| (piece >= 45 && neighbor > piece)
-						|| (piece % 10 == 5 && direction % 2 == 0)
-						|| (piece % 10 == 4 && direction % 2 == 1))) { //if not moving over edge of board
+					if(NOT_OVER_EDGE(piece, neighbor, direction, 1)) {
 						if(board[neighbor] == 0) {
 							memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 							new_board[piece] = 0;
@@ -198,7 +216,7 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 				}
 			}
 		}
-	} else {
+	} else { //if forced captures
 		ListNode *captures = NULL;
 		get_nodes_at_depth(head, 0, max_depth, &captures);
 		ListNode *cur_listhead = captures;
@@ -234,9 +252,11 @@ int main()
 {
 	int board[BOARD_SIZE];
 	int i;
+
 	for(i=0; i<=19; i++) board[i] = -1;
 	for(i=20; i<=29; i++) board[i] = 0;
 	for(i=30; i<=49; i++) board[i] = 1;
+
 	/*
 	char buf[BUFFER_SIZE];
 	printf("[White/Black]? ");
@@ -255,6 +275,16 @@ int main()
 
 	printf("%d\n", evaluation);
 	*/
+	/*
+	for(i=0; i<50; i++) board[i] = 0;
+	board[12] = 1;
+	board[7] = -1;
+	//board[10] = -1;
+	print_board(board);
+	(void) play_engine_move(1, board, 1, true);
+	print_board(board);
+	*/
+
 	int turn = 1;
 	for(i = 0; i < 40; i++)
 	{
@@ -263,4 +293,6 @@ int main()
 		turn *= -1;
 	}
 	print_board(board);
+
+
 }
