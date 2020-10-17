@@ -23,7 +23,7 @@ typedef struct Node Node;
 typedef struct ListNode ListNode;
 
 int play_engine_move(int color, int *board, int remaining_depth, bool return_board);
-int create_capture_tree(int color, int piece, int direction, int depth, int *board, Node *head);
+int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head);
 
 typedef struct Node {
 	int piece;

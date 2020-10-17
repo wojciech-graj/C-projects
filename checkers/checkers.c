@@ -76,12 +76,12 @@ void append_tree(Node *head, int piece, int neighbor, int behind_neighbor, int *
 	int new_direction;
 	for(new_direction = 0; new_direction < 4; new_direction++)
 	{
-		int cur_depth = create_capture_tree(color, behind_neighbor, new_direction, depth + 1, new_board, node);
+		int cur_depth = create_capture_subtree(color, behind_neighbor, new_direction, depth + 1, new_board, node);
 		if(cur_depth > (*max_depth)) *max_depth = cur_depth;
 	}
 }
 
-int create_capture_tree(int color, int piece, int direction, int depth, int *board, Node *head)
+int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head)
 {
 	int max_depth = depth - 1;
 	int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
@@ -188,12 +188,8 @@ void delete_list(ListNode *node)
 	free(node);
 }
 
-int play_engine_move(int color, int *board, int remaining_depth, bool return_board)
+int create_capture_tree(int color, int *board, Node *head)
 {
-	Node *head;
-	init_node(&head);
-
-	//calculate forced moves
 	int piece;
 	int max_depth = 0;
 	for(piece = 0; piece < BOARD_SIZE; piece++)
@@ -202,15 +198,24 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 			int direction;
 			for(direction = 0; direction < 4; direction++)
 			{
-				int depth = create_capture_tree(color, piece, direction, 1, board, head);
+				int depth = create_capture_subtree(color, piece, direction, 1, board, head);
 				if(depth > max_depth) max_depth = depth;
 			}
 		}
 	}
+	return max_depth;
+}
+
+int play_engine_move(int color, int *board, int remaining_depth, bool return_board)
+{
+	Node *head;
+	init_node(&head);
+	int max_depth = create_capture_tree(color, board, head);
 
 	int evaluation = 2 * MIN_EVAL * color;
 	int best_board[BOARD_SIZE];
 
+	int piece;
 	int new_board[BOARD_SIZE];
 	if(! head->child) {//if no captures
 		bool game_over = true;
@@ -299,43 +304,144 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 	return evaluation;
 }
 
+void play_player_move(int color, int *board)
+{
+	//TODO: add support for: resign, capture
+	//TODO: check for moves / loss
+	Node *head;
+	init_node(&head);
+	int max_depth = create_capture_tree(color, board, head);
+	ListNode *captures = NULL;
+	if(head->child) get_nodes_at_depth(head, 0, max_depth, &captures);
+	char buf[BUFFER_SIZE];
+
+	GET_INPUT:
+	printf("Move: ");
+	scanf("%s", buf);
+	strtok(buf, "\n");
+	if(strchr(buf, '-') && ! head->child) {
+		int piece = atoi(strtok(buf, "-")) - 1;
+		int destination = atoi(strtok(NULL, "-")) - 1;
+		if(piece == destination) goto INVALID_MOVE;
+		int difference = destination - piece;
+		if((board[piece] ^ color) >= 0 && board[piece] != 0 && board[destination] == 0) {
+			if(fabs(board[piece]) == 1) { //if not queen
+				difference += (int) (piece % 10 > 4);
+				int direction = 0;
+    			while(direction <= 3 && NEIGHBORS[direction] != difference) direction++;
+				if(direction == 4) goto INVALID_MOVE;
+				if((difference ^ color) < 0
+					&& NOT_OVER_EDGE(piece, destination, direction, 1)
+					&& (direction + color == 1 || direction + color == 2)) {
+					board[destination] = board[piece];
+					if(PROMOTING(board[piece], destination)) board[destination] *= 2;
+					board[piece] = 0;
+				} else {
+					goto INVALID_MOVE;
+				}
+			} else { //if queen
+				int direction;
+				for(direction = 2 * (int) (difference > 0); direction < 2 + 2 * (int) (difference > 0); direction++) //only check directions with same sign as difference, either 0,1 or 2,3
+				{
+					int temp_piece = piece;
+					int next_temp_piece = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
+					while(NOT_OVER_EDGE(temp_piece, next_temp_piece, direction, 1) && board[next_temp_piece] == 0)
+					{
+						if(next_temp_piece == destination) {
+							board[destination] = board[piece];
+							if(PROMOTING(board[piece], destination)) board[destination] *= 2;
+							board[piece] = 0;
+							goto INPUT_END;
+						}
+						temp_piece = next_temp_piece;
+						next_temp_piece += NEIGHBORS[direction] - (int) (next_temp_piece % 10 > 4);
+					}
+				}
+				goto INVALID_MOVE;
+			}
+		} else {
+			goto INVALID_MOVE;
+		}
+	} else if(strchr(buf, 'x') && head->child) { //if capturing
+		int moves[BUFFER_SIZE];
+		int i = 0;
+		char *token = strtok(buf, "x");
+		while(token)
+		{
+			moves[i] = atoi(token) - 1;
+			i++;
+			token = strtok(NULL, "x");
+		}
+		if(i - 1 != max_depth) goto INVALID_MOVE;
+		ListNode *cur_listhead = captures;
+		while(cur_listhead)
+		{
+			Node *cur_node = cur_listhead->node;
+			for(i = max_depth; i >= 0; i--)
+			{
+				if(cur_node->destination != moves[i]) break;
+				if(i == 1 && cur_node->piece == moves[0]) {
+					board[cur_listhead->node->destination] = cur_listhead->node->type;
+					board[cur_node->piece] = 0;
+					cur_node = cur_listhead->node;
+					while(cur_node->parent)
+					{
+						board[cur_node->captured] = 0;
+						cur_node = cur_node->parent;
+					}
+					delete_list(captures);
+					goto INPUT_END;
+				}
+				cur_node = cur_node->parent;
+			}
+			cur_listhead = cur_listhead->node_next;
+		}
+		goto INVALID_MOVE;
+	} else {
+		INVALID_MOVE:
+		printf("INVALID MOVE\n");
+		goto GET_INPUT;
+	}
+	INPUT_END:
+	delete_tree(head);
+}
+
 int main()
 {
 	int board[BOARD_SIZE];
 	int i;
 
+	const int mode = 0;
+
 	for(i=0; i<=19; i++) board[i] = -1;
 	for(i=20; i<=29; i++) board[i] = 0;
 	for(i=30; i<=49; i++) board[i] = 1;
 
-	/*
-	char buf[BUFFER_SIZE];
-	printf("[White/Black]? ");
-	scanf("%s", buf);
-	int player_color = (buf[0] == 'W') ? 1 : -1;
-	int turn = 1;
-
-
-
-	print_board(board);
-
-	int evaluation = play_engine_move(player_color, board, 2, true);
-
-	print_board(board);
-
-	printf("%d\n", evaluation);
-	*/
-
-	for(i = 0; i < 80; i++)
-	{
+	if(mode == 0) {
+		char buf[BUFFER_SIZE];
+		printf("[White/Black]? ");
+		scanf("%s", buf);
+		int player_color = (buf[0] == 'W') ? 1 : -1;
+		int turn = 1;
 		print_board(board);
-		(void) play_engine_move(1, board, 6, true);
+		while(true)
+		{
+			if(turn == player_color) {
+				play_player_move(turn, board);
+			} else {
+				(void) play_engine_move(turn, board, 6, true);
+			}
+			print_board(board);
+			turn *= -1;
+		}
+	} else if(mode == 1) {
+		for(i = 0; i < 200; i++)
+		{
+			print_board(board);
+			(void) play_engine_move(1, board, 6, true);
+			print_board(board);
+			(void) play_engine_move(-1, board, 4, true);
+		}
 		print_board(board);
-		(void) play_engine_move(-1, board, 3, true);
 	}
-	print_board(board);
-
-
-
-
 }
