@@ -143,15 +143,25 @@ void get_nodes_at_depth(Node *head, int depth, int target_depth, ListNode **capt
 void evaluate_board(int color, int remaining_depth, bool return_board, int *evaluation, int *board, int *best_board){
 	int cur_evaluation = 0;
 	int piece;
-	if(remaining_depth == 0) {
-		for(piece = 0; piece < BOARD_SIZE; piece++)
-		{
-			cur_evaluation += board[piece];
+	bool white_left = false;
+	bool black_left = false;
+	for(piece = 0; piece < BOARD_SIZE; piece++)
+	{
+		cur_evaluation += board[piece];
+		if(black_left == false && board[piece] < 0) {
+			black_left = true;
+		} else if(white_left == false && board[piece] > 0) {
+			white_left = true;
 		}
-	} else {
+	}
+	if(! white_left) {
+		cur_evaluation = MIN_EVAL;
+	} else if(! black_left) {
+		cur_evaluation = -1 * MIN_EVAL;
+	} else if(remaining_depth != 0) {
 		cur_evaluation = play_engine_move(color * -1, board, remaining_depth - 1, false);
 	}
-	if((color < 0 && cur_evaluation < *evaluation) || (color > 0 && cur_evaluation > *evaluation)) { //TODO:OPTIMIZE
+	if((color < 0 && cur_evaluation < *evaluation) || (color > 0 && cur_evaluation > *evaluation)) {
 		*evaluation = cur_evaluation;
 		if(return_board) {
 			memcpy(best_board, board, BOARD_SIZE * sizeof(int));
@@ -198,21 +208,23 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 		}
 	}
 
-	int evaluation = MIN_EVAL * color;
+	int evaluation = 2 * MIN_EVAL * color;
 	int best_board[BOARD_SIZE];
-	
+
 	int new_board[BOARD_SIZE];
 	if(! head->child) {//if no captures
+		bool game_over = true;
 		for(piece = 0; piece < BOARD_SIZE; piece++)
 		{
 			if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
-				int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
 				int direction;
 				if(fabs(board[piece]) == 1) {//if not queen
 					for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
 					{
+						int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
 						if(NOT_OVER_EDGE(piece, neighbor, direction, 1)) {
 							if(board[neighbor] == 0) {
+								if(game_over == true) game_over = false;
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 								new_board[piece] = 0;
 								new_board[neighbor] = board[piece];
@@ -224,9 +236,11 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 				} else {//if queen
 					for(direction = 0; direction < 4; direction++)
 					{
+						int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
 						int prev_neighbor = piece;
 						while(NOT_OVER_EDGE(prev_neighbor, neighbor, direction, 1)) {
 							if(board[neighbor] == 0) {
+								if(game_over == true) game_over = false;
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 								new_board[piece] = 0;
 								new_board[neighbor] = board[piece];
@@ -240,7 +254,18 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 						}
 					}
 				}
-
+			}
+		}
+		if(game_over == true) {
+			if(return_board) {
+				if(color == 1) {
+					printf("Black is the winner!\n");
+				} else {
+					printf("White is the winner!\n");
+				}
+				exit(0);
+			} else {
+				evaluation = color * MIN_EVAL;
 			}
 		}
 	} else { //if forced captures
@@ -290,8 +315,7 @@ int main()
 	int player_color = (buf[0] == 'W') ? 1 : -1;
 	int turn = 1;
 
-	board[21] = 1;
-	board[38] = 0;
+
 
 	print_board(board);
 
@@ -305,11 +329,12 @@ int main()
 	for(i = 0; i < 80; i++)
 	{
 		print_board(board);
-		(void) play_engine_move(1, board, 5, true);
+		(void) play_engine_move(1, board, 6, true);
 		print_board(board);
-		(void) play_engine_move(-1, board, 4, true);
+		(void) play_engine_move(-1, board, 3, true);
 	}
 	print_board(board);
+
 
 
 
