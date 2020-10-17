@@ -48,7 +48,27 @@ void init_node(Node **node) {
 	(*node)->parent = NULL;
 }
 
-void append_tree(Node *head, int piece, int neighbor, int behind_neighbor, int *board, Node **cur_sibling, int *max_depth, int color, int depth) {
+//node is the end node of tree
+void execute_captures(int *board, Node *node)
+{
+	board[node->destination] = node->type;
+	Node *cur_node = node;
+	while(cur_node->parent)
+	{
+		board[cur_node->captured] = 0;
+		board[cur_node->piece] = 0;
+		cur_node = cur_node->parent;
+	}
+}
+
+void execute_move(int *board, int piece, int destination)
+{
+	board[destination] = board[piece];
+	board[piece] = 0;
+	if(PROMOTING(board[destination], destination)) board[destination] *= 2;
+}
+
+void append_tree(Node *head, int piece, int neighbor, int destination, int *board, Node **cur_sibling, int *max_depth, int color, int depth) {
 	Node *node;
 	init_node(&node);
 	if(! head->child) {
@@ -61,22 +81,19 @@ void append_tree(Node *head, int piece, int neighbor, int behind_neighbor, int *
 
 	int new_board[BOARD_SIZE];
 	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-	new_board[piece] = 0;
 	new_board[neighbor] = 0;
-	new_board[behind_neighbor] = board[piece];
-
-	if(PROMOTING(board[piece], behind_neighbor)) new_board[behind_neighbor] *= 2;
+	execute_move(new_board, piece, destination);
 
 	node->parent = head;
 	node->piece = piece;
 	node->captured = neighbor;
-	node->destination = behind_neighbor;
-	node->type = new_board[behind_neighbor];
+	node->destination = destination;
+	node->type = new_board[destination];
 
 	int new_direction;
 	for(new_direction = 0; new_direction < 4; new_direction++)
 	{
-		int cur_depth = create_capture_subtree(color, behind_neighbor, new_direction, depth + 1, new_board, node);
+		int cur_depth = create_capture_subtree(color, destination, new_direction, depth + 1, new_board, node);
 		if(cur_depth > (*max_depth)) *max_depth = cur_depth;
 	}
 }
@@ -84,32 +101,32 @@ void append_tree(Node *head, int piece, int neighbor, int behind_neighbor, int *
 int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head)
 {
 	int max_depth = depth - 1;
-	int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
+	int neighbor = piece + NEIGHBOR_DIFF(piece, direction);
 	if(NOT_OVER_EDGE(piece, neighbor, direction, 2)) {
 		Node *cur_sibling;
-		int behind_neighbor = neighbor + NEIGHBORS[direction] - (int)(neighbor % 10 > 4);
+		int destination = neighbor + NEIGHBOR_DIFF(neighbor, direction);
 		if(fabs(board[piece]) == 1) { //if not queen
 			if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
-				&& board[behind_neighbor] == 0) { //if can capture neighbor
-				append_tree(head, piece, neighbor, behind_neighbor, board, &cur_sibling, &max_depth, color, depth);
+				&& board[destination] == 0) { //if can capture neighbor
+				append_tree(head, piece, neighbor, destination, board, &cur_sibling, &max_depth, color, depth);
 			}
 		} else { //if queen
-			while(NOT_OVER_EDGE(neighbor, behind_neighbor, direction, 1)
-				&& ! (board[neighbor] != 0 && board[behind_neighbor] != 0))
+			while(NOT_OVER_EDGE(neighbor, destination, direction, 1)
+				&& ! (board[neighbor] != 0 && board[destination] != 0))
 			{
 				if((board[neighbor] ^ color) < 0 && board[neighbor] != 0) {
-					int prev_behind_neighbor = neighbor;
-					while(NOT_OVER_EDGE(prev_behind_neighbor, behind_neighbor, direction, 1)
-						&& board[behind_neighbor] == 0)
+					int prev_destination = neighbor;
+					while(NOT_OVER_EDGE(prev_destination, destination, direction, 1)
+						&& board[destination] == 0)
 					{
-						append_tree(head, piece, neighbor, behind_neighbor, board, &cur_sibling, &max_depth, color, depth);
-						prev_behind_neighbor = behind_neighbor;
-						behind_neighbor += NEIGHBORS[direction] - (int)(behind_neighbor % 10 > 4);
+						append_tree(head, piece, neighbor, destination, board, &cur_sibling, &max_depth, color, depth);
+						prev_destination = destination;
+						destination += NEIGHBOR_DIFF(destination, direction);
 					}
 				}
 				if(board[neighbor] != 0) break;
-				neighbor = behind_neighbor;
-				behind_neighbor += NEIGHBORS[direction] - (int)(behind_neighbor % 10 > 4);
+				neighbor = destination;
+				destination += NEIGHBOR_DIFF(destination, direction);
 			}
 		}
 	}
@@ -226,14 +243,12 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 				if(fabs(board[piece]) == 1) {//if not queen
 					for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
 					{
-						int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
+						int neighbor = piece + NEIGHBOR_DIFF(piece, direction);
 						if(NOT_OVER_EDGE(piece, neighbor, direction, 1)) {
 							if(board[neighbor] == 0) {
 								if(game_over == true) game_over = false;
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-								new_board[piece] = 0;
-								new_board[neighbor] = board[piece];
-								if(PROMOTING(board[piece], neighbor)) new_board[neighbor] *= 2;
+								execute_move(new_board, piece, neighbor);
 								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
 							}
 						}
@@ -241,21 +256,19 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 				} else {//if queen
 					for(direction = 0; direction < 4; direction++)
 					{
-						int neighbor = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
+						int neighbor = piece + NEIGHBOR_DIFF(piece, direction);
 						int prev_neighbor = piece;
 						while(NOT_OVER_EDGE(prev_neighbor, neighbor, direction, 1)) {
 							if(board[neighbor] == 0) {
 								if(game_over == true) game_over = false;
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-								new_board[piece] = 0;
-								new_board[neighbor] = board[piece];
-								if(PROMOTING(board[piece], neighbor)) new_board[neighbor] *= 2;
+								execute_move(new_board, piece, neighbor);
 								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
 							} else {
 								break;
 							}
 							prev_neighbor = neighbor;
-							neighbor += NEIGHBORS[direction] - (int) (neighbor % 10 > 4);
+							neighbor += NEIGHBOR_DIFF(neighbor, direction);
 						}
 					}
 				}
@@ -280,17 +293,7 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 		while(cur_listhead)
 		{
 			memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-
-			Node *cur_node = cur_listhead->node;
-			new_board[cur_node->destination] = cur_node->type;
-			while(cur_node->parent)
-			{
-				new_board[cur_node->piece] = 0;
-				new_board[cur_node->captured] = 0;
-
-				cur_node = cur_node->parent;
-			}
-
+			execute_captures(new_board, cur_listhead->node);
 			evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
 
 			cur_listhead = cur_listhead->node_next;
@@ -306,7 +309,7 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 
 void play_player_move(int color, int *board)
 {
-	//TODO: add support for: resign, capture
+	//TODO: add support for: resign
 	//TODO: check for moves / loss
 	Node *head;
 	init_node(&head);
@@ -319,7 +322,10 @@ void play_player_move(int color, int *board)
 	printf("Move: ");
 	scanf("%s", buf);
 	strtok(buf, "\n");
-	if(strchr(buf, '-') && ! head->child) {
+	if(! strcmp(buf, "capture") && head->child && ! captures->node_next) { //TODO: create function for this
+		execute_captures(board, captures->node);
+		delete_list(captures);
+	} else if(strchr(buf, '-') && ! head->child) {
 		int piece = atoi(strtok(buf, "-")) - 1;
 		int destination = atoi(strtok(NULL, "-")) - 1;
 		if(piece == destination) goto INVALID_MOVE;
@@ -333,9 +339,7 @@ void play_player_move(int color, int *board)
 				if((difference ^ color) < 0
 					&& NOT_OVER_EDGE(piece, destination, direction, 1)
 					&& (direction + color == 1 || direction + color == 2)) {
-					board[destination] = board[piece];
-					if(PROMOTING(board[piece], destination)) board[destination] *= 2;
-					board[piece] = 0;
+					execute_move(board, piece, destination);
 				} else {
 					goto INVALID_MOVE;
 				}
@@ -344,17 +348,15 @@ void play_player_move(int color, int *board)
 				for(direction = 2 * (int) (difference > 0); direction < 2 + 2 * (int) (difference > 0); direction++) //only check directions with same sign as difference, either 0,1 or 2,3
 				{
 					int temp_piece = piece;
-					int next_temp_piece = piece + NEIGHBORS[direction] - (int) (piece % 10 > 4);
+					int next_temp_piece = piece + NEIGHBOR_DIFF(piece, direction);
 					while(NOT_OVER_EDGE(temp_piece, next_temp_piece, direction, 1) && board[next_temp_piece] == 0)
 					{
 						if(next_temp_piece == destination) {
-							board[destination] = board[piece];
-							if(PROMOTING(board[piece], destination)) board[destination] *= 2;
-							board[piece] = 0;
+							execute_move(board, piece, destination);
 							goto INPUT_END;
 						}
 						temp_piece = next_temp_piece;
-						next_temp_piece += NEIGHBORS[direction] - (int) (next_temp_piece % 10 > 4);
+						next_temp_piece += NEIGHBOR_DIFF(next_temp_piece, direction);
 					}
 				}
 				goto INVALID_MOVE;
@@ -381,14 +383,7 @@ void play_player_move(int color, int *board)
 			{
 				if(cur_node->destination != moves[i]) break;
 				if(i == 1 && cur_node->piece == moves[0]) {
-					board[cur_listhead->node->destination] = cur_listhead->node->type;
-					board[cur_node->piece] = 0;
-					cur_node = cur_listhead->node;
-					while(cur_node->parent)
-					{
-						board[cur_node->captured] = 0;
-						cur_node = cur_node->parent;
-					}
+					execute_captures(board, captures->node);
 					delete_list(captures);
 					goto INPUT_END;
 				}
@@ -417,6 +412,9 @@ int main()
 	for(i=20; i<=29; i++) board[i] = 0;
 	for(i=30; i<=49; i++) board[i] = 1;
 
+	board[28] = -1;
+	board[11] = 0;
+
 	if(mode == 0) {
 		char buf[BUFFER_SIZE];
 		printf("[White/Black]? ");
@@ -429,7 +427,7 @@ int main()
 			if(turn == player_color) {
 				play_player_move(turn, board);
 			} else {
-				(void) play_engine_move(turn, board, 6, true);
+				(void) play_engine_move(turn, board, 7, true);
 			}
 			print_board(board);
 			turn *= -1;

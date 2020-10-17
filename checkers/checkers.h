@@ -7,6 +7,9 @@
 #define BOARD_SIZE 50
 #define MIN_EVAL -100
 
+const int BUFFER_SIZE = 255;
+const int NEIGHBORS[] = {-5, -4, 5, 6};
+
 #define NOT_OVER_EDGE(piece, neighbor, direction, margin)\
 	(! ((piece <= 5 * margin - 1 && neighbor < piece)\
 	|| (piece >= 50 - 5 * margin && neighbor > piece)\
@@ -15,8 +18,7 @@
 
 #define PROMOTING(type, piece) (type == -1 && piece >= 45 || type == 1 && piece <= 4)
 
-const int BUFFER_SIZE = 255;
-const int NEIGHBORS[] = {-5, -4, 5, 6};
+#define NEIGHBOR_DIFF(piece, direction) (NEIGHBORS[direction] - (int) (piece % 10 > 4))
 
 //tree node
 typedef struct Node Node;
