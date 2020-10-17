@@ -20,8 +20,7 @@ const int NEIGHBORS[] = {-5, -4, 5, 6};
 
 #define NEIGHBOR_DIFF(piece, direction) (NEIGHBORS[direction] - (int) (piece % 10 > 4))
 
-//tree node
-typedef struct Node Node;
+typedef struct Node Node; //tree node
 typedef struct ListNode ListNode;
 
 int play_engine_move(int color, int *board, int remaining_depth, bool return_board);

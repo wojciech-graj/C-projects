@@ -55,7 +55,7 @@ void execute_captures(int *board, Node *node)
 	Node *cur_node = node;
 	while(cur_node->parent)
 	{
-		board[cur_node->captured] = 0;
+		board[cur_node->captured] = 0; //TODO: optimize
 		board[cur_node->piece] = 0;
 		cur_node = cur_node->parent;
 	}
@@ -68,7 +68,7 @@ void execute_move(int *board, int piece, int destination)
 	if(PROMOTING(board[destination], destination)) board[destination] *= 2;
 }
 
-void append_tree(Node *head, int piece, int neighbor, int destination, int *board, Node **cur_sibling, int *max_depth, int color, int depth) {
+void append_tree(Node *head, int piece, int captured, int destination, int *board, Node **cur_sibling, int *max_depth, int color, int depth) {
 	Node *node;
 	init_node(&node);
 	if(! head->child) {
@@ -81,12 +81,12 @@ void append_tree(Node *head, int piece, int neighbor, int destination, int *boar
 
 	int new_board[BOARD_SIZE];
 	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-	new_board[neighbor] = 0;
+	new_board[captured] = 0;
 	execute_move(new_board, piece, destination);
 
 	node->parent = head;
 	node->piece = piece;
-	node->captured = neighbor;
+	node->captured = captured;
 	node->destination = destination;
 	node->type = new_board[destination];
 
@@ -101,31 +101,31 @@ void append_tree(Node *head, int piece, int neighbor, int destination, int *boar
 int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head)
 {
 	int max_depth = depth - 1;
-	int neighbor = piece + NEIGHBOR_DIFF(piece, direction);
-	if(NOT_OVER_EDGE(piece, neighbor, direction, 2)) {
+	int captured = piece + NEIGHBOR_DIFF(piece, direction);
+	if(NOT_OVER_EDGE(piece, captured, direction, 2)) {
 		Node *cur_sibling;
-		int destination = neighbor + NEIGHBOR_DIFF(neighbor, direction);
+		int destination = captured + NEIGHBOR_DIFF(captured, direction);
 		if(fabs(board[piece]) == 1) { //if not queen
-			if ((board[neighbor] ^ color) < 0 && board[neighbor] != 0
+			if ((board[captured] ^ color) < 0 && board[captured] != 0
 				&& board[destination] == 0) { //if can capture neighbor
-				append_tree(head, piece, neighbor, destination, board, &cur_sibling, &max_depth, color, depth);
+				append_tree(head, piece, captured, destination, board, &cur_sibling, &max_depth, color, depth);
 			}
 		} else { //if queen
-			while(NOT_OVER_EDGE(neighbor, destination, direction, 1)
-				&& ! (board[neighbor] != 0 && board[destination] != 0))
+			while(NOT_OVER_EDGE(captured, destination, direction, 1)
+				&& ! (board[captured] != 0 && board[destination] != 0))
 			{
-				if((board[neighbor] ^ color) < 0 && board[neighbor] != 0) {
-					int prev_destination = neighbor;
+				if((board[captured] ^ color) < 0 && board[captured] != 0) {
+					int prev_destination = captured;
 					while(NOT_OVER_EDGE(prev_destination, destination, direction, 1)
 						&& board[destination] == 0)
 					{
-						append_tree(head, piece, neighbor, destination, board, &cur_sibling, &max_depth, color, depth);
+						append_tree(head, piece, captured, destination, board, &cur_sibling, &max_depth, color, depth);
 						prev_destination = destination;
 						destination += NEIGHBOR_DIFF(destination, direction);
 					}
 				}
-				if(board[neighbor] != 0) break;
-				neighbor = destination;
+				if(board[captured] != 0) break;
+				captured = destination;
 				destination += NEIGHBOR_DIFF(destination, direction);
 			}
 		}
