@@ -9,7 +9,7 @@
 
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
-const char *colors[] = {"White", "Black"};
+const char *COLORS[] = {"White", "Black"};
 
 const char *TITLE ="\
  ___                     _   _\n\
@@ -30,10 +30,14 @@ const char *TITLE ="\
 
 #define SAME_SIGN(a, b) ((a ^ b) >= 0)
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 typedef struct Node Node; //tree node
 typedef struct ListNode ListNode;
 
-int play_engine_move(int color, int *board, int remaining_depth, bool return_board);
+int play_engine_move(int color, int *board, int remaining_depth, bool return_board, int alpha, int beta);
 int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head);
 
 typedef struct Node {

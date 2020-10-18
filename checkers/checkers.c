@@ -50,11 +50,7 @@ void init_node(Node **node) {
 
 void end_game(int color)
 {
-	if(color == 1) {
-		printf("Black is the winner!\n");
-	} else if(color == -1) {
-		printf("White is the winner!\n");
-	}
+	printf("%s wins!\n", COLORS[(color + 1) / 2]);
 	exit(0);
 }
 
@@ -168,7 +164,7 @@ void get_nodes_at_depth(Node *head, int depth, int target_depth, ListNode **capt
 	}
 }
 
-void evaluate_board(int color, int remaining_depth, bool return_board, int *evaluation, int *board, int *best_board){
+int evaluate_board(int color, int remaining_depth, bool return_board, int *evaluation, int *board, int *best_board, int alpha, int beta){
 	int cur_evaluation = 0;
 	int piece;
 	bool white_left = false;
@@ -187,7 +183,7 @@ void evaluate_board(int color, int remaining_depth, bool return_board, int *eval
 	} else if(! black_left) {
 		cur_evaluation = -1 * MIN_EVAL;
 	} else if(remaining_depth != 0) {
-		cur_evaluation = play_engine_move(color * -1, board, remaining_depth - 1, false);
+		cur_evaluation = play_engine_move(color * -1, board, remaining_depth - 1, false, alpha, beta);
 	}
 	if((color < 0 && cur_evaluation < *evaluation) || (color > 0 && cur_evaluation > *evaluation)) {
 		*evaluation = cur_evaluation;
@@ -195,6 +191,7 @@ void evaluate_board(int color, int remaining_depth, bool return_board, int *eval
 			memcpy(best_board, board, BOARD_SIZE * sizeof(int));
 		}
 	}
+	return cur_evaluation;
 }
 
 void delete_tree(Node *node)
@@ -234,7 +231,17 @@ int create_capture_tree(int color, int *board, Node *head)
 	return max_depth;
 }
 
-int play_engine_move(int color, int *board, int remaining_depth, bool return_board)
+bool prune(int color, int evaluation, int *alpha, int *beta)
+{
+	if(color == 1) {
+		*alpha = MAX(*alpha, evaluation);
+	} else if(color == -1) {
+		*beta = MIN(*beta, evaluation);
+	}
+	return (*beta <= *alpha);
+}
+
+int play_engine_move(int color, int *board, int remaining_depth, bool return_board, int alpha, int beta)
 {
 	Node *head;
 	init_node(&head);
@@ -260,7 +267,9 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 								if(game_over == true) game_over = false;
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 								execute_move(new_board, piece, neighbor);
-								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+								int cur_evaluation = evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board, alpha, beta);
+								if(prune(color, cur_evaluation, &alpha, &beta)) goto END;
+
 							}
 						}
 					}
@@ -274,7 +283,9 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 								if(game_over == true) game_over = false;
 								memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 								execute_move(new_board, piece, neighbor);
-								evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+								int cur_evaluation = evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board, alpha, beta);
+
+								if(prune(color, cur_evaluation, &alpha, &beta)) goto END;
 							} else {
 								break;
 							}
@@ -300,12 +311,17 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 		{
 			memcpy(new_board, board, BOARD_SIZE * sizeof(int));
 			execute_captures(new_board, cur_listhead->node);
-			evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board);
+			int cur_evaluation = evaluate_board(color, remaining_depth, return_board, &evaluation, new_board, best_board, alpha, beta);
 
+			if(prune(color, cur_evaluation, &alpha, &beta)) {
+				delete_list(captures);
+				goto END;
+			}
 			cur_listhead = cur_listhead->node_next;
 		}
 		delete_list(captures);
 	}
+	END:
 	delete_tree(head);
 	if(return_board) {
 		memcpy(board, best_board, BOARD_SIZE * sizeof(int));
@@ -319,7 +335,7 @@ void play_player_move(int color, int *board)
 	//check if there exist any moves
 	int new_board[BOARD_SIZE];
 	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-	(void) play_engine_move(color, new_board, 0, true);
+	(void) play_engine_move(color, new_board, 0, true, -1 * MIN_EVAL, MIN_EVAL);
 
 	Node *head;
 	init_node(&head);
@@ -431,14 +447,25 @@ int main()
 
 	char buf[BUFFER_SIZE];
 	char players[2];
+	int computer_depth[2];
 	for(i = 0; i <= 1; i++)
 	{
 		GET_PLAYER:
-		printf("%s: [CPU/Player]? ", colors[i]);
+		printf("%s: [CPU/Player]? ", COLORS[i]);
 		scanf("%s", buf);
-		if(buf[0] == 'C' || buf[0] == 'P') {
+		if(buf[0] == 'C') {
 			players[i] = buf[0];
-		} else{
+			GET_DEPTH:
+			printf("depth: [>0]? ");
+			scanf("%s", buf);
+			computer_depth[i] = atoi(buf);
+			if(computer_depth[i] < 1) {
+				printf("INVALID INPUT\n");
+				goto GET_DEPTH;
+			}
+		} else if(buf[0] == 'P') {
+			players[i] = buf[0];
+		} else {
 			printf("INVALID INPUT\n");
 			goto GET_PLAYER;
 		}
@@ -449,7 +476,7 @@ int main()
 	while(true)
 	{
 		if(players[i % 2] == 'C') {
-			(void) play_engine_move(color, board, 6, true);
+			(void) play_engine_move(color, board, computer_depth[i % 2], true, MIN_EVAL, -1 * MIN_EVAL);
 		} else if(players[i % 2] == 'P') {
 			play_player_move(color, board);
 		} else{
