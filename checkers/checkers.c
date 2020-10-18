@@ -430,28 +430,35 @@ int main()
 	printf("%s\n", TITLE);
 
 	char buf[BUFFER_SIZE];
-	printf("White: [CPU/Player]? ");
-	scanf("%s", buf);
-	char white_type = buf[0];
-	printf("Black: [CPU/Player]? ");
-	scanf("%s", buf);
-	char black_type = buf[0];
+	char players[2];
+	for(i = 0; i <= 1; i++)
+	{
+		GET_PLAYER:
+		printf("%s: [CPU/Player]? ", colors[i]);
+		scanf("%s", buf);
+		if(buf[0] == 'C' || buf[0] == 'P') {
+			players[i] = buf[0];
+		} else{
+			printf("INVALID INPUT\n");
+			goto GET_PLAYER;
+		}
+	}
 
 	print_board(board);
+	int color = 1;
 	while(true)
 	{
-		if(white_type == 'C') {
-			(void) play_engine_move(1, board, 6, true);
-		} else {
-			play_player_move(1, board);
+		if(players[i % 2] == 'C') {
+			(void) play_engine_move(color, board, 6, true);
+		} else if(players[i % 2] == 'P') {
+			play_player_move(color, board);
+		} else{
+			printf("ERROR\n");
+			exit(0);
 		}
+		printf("\n");
 		print_board(board);
-
-		if(black_type == 'C') {
-			(void) play_engine_move(-1, board, 6, true);
-		} else {
-			play_player_move(-1, board);
-		}
-		print_board(board);
+		color *= -1;
+		i += 1;
 	}
 }

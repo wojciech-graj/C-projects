@@ -9,6 +9,7 @@
 
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
+const char *colors[] = {"White", "Black"};
 
 const char *TITLE ="\
  ___                     _   _\n\
