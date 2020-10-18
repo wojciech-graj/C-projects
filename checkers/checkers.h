@@ -10,6 +10,13 @@
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
 
+const char *TITLE ="\
+ ___                     _   _\n\
+|   \\ _ _ __ _ _  _ __ _| |_| |_ ___\n\
+| |) | '_/ _` | || / _` | ' \\  _(_-<\n\
+|___/|_| \\__,_|\\_,_\\__, |_||_\\__/__/\n\
+                   |___/ ";
+
 #define NOT_OVER_EDGE(piece, neighbor, direction, margin)\
 	(! ((piece <= 5 * margin - 1 && neighbor < piece)\
 	|| (piece >= 50 - 5 * margin && neighbor > piece)\

@@ -423,36 +423,34 @@ int main()
 	int board[BOARD_SIZE];
 	int i;
 
-	const int mode = 0;
-
 	for(i=0; i<=19; i++) board[i] = -1;
 	for(i=20; i<=29; i++) board[i] = 0;
 	for(i=30; i<=49; i++) board[i] = 1;
 
-	if(mode == 0) {
-		char buf[BUFFER_SIZE];
-		printf("[White/Black]? ");
-		scanf("%s", buf);
-		int player_color = (buf[0] == 'W') ? 1 : -1;
-		int turn = 1;
-		print_board(board);
-		while(true)
-		{
-			if(turn == player_color) {
-				play_player_move(turn, board);
-			} else {
-				(void) play_engine_move(turn, board, 7, true);
-			}
-			print_board(board);
-			turn *= -1;
-		}
-	} else if(mode == 1) {
-		for(i = 0; i < 200; i++)
-		{
-			print_board(board);
+	printf("%s\n", TITLE);
+
+	char buf[BUFFER_SIZE];
+	printf("White: [CPU/Player]? ");
+	scanf("%s", buf);
+	char white_type = buf[0];
+	printf("Black: [CPU/Player]? ");
+	scanf("%s", buf);
+	char black_type = buf[0];
+
+	print_board(board);
+	while(true)
+	{
+		if(white_type == 'C') {
 			(void) play_engine_move(1, board, 6, true);
-			print_board(board);
-			(void) play_engine_move(-1, board, 4, true);
+		} else {
+			play_player_move(1, board);
+		}
+		print_board(board);
+
+		if(black_type == 'C') {
+			(void) play_engine_move(-1, board, 6, true);
+		} else {
+			play_player_move(-1, board);
 		}
 		print_board(board);
 	}
