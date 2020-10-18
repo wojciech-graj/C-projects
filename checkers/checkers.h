@@ -20,6 +20,8 @@ const int NEIGHBORS[] = {-5, -4, 5, 6};
 
 #define NEIGHBOR_DIFF(piece, direction) (NEIGHBORS[direction] - (int) (piece % 10 > 4))
 
+#define SAME_SIGN(a, b) ((a ^ b) >= 0)
+
 typedef struct Node Node; //tree node
 typedef struct ListNode ListNode;
 

@@ -48,6 +48,16 @@ void init_node(Node **node) {
 	(*node)->parent = NULL;
 }
 
+void end_game(int color)
+{
+	if(color == 1) {
+		printf("Black is the winner!\n");
+	} else if(color == -1) {
+		printf("White is the winner!\n");
+	}
+	exit(0);
+}
+
 //node is the end node of tree
 void execute_captures(int *board, Node *node)
 {
@@ -106,7 +116,8 @@ int create_capture_subtree(int color, int piece, int direction, int depth, int *
 		Node *cur_sibling;
 		int destination = captured + NEIGHBOR_DIFF(captured, direction);
 		if(fabs(board[piece]) == 1) { //if not queen
-			if ((board[captured] ^ color) < 0 && board[captured] != 0
+			if (! SAME_SIGN(board[captured], color)
+				&& board[captured] != 0
 				&& board[destination] == 0) { //if can capture neighbor
 				append_tree(head, piece, captured, destination, board, &cur_sibling, &max_depth, color, depth);
 			}
@@ -114,7 +125,7 @@ int create_capture_subtree(int color, int piece, int direction, int depth, int *
 			while(NOT_OVER_EDGE(captured, destination, direction, 1)
 				&& ! (board[captured] != 0 && board[destination] != 0))
 			{
-				if((board[captured] ^ color) < 0 && board[captured] != 0) {
+				if(! SAME_SIGN(board[captured], color) && board[captured] != 0) {
 					int prev_destination = captured;
 					while(NOT_OVER_EDGE(prev_destination, destination, direction, 1)
 						&& board[destination] == 0)
@@ -211,7 +222,7 @@ int create_capture_tree(int color, int *board, Node *head)
 	int max_depth = 0;
 	for(piece = 0; piece < BOARD_SIZE; piece++)
 	{
-		if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
+		if(SAME_SIGN(board[piece], color) && board[piece] != 0) {//if piece has same sign
 			int direction;
 			for(direction = 0; direction < 4; direction++)
 			{
@@ -238,7 +249,7 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 		bool game_over = true;
 		for(piece = 0; piece < BOARD_SIZE; piece++)
 		{
-			if((board[piece] ^ color) >= 0 && board[piece] != 0) {//if piece has same sign
+			if(SAME_SIGN(board[piece], color) && board[piece] != 0) {//if piece has same sign
 				int direction;
 				if(fabs(board[piece]) == 1) {//if not queen
 					for(direction = -1 * color + 1; direction < -1 * color + 3; direction++) //only allow forward directions
@@ -276,12 +287,7 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 		}
 		if(game_over == true) {
 			if(return_board) {
-				if(color == 1) {
-					printf("Black is the winner!\n");
-				} else {
-					printf("White is the winner!\n");
-				}
-				exit(0);
+				end_game(color);
 			} else {
 				evaluation = color * MIN_EVAL;
 			}
@@ -307,10 +313,14 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 	return evaluation;
 }
 
+//TODO: add help text
 void play_player_move(int color, int *board)
 {
-	//TODO: add support for: resign
-	//TODO: check for moves / loss
+	//check if there exist any moves
+	int new_board[BOARD_SIZE];
+	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+	(void) play_engine_move(color, new_board, 0, true);
+
 	Node *head;
 	init_node(&head);
 	int max_depth = create_capture_tree(color, board, head);
@@ -319,24 +329,31 @@ void play_player_move(int color, int *board)
 	char buf[BUFFER_SIZE];
 
 	GET_INPUT:
-	printf("Move: ");
+	printf(": ");
 	scanf("%s", buf);
 	strtok(buf, "\n");
-	if(! strcmp(buf, "capture") && head->child && ! captures->node_next) { //TODO: create function for this
+	if(! strcmp(buf, "help")) {
+		//printf("");
+		goto GET_INPUT;
+	} else if(! strcmp(buf, "capture") && head->child && ! captures->node_next) {
 		execute_captures(board, captures->node);
 		delete_list(captures);
+	} else if(! strcmp(buf, "resign")) {
+		if(head->child) delete_list(captures);
+		delete_tree(head);
+		end_game(color);
 	} else if(strchr(buf, '-') && ! head->child) {
 		int piece = atoi(strtok(buf, "-")) - 1;
 		int destination = atoi(strtok(NULL, "-")) - 1;
 		if(piece == destination) goto INVALID_MOVE;
 		int difference = destination - piece;
-		if((board[piece] ^ color) >= 0 && board[piece] != 0 && board[destination] == 0) {
+		if(SAME_SIGN(board[piece], color) && board[piece] != 0 && board[destination] == 0) {
 			if(fabs(board[piece]) == 1) { //if not queen
 				difference += (int) (piece % 10 > 4);
 				int direction = 0;
     			while(direction <= 3 && NEIGHBORS[direction] != difference) direction++;
 				if(direction == 4) goto INVALID_MOVE;
-				if((difference ^ color) < 0
+				if(! SAME_SIGN(difference, color)
 					&& NOT_OVER_EDGE(piece, destination, direction, 1)
 					&& (direction + color == 1 || direction + color == 2)) {
 					execute_move(board, piece, destination);
@@ -411,9 +428,6 @@ int main()
 	for(i=0; i<=19; i++) board[i] = -1;
 	for(i=20; i<=29; i++) board[i] = 0;
 	for(i=30; i<=49; i++) board[i] = 1;
-
-	board[28] = -1;
-	board[11] = 0;
 
 	if(mode == 0) {
 		char buf[BUFFER_SIZE];
