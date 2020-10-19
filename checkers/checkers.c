@@ -15,7 +15,7 @@ void init_node(Node **node) {
 	(*node)->parent = NULL;
 }
 
-void end_game(int color)
+__attribute__((weak)) void end_game(int color)
 {
 	printf("%s wins!\n", PLAYER_COLORS[(color + 1) / 2]);
 	exit(0);

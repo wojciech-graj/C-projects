@@ -35,10 +35,9 @@ typedef struct ListNode ListNode;
 
 void init_board(int *board);
 void init_node(Node **node);
-void end_game(int color);
+__attribute__((weak)) void end_game(int color);
 void execute_captures(int *board, Node *node);
 void execute_move(int *board, int piece, int destination);
-
 void get_nodes_at_depth(Node *head, int depth, int target_depth, ListNode **captures);
 int evaluate_board(int color, int remaining_depth, bool return_board, int *evaluation, int *board, int *best_board, int alpha, int beta);
 void delete_tree(Node *node);
