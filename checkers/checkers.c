@@ -33,7 +33,7 @@ void print_board(int *board)
 					break;
 			}
 		} else {
-			tile = "▓";
+			tile = "█";
 		}
 		printf("%s", tile);
 	}
