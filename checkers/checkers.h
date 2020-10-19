@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 #define BOARD_SIZE 50
-#define MIN_EVAL -100
 
+const int MIN_EVAL = -100;
 const int BUFFER_SIZE = 255;
 const int NEIGHBORS[] = {-5, -4, 5, 6};
 const char *COLORS[] = {"White", "Black"};
@@ -17,6 +17,23 @@ const char *TITLE ="\
 | |) | '_/ _` | || / _` | ' \\  _(_-<\n\
 |___/|_| \\__,_|\\_,_\\__, |_||_\\__/__/\n\
                    |___/ ";
+
+const char *HELP = "\
++---------+--------------------------------------------------------------+\n\
+| COMMAND | ACTION                                                       |\n\
++---------+--------------------------------------------------------------+\n\
+| resign  | resign game                                                  |\n\
++---------+--------------------------------------------------------------+\n\
+| capture | execute forced sequence of captures if there exists only one |\n\
+|         | possible sequence                                            |\n\
++---------+--------------------------------------------------------------+\n\
+| help    | display this page                                            |\n\
++---------+--------------------------------------------------------------+\n\
+| A-B     | move a piece from A to B                                     |\n\
++---------+--------------------------------------------------------------+\n\
+| AxB     | capture using piece A which will land on tile B.             |\n\
+|         | can be extended to perform a sequence of captures e.g. AxBxC |\n\
++---------+--------------------------------------------------------------+\n";
 
 #define NOT_OVER_EDGE(piece, neighbor, direction, margin)\
 	(! ((piece <= 5 * margin - 1 && neighbor < piece)\
