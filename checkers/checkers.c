@@ -2,16 +2,17 @@
 
 void print_board(int *board)
 {
-	printf("   1 2 3 4 5");
+	printf("   1 2 3 4 5\n  ╔══════════╗");
 	int i;
 	for(i = 0; i < BOARD_SIZE * 2; i++)
 	{
 		char *tile;
 
 		if(i % 20 == 10) {
-			printf("\n%-2d", i / 2 + 1);
+			printf("║\n%-2d║", i / 2 + 1);
 		} else if(i % 10 == 0) {
-			printf("\n  ");
+			if(i != 0) printf("║");
+			printf("\n  ║");
 		}
 		if(i % 2 == 0 && i % 20 > 9 || i % 2 == 1 && i % 20 < 10) {
 			switch(board[i/2])
@@ -37,7 +38,15 @@ void print_board(int *board)
 		}
 		printf("%s", tile);
 	}
-	printf("\n");
+	printf("║\n  ╚══════════╝\n");
+}
+
+void init_board(int *board)
+{
+	int i;
+	for(i=0; i<=19; i++) board[i] = -1;
+	for(i=20; i<=29; i++) board[i] = 0;
+	for(i=30; i<=49; i++) board[i] = 1;
 }
 
 void init_node(Node **node) {
@@ -49,7 +58,7 @@ void init_node(Node **node) {
 
 void end_game(int color)
 {
-	printf("%s wins!\n", COLORS[(color + 1) / 2]);
+	printf("%s wins!\n", PLAYER_COLORS[(color + 1) / 2]);
 	exit(0);
 }
 
@@ -473,21 +482,19 @@ void play_player_move(int color, int *board)
 int main()
 {
 	int board[BOARD_SIZE];
-	int i;
 
-	for(i=0; i<=19; i++) board[i] = -1;
-	for(i=20; i<=29; i++) board[i] = 0;
-	for(i=30; i<=49; i++) board[i] = 1;
+	init_board(board);
 
 	printf("%s\n", TITLE);
 
 	char buf[BUFFER_SIZE];
 	char players[2];
 	int computer_depth[2];
+	int i;
 	for(i = 0; i <= 1; i++)
 	{
 		GET_PLAYER:
-		printf("%s: [CPU/Player]? ", COLORS[i]);
+		printf("%s: [CPU/Player]? ", PLAYER_COLORS[i]);
 		scanf("%s", buf);
 		if(buf[0] == 'C') {
 			players[i] = buf[0];
