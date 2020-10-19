@@ -1,8 +1,11 @@
 #include <ncurses.h>
 #include <locale.h>
+
 #include "checkers.h"
 
 #define BOARD_SIDELENGTH 10
+#define SCREEN_WIDTH 13
+#define SCREEN_HEIGHT 14
 
 void draw_board_edge(int x, int y)
 {
@@ -64,17 +67,6 @@ void draw_board(WINDOW *window, int *board)
 
 int main()
 {
-	setlocale(LC_ALL, "");
-	initscr();
-	clear();
-	noecho();
-	cbreak();
-
-	printw("TEXT");
-	refresh();
-
-	WINDOW *board_window = newwin(BOARD_SIDELENGTH, BOARD_SIDELENGTH, 3, 3);
-
 	int board[50];
 	int i;
 
@@ -82,11 +74,29 @@ int main()
 	for(i=20; i<=29; i++) board[i] = 0;
 	for(i=30; i<=49; i++) board[i] = 1;
 
+	setlocale(LC_ALL, "");
+	initscr();
+	clear();
+	noecho();
+	cbreak();
+
+	WINDOW *board_window = newwin(BOARD_SIDELENGTH, BOARD_SIDELENGTH, 3, 3);
+
+	printw("DRAUGHTS");
+	mvaddch(0, SCREEN_WIDTH, 'X');
+	mvprintw(14, 0, "MOVE:");
+	mvaddwstr(14, 10, L"🏳️");
+	mvaddwstr(14, 13, L"▶️");
+	refresh();
+
 	draw_board_edge(0, 1);
 
 	draw_board(board_window, board);
 
-	sleep(5);
+	while(true)
+	{
+		sleep(5);
+	}
 
 	endwin();
 }

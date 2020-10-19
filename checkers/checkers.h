@@ -1,3 +1,6 @@
+#ifndef CHECKERS_H
+#define CHECKERS_H
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -6,34 +9,10 @@
 
 #define BOARD_SIZE 50
 
-const int MIN_EVAL = -100;
-const int BUFFER_SIZE = 255;
-const int NEIGHBORS[] = {-5, -4, 5, 6};
-const char *COLORS[] = {"White", "Black"};
-
-const char *TITLE ="\
- ___                     _   _\n\
-|   \\ _ _ __ _ _  _ __ _| |_| |_ ___\n\
-| |) | '_/ _` | || / _` | ' \\  _(_-<\n\
-|___/|_| \\__,_|\\_,_\\__, |_||_\\__/__/\n\
-                   |___/ ";
-
-const char *HELP = "\
-+---------+--------------------------------------------------------------+\n\
-| COMMAND | ACTION                                                       |\n\
-+---------+--------------------------------------------------------------+\n\
-| resign  | resign game                                                  |\n\
-+---------+--------------------------------------------------------------+\n\
-| capture | execute forced sequence of captures if there exists only one |\n\
-|         | possible sequence                                            |\n\
-+---------+--------------------------------------------------------------+\n\
-| help    | display this page                                            |\n\
-+---------+--------------------------------------------------------------+\n\
-| A-B     | move a piece from A to B                                     |\n\
-+---------+--------------------------------------------------------------+\n\
-| AxB     | capture using piece A which will land on tile B.             |\n\
-|         | can be extended to perform a sequence of captures e.g. AxBxC |\n\
-+---------+--------------------------------------------------------------+\n";
+static const int MIN_EVAL = -100;
+static const int BUFFER_SIZE = 255;
+static const int NEIGHBORS[] = {-5, -4, 5, 6};
+static const char *PLAYER_COLORS[] = {"White", "Black"};
 
 #define NOT_OVER_EDGE(piece, neighbor, direction, margin)\
 	(! ((piece <= 5 * margin - 1 && neighbor < piece)\
@@ -54,8 +33,21 @@ const char *HELP = "\
 typedef struct Node Node; //tree node
 typedef struct ListNode ListNode;
 
+void init_board(int *board);
+void init_node(Node **node);
+void end_game(int color);
+void execute_captures(int *board, Node *node);
+void execute_move(int *board, int piece, int destination);
+
+void get_nodes_at_depth(Node *head, int depth, int target_depth, ListNode **captures);
+int evaluate_board(int color, int remaining_depth, bool return_board, int *evaluation, int *board, int *best_board, int alpha, int beta);
+void delete_tree(Node *node);
+void delete_list(ListNode *node);
+int create_capture_tree(int color, int *board, Node *head);
 int play_engine_move(int color, int *board, int remaining_depth, bool return_board, int alpha, int beta);
-int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head);
+static int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head);
+static void append_tree(Node *head, int piece, int captured, int destination, int *board, Node **cur_sibling, int *max_depth, int color, int depth);
+static bool prune(int color, int evaluation, int *alpha, int *beta);
 
 typedef struct Node {
 	int piece;
@@ -71,3 +63,5 @@ typedef struct ListNode {
 	ListNode *node_next;
 	Node *node;
 } ListNode;
+
+#endif

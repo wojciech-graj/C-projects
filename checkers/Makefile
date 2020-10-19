@@ -1,4 +1,4 @@
 cli:
-	gcc checkers.c -o checkers -lm -g
+	gcc checkers-cli.c checkers.c -o checkers-cli -lm -g
 gui:
-	gcc checkers-gui.c -o checkers-gui -lm -lncursesw -D_XOPEN_SOURCE_EXTENDED
+	gcc checkers-gui.c checkers.c -o checkers-gui -lm -lncursesw -D_XOPEN_SOURCE_EXTENDED
