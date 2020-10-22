@@ -21,6 +21,7 @@ void end_game(int color)
 SDL_Texture *load_texture(SDL_Renderer* rend, const char *path, int w, int h)
 {
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(rend, IMG_Load(path));
+	assert(texture);
 	return texture;
 }
 
@@ -96,17 +97,18 @@ void play_player_move(int color, int *board)
 
 int main(int argc, char *argv[])
 {
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-        printf("error initializing SDL: %s\n", SDL_GetError());
-    }
+	int init = SDL_Init(SDL_INIT_EVERYTHING);
+    assert(init == 0);
 
     win = SDL_CreateWindow("DRAUGHTS",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
 		WINDOW_SIZE_X, WINDOW_SIZE_Y, 0);
+	assert(win);
 
-    Uint32 render_flags = SDL_RENDERER_ACCELERATED;
+	Uint32 render_flags = SDL_RENDERER_ACCELERATED;
     rend = SDL_CreateRenderer(win, -1, render_flags);
+	assert(rend);
 
 	int i;
 	for(i = 0; i < NUM_TEXTURES; i++)
