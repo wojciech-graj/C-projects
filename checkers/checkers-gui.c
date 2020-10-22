@@ -72,9 +72,7 @@ void play_player_move(int color, int *board)
 	while(true)
 	{
 		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT) {
-				end_program();
-			} else if (event.type == SDL_MOUSEBUTTONDOWN) {
+			 if (event.type == SDL_MOUSEBUTTONDOWN) {
 				if (event.button.button == SDL_BUTTON_LEFT) {
 					int x, y;
 					SDL_GetMouseState(&x, &y);
@@ -92,6 +90,22 @@ void play_player_move(int color, int *board)
 				//break;
 			}
 		}
+		SDL_Delay(1000 / POLLING_FREQ);
+	}
+}
+
+int check_if_end_program(void *ptr)
+{
+	(void) ptr;
+	SDL_Event event;
+	while(true)
+	{
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				end_program();
+			}
+		}
+		SDL_Delay(1000 / POLLING_FREQ);
 	}
 }
 
@@ -118,6 +132,9 @@ int main(int argc, char *argv[])
 	init_board(board);
 
 	draw_board(board);
+
+	SDL_Thread *thread = SDL_CreateThread(check_if_end_program, "check_if_end_program_thread", (void *)NULL);
+	assert(thread);
 
 	//TODO: Allow user to select who plays
 	char players[2] = {'C', 'C'};

@@ -14,7 +14,7 @@
 #define WINDOW_SIZE_X 800
 #define WINDOW_SIZE_Y 900
 #define NUM_TEXTURES 5
-#define FPS 30
+#define POLLING_FREQ 100
 
 const int PIECE_SIZE = BOARD_SIDELENGTH / 10;
 
