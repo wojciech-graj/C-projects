@@ -18,7 +18,7 @@ void end_game(int color)
 	end_program();
 }
 
-SDL_Texture *load_texture(SDL_Renderer* rend, const char *path, int w, int h)
+SDL_Texture *load_texture(const char *path)
 {
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(rend, IMG_Load(path));
 	assert(texture);
@@ -35,12 +35,18 @@ void draw_board(int *board)
 	dest.y = 0;
 	SDL_RenderCopy(rend, textures[board_texture], NULL, &dest);
 	int i;
+
 	for(i = 0; i < 50; i++)
 	{
 		dest.w = PIECE_SIZE;
 		dest.h = PIECE_SIZE;
 		dest.x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
 		dest.y = (i / 5) * PIECE_SIZE;
+
+		if(selected_piece == i) {
+			SDL_RenderCopy(rend, textures[hightlight_green], NULL, &dest);
+		}
+
 		SDL_Texture *cur_texture;
 		switch(board[i])
 		{
@@ -66,7 +72,6 @@ void draw_board(int *board)
 
 void play_player_move(int color, int *board)
 {
-	int piece = -1;
 	int destination;
 	SDL_Event event;
 	while(true)
@@ -79,22 +84,22 @@ void play_player_move(int color, int *board)
 					int row = y / PIECE_SIZE;
 					int board_loc = 5 * row + (x / PIECE_SIZE) / 2;
 					if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
-						if(SAME_SIGN(board[board_loc], color) && board[board_loc] != 0) {
-							piece = board_loc;
+						if(selected_piece != board_loc && SAME_SIGN(board[board_loc], color) && board[board_loc] != 0) {
+							selected_piece = board_loc;
+							draw_board(board);
 						} else if(board[board_loc] == 0) {
 							destination = board_loc;
 							//check if can move
 						}
 					}
 				}
-				//break;
 			}
 		}
 		SDL_Delay(1000 / POLLING_FREQ);
 	}
 }
 
-int check_if_end_program(void *ptr)
+int quit_check(void *ptr)
 {
 	(void) ptr;
 	SDL_Event event;
@@ -107,6 +112,7 @@ int check_if_end_program(void *ptr)
 		}
 		SDL_Delay(1000 / POLLING_FREQ);
 	}
+
 }
 
 int main(int argc, char *argv[])
@@ -126,18 +132,18 @@ int main(int argc, char *argv[])
 
 	int i;
 	for(i = 0; i < NUM_TEXTURES; i++)
-	    textures[i] = load_texture(rend, texture_filenames[i], texture_sizes[i], texture_sizes[i]);
+	    textures[i] = load_texture(texture_filenames[i]);
 
 	int board[BOARD_SIZE];
 	init_board(board);
 
 	draw_board(board);
 
-	SDL_Thread *thread = SDL_CreateThread(check_if_end_program, "check_if_end_program_thread", (void *)NULL);
-	assert(thread);
+	SDL_Thread *quit_check_thread = SDL_CreateThread(quit_check, "quit_check_thread", (void *)NULL);
+	assert(quit_check_thread);
 
 	//TODO: Allow user to select who plays
-	char players[2] = {'C', 'C'};
+	char players[2] = {'P', 'C'};
 	int computer_depth[2] = {9, 6};
 
 	i=0;
