@@ -1,19 +1,29 @@
 #ifndef CHECKERS_GUI_H
 #define CHECKERS_GUI_H
 
-#include <ncurses.h>
-#include <locale.h>
-#include <unistd.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_timer.h>
 
 #include "checkers.h"
 
-#define BOARD_SIDELENGTH 10
-#define SCREEN_WIDTH 14
-#define SCREEN_HEIGHT 15
+#define BOARD_SIDELENGTH 800
+#define WINDOW_SIZE_X 800
+#define WINDOW_SIZE_Y 900
+#define NUM_TEXTURES 5
 
-const int EXIT_POS[] = {SCREEN_WIDTH - 1, 0};
-const int RESIGN_POS[] = {10, SCREEN_HEIGHT - 1};
-const int CAPTURE_POS[] = {13, SCREEN_HEIGHT - 1};
-const int BOARD_OFFSET[] = {3, 3};
+const int PIECE_SIZE = BOARD_SIDELENGTH / 10;
+
+enum texture_names{wK, wM, bK, bM, board_texture};
+const char *texture_filenames[] = {"resources/wK.svg",
+	"resources/wM.svg",
+	"resources/bK.svg",
+	"resources/bM.svg",
+	"resources/board.png"};
+const int texture_sizes[] = {PIECE_SIZE,
+	PIECE_SIZE,
+	PIECE_SIZE,
+	PIECE_SIZE,
+	BOARD_SIDELENGTH};
 
 #endif

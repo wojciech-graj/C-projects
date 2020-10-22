@@ -1,155 +1,99 @@
 #include "checkers-gui.h"
 
-void draw_board_edge(WINDOW *window, int x, int y)
+SDL_Texture *load_texture(SDL_Renderer* rend, const char *path, int w, int h)
 {
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(rend, IMG_Load(path));
+	return texture;
+}
+
+void draw_board(SDL_Renderer* rend, SDL_Texture* wK, SDL_Texture* wM, SDL_Texture* bK, SDL_Texture* bM, SDL_Texture* board_texture, int *board)
+{
+	SDL_RenderClear(rend);
+	SDL_Rect dest;
+	dest.w = BOARD_SIDELENGTH;
+	dest.h = BOARD_SIDELENGTH;
+	dest.x = 0;
+	dest.y = 0;
+	SDL_RenderCopy(rend, board_texture, NULL, &dest);
 	int i;
-	for(i = 2; i <= BOARD_SIDELENGTH; i += 2)
+	for(i = 0; i < 50; i++)
 	{
-		mvwprintw(window, y + 1 + i, x, "%d", 5 * i - 4);
-		mvwprintw(window, y, x + 2 + i, "%d", i / 2);
+		dest.w = PIECE_SIZE;
+		dest.h = PIECE_SIZE;
+		dest.x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
+		dest.y = (i / 5) * PIECE_SIZE;
+		SDL_Texture *cur_texture;
+		switch(board[i])
+		{
+			case -2:
+				cur_texture = bK;
+				break;
+			case -1:
+				cur_texture = bM;
+				break;
+			case 1:
+				cur_texture = wM;
+				break;
+			case 2:
+				cur_texture = wK;
+				break;
+			default:
+				continue;
+		}
+		SDL_RenderCopy(rend, cur_texture, NULL, &dest);
 	}
-
-	x += 2;
-	y += 1;
-	for(i = 1; i <= BOARD_SIDELENGTH; i++)
-	{
-		mvwaddwstr(window, y + i, x, L"║");
-		mvwaddwstr(window, y + i, x + 1 + BOARD_SIDELENGTH, L"║");
-		mvwaddwstr(window, y, x + i, L"═");
-		mvwaddwstr(window, y + 1 + BOARD_SIDELENGTH, x + i, L"═");
-	}
-	mvwaddwstr(window, y, x, L"╔");
-	mvwaddwstr(window, y, x + 1 + BOARD_SIDELENGTH, L"╗");
-	mvwaddwstr(window, y + 1 + BOARD_SIDELENGTH, x, L"╚");
-	mvwaddwstr(window, y + 1 + BOARD_SIDELENGTH, x + 1 + BOARD_SIDELENGTH, L"╝");
+	SDL_RenderPresent(rend);
 }
 
-void draw_board(WINDOW *window, int *board)
+int main(int argc, char *argv[])
 {
-	wclear(window);
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+        printf("error initializing SDL: %s\n", SDL_GetError());
+    }
+    SDL_Window* win = SDL_CreateWindow("DRAUGHTS", // creates a window
+                                       SDL_WINDOWPOS_CENTERED,
+                                       SDL_WINDOWPOS_CENTERED,
+                                       WINDOW_SIZE_X, WINDOW_SIZE_Y, 0);
+
+    Uint32 render_flags = SDL_RENDERER_ACCELERATED;
+
+    SDL_Renderer* rend = SDL_CreateRenderer(win, -1, render_flags);
+
+	SDL_Texture *textures[NUM_TEXTURES];
 	int i;
-	for(i = 0; i < 2 * BOARD_SIZE; i++)
-	{
-		wchar_t *tile;
-		if(i % 2 == 0 && i % 20 > 9 || i % 2 == 1 && i % 20 < 10) {
-			switch(board[i/2])
-			{
-				case -2:
-					tile = L"⛁";
-					break;
-				case -1:
-					tile = L"⛀";
-					break;
-				case 0:
-					tile = L" ";
-					break;
-				case 1:
-					tile = L"⛂";
-					break;
-				case 2:
-					tile = L"⛃";
-					break;
-			}
-		} else {
-			tile = L"█";
-		}
-		waddwstr(window, tile);
-	}
-}
+	for(i = 0; i < NUM_TEXTURES; i++)
+	    textures[i] = load_texture(rend, texture_filenames[i], texture_sizes[i], texture_sizes[i]);
 
-void end_game(int color)
-{
-	printf("%s wins!\n", PLAYER_COLORS[(color + 1) / 2]);
-	endwin();
-	exit(0);
-}
-
-void play_player_move(WINDOW *window, WINDOW *board_window, int *board, int color)
-{
-	MEVENT event;
-	while(true)
-	{
-		int c = wgetch(window);
-		if(c == KEY_MOUSE) {
-			if(getmouse(&event) == OK) {
-				if(event.bstate & BUTTON1_PRESSED) {
-					int x = event.x;
-					int y = event.y;
-					if(x < BOARD_OFFSET[0] + BOARD_SIZE && x >= BOARD_OFFSET[0]
-						&& y < BOARD_OFFSET[1] + BOARD_SIZE && y >= BOARD_OFFSET[1]) {
-						draw_board(board_window, board);
-						wmove(board_window, y - BOARD_OFFSET[1], x - BOARD_OFFSET[0]);
-						wrefresh(board_window);
-					} else if(x == EXIT_POS[0] && y == EXIT_POS[1]) {
-						endwin();
-						exit(0);
-					} else if(x == RESIGN_POS[0] && y == RESIGN_POS[1]) {
-						end_game(color);
-					} else if(x == CAPTURE_POS[0] && y == CAPTURE_POS[1]) {
-
-					} else {
-						//reset mouse loc
-					}
-				}
-			}
-		}
-	}
-}
-
-int main()
-{
 	int board[50];
-	int i;
-	char players[2];
-	int computer_depth[2];
-
 	init_board(board);
+	draw_board(rend, textures[wK], textures[wM], textures[bK], textures[bM], textures[board_texture], board);
 
-	setlocale(LC_ALL, "");
-	initscr();
-	clear();
-	noecho();
-	cbreak();
+	int close = 0;
+    while (!close) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				close = 1;
+                break;
+			} else if (event.type == SDL_MOUSEBUTTONDOWN) {
+				int button = event.button.button;
+				if (button == SDL_BUTTON_LEFT) {
+                    int x, y;
+					SDL_GetMouseState(&x, &y);
+					printf("%d : %d\n",x ,y);
+                }
+			} else {
+				continue;
+			}
+        }
+        SDL_Delay(1000 / 60);
+    }
 
-	WINDOW *window = newwin(SCREEN_HEIGHT, SCREEN_WIDTH, 0, 0);
-	WINDOW *board_window = newwin(BOARD_SIDELENGTH, BOARD_SIDELENGTH, BOARD_OFFSET[1], BOARD_OFFSET[0]);
+	for(i = 0; i < NUM_TEXTURES; i++)
+    	SDL_DestroyTexture(textures[i]);
 
-	wprintw(window, "DRAUGHTS");
-	mvwaddch(window, EXIT_POS[1], EXIT_POS[0], 'X');
-	mvwprintw(window, 14, 0, "MOVE:");
-	mvwaddwstr(window, RESIGN_POS[1], RESIGN_POS[0], L"🏳️");
-	mvwaddwstr(window, CAPTURE_POS[1], CAPTURE_POS[0], L"▶️");
-	draw_board_edge(window, 0, 1);
-	wrefresh(window);
+    SDL_DestroyRenderer(rend);
 
-	draw_board(board_window, board);
-	wrefresh(board_window);
-
-	mousemask(ALL_MOUSE_EVENTS, NULL);
-	keypad(window, TRUE);
-
-	//CHANGE LATER
-	players[0] = 'P';
-	players[1] = 'P';
-	computer_depth[0] = 6;
-	computer_depth[1] = 8;
-
-	int color = 1;
-	i = 0;
-	while(true)
-	{
-		if(players[i % 2] == 'C') {
-			(void) play_engine_move(color, board, computer_depth[i % 2], true, MIN_EVAL, -MIN_EVAL);
-		} else if(players[i % 2] == 'P') {
-			play_player_move(window, board_window, board, color);
-		}
-		draw_board(board_window, board);
-		wrefresh(board_window);
-		i++;
-		color *= -1;
-
-	}
-
-	endwin();
-	return 0;
+    SDL_DestroyWindow(win);
+    return 0;
 }
