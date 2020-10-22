@@ -1,12 +1,30 @@
 #include "checkers-gui.h"
 
+void end_program()
+{
+	int i;
+	for(i = 0; i < NUM_TEXTURES; i++)
+    	SDL_DestroyTexture(textures[i]);
+
+    SDL_DestroyRenderer(rend);
+    SDL_DestroyWindow(win);
+
+	exit(0);
+}
+
+void end_game(int color)
+{
+	printf("%s wins!\n", PLAYER_COLORS[(color + 1) / 2]);
+	end_program();
+}
+
 SDL_Texture *load_texture(SDL_Renderer* rend, const char *path, int w, int h)
 {
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(rend, IMG_Load(path));
 	return texture;
 }
 
-void draw_board(SDL_Renderer* rend, SDL_Texture* wK, SDL_Texture* wM, SDL_Texture* bK, SDL_Texture* bM, SDL_Texture* board_texture, int *board)
+void draw_board(int *board)
 {
 	SDL_RenderClear(rend);
 	SDL_Rect dest;
@@ -14,7 +32,7 @@ void draw_board(SDL_Renderer* rend, SDL_Texture* wK, SDL_Texture* wM, SDL_Textur
 	dest.h = BOARD_SIDELENGTH;
 	dest.x = 0;
 	dest.y = 0;
-	SDL_RenderCopy(rend, board_texture, NULL, &dest);
+	SDL_RenderCopy(rend, textures[board_texture], NULL, &dest);
 	int i;
 	for(i = 0; i < 50; i++)
 	{
@@ -26,16 +44,16 @@ void draw_board(SDL_Renderer* rend, SDL_Texture* wK, SDL_Texture* wM, SDL_Textur
 		switch(board[i])
 		{
 			case -2:
-				cur_texture = bK;
+				cur_texture = textures[bK];
 				break;
 			case -1:
-				cur_texture = bM;
+				cur_texture = textures[bM];
 				break;
 			case 1:
-				cur_texture = wM;
+				cur_texture = textures[wM];
 				break;
 			case 2:
-				cur_texture = wK;
+				cur_texture = textures[wK];
 				break;
 			default:
 				continue;
@@ -45,55 +63,75 @@ void draw_board(SDL_Renderer* rend, SDL_Texture* wK, SDL_Texture* wM, SDL_Textur
 	SDL_RenderPresent(rend);
 }
 
+void play_player_move(int color, int *board)
+{
+	int piece = -1;
+	int destination;
+	SDL_Event event;
+	while(true)
+	{
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				end_program();
+			} else if (event.type == SDL_MOUSEBUTTONDOWN) {
+				if (event.button.button == SDL_BUTTON_LEFT) {
+					int x, y;
+					SDL_GetMouseState(&x, &y);
+					int row = y / PIECE_SIZE;
+					int board_loc = 5 * row + (x / PIECE_SIZE) / 2;
+					if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
+						if(SAME_SIGN(board[board_loc], color) && board[board_loc] != 0) {
+							piece = board_loc;
+						} else if(board[board_loc] == 0) {
+							destination = board_loc;
+							//check if can move
+						}
+					}
+				}
+				//break;
+			}
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         printf("error initializing SDL: %s\n", SDL_GetError());
     }
-    SDL_Window* win = SDL_CreateWindow("DRAUGHTS", // creates a window
-                                       SDL_WINDOWPOS_CENTERED,
-                                       SDL_WINDOWPOS_CENTERED,
-                                       WINDOW_SIZE_X, WINDOW_SIZE_Y, 0);
+
+    win = SDL_CreateWindow("DRAUGHTS",
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		WINDOW_SIZE_X, WINDOW_SIZE_Y, 0);
 
     Uint32 render_flags = SDL_RENDERER_ACCELERATED;
+    rend = SDL_CreateRenderer(win, -1, render_flags);
 
-    SDL_Renderer* rend = SDL_CreateRenderer(win, -1, render_flags);
-
-	SDL_Texture *textures[NUM_TEXTURES];
 	int i;
 	for(i = 0; i < NUM_TEXTURES; i++)
 	    textures[i] = load_texture(rend, texture_filenames[i], texture_sizes[i], texture_sizes[i]);
 
-	int board[50];
+	int board[BOARD_SIZE];
 	init_board(board);
-	draw_board(rend, textures[wK], textures[wM], textures[bK], textures[bM], textures[board_texture], board);
 
-	int close = 0;
-    while (!close) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT) {
-				close = 1;
-                break;
-			} else if (event.type == SDL_MOUSEBUTTONDOWN) {
-				int button = event.button.button;
-				if (button == SDL_BUTTON_LEFT) {
-                    int x, y;
-					SDL_GetMouseState(&x, &y);
-					printf("%d : %d\n",x ,y);
-                }
-			} else {
-				continue;
-			}
-        }
-        SDL_Delay(1000 / 60);
+	draw_board(board);
+
+	//TODO: Allow user to select who plays
+	char players[2] = {'C', 'C'};
+	int computer_depth[2] = {9, 6};
+
+	i=0;
+	int color = 1;
+    while(true) {
+		if(players[i % 2] == 'C') {
+			(void) play_engine_move(color, board, computer_depth[i % 2], true, MIN_EVAL, -MIN_EVAL);
+		} else if(players[i % 2] == 'P') {
+			play_player_move(color, board);
+		}
+		i++;
+		color *= -1;
+		draw_board(board);
     }
-
-	for(i = 0; i < NUM_TEXTURES; i++)
-    	SDL_DestroyTexture(textures[i]);
-
-    SDL_DestroyRenderer(rend);
-
-    SDL_DestroyWindow(win);
     return 0;
 }
