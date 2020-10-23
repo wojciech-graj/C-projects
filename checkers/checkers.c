@@ -15,12 +15,6 @@ void init_node(Node **node) {
 	(*node)->parent = NULL;
 }
 
-__attribute__((weak)) void end_game(int color)
-{
-	printf("%s wins!\n", PLAYER_COLORS[(color + 1) / 2]);
-	exit(0);
-}
-
 //node is the end node of tree
 void execute_captures(int *board, Node *node)
 {
@@ -41,7 +35,7 @@ void execute_move(int *board, int piece, int destination)
 	if(PROMOTING(board[destination], destination)) board[destination] *= 2;
 }
 
-void append_tree(Node *head, int piece, int captured, int destination, int *board, Node **cur_sibling, int *max_depth, int color, int depth) {
+static void append_tree(Node *head, int piece, int captured, int destination, int *board, Node **cur_sibling, int *max_depth, int color, int depth) {
 	Node *node;
 	init_node(&node);
 	if(! head->child) {
@@ -71,7 +65,7 @@ void append_tree(Node *head, int piece, int captured, int destination, int *boar
 	}
 }
 
-int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head)
+static int create_capture_subtree(int color, int piece, int direction, int depth, int *board, Node *head)
 {
 	int max_depth = depth - 1;
 	int captured = piece + NEIGHBOR_DIFF(piece, direction);
@@ -198,7 +192,7 @@ int create_capture_tree(int color, int *board, Node *head)
 	return max_depth;
 }
 
-bool prune(int color, int evaluation, int *alpha, int *beta)
+static bool prune(int color, int evaluation, int *alpha, int *beta)
 {
 	if(color == 1) {
 		*alpha = MAX(*alpha, evaluation);

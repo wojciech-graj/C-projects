@@ -1,7 +1,6 @@
 #ifndef CHECKERS_H
 #define CHECKERS_H
 
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
@@ -12,7 +11,6 @@
 static const int MIN_EVAL = -100;
 static const int BUFFER_SIZE = 255;
 static const int NEIGHBORS[] = {-5, -4, 5, 6};
-static const char *PLAYER_COLORS[] = {"White", "Black"};
 
 #define NOT_OVER_EDGE(piece, neighbor, direction, margin)\
 	(! ((piece <= 5 * margin - 1 && neighbor < piece)\
