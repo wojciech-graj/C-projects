@@ -123,7 +123,7 @@ void play_player_move(int x, int y)
 	int *board = cur_board;
 	int row = y / PIECE_SIZE;
 	int col = x / PIECE_SIZE;
-	int board_loc = 5 * (flip ? (9 - row) : row) + (flip ? (10 - col) : col) / 2;
+	int board_loc = 5 * (flip ? (9 - row) : row) + (flip ? (9 - col) : col) / 2;
 	if(row == 10) {//if selecting menu
 		if(col == 8) {//rotate board
 			flip = !flip;
@@ -381,7 +381,6 @@ int main(int argc, char *argv[])
 						play_player_move(x, y);
 					} else if(! playing && y / PIECE_SIZE == 10 && x / PIECE_SIZE == 7) {//restart
 						playing = true;
-						cur_color = 1;
 						cur_piece = -1;
 						cur_destination = -1;
 						prev_piece = -1;
@@ -392,6 +391,7 @@ int main(int argc, char *argv[])
 						}
 						cur_capture_node = NULL;
 						get_players();
+						cur_color = 1;
 						SDL_Thread *game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
 						assert(game_thread);
 					}
