@@ -94,11 +94,12 @@ void play_player_move(int x, int y)
 	if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
 		if(cur_piece != board_loc && SAME_SIGN(board[board_loc], cur_color) && board[board_loc] != 0) {
 			cur_piece = board_loc;
+			cur_capture_node = NULL;
 		} else if(cur_piece != -1 && board[board_loc] == 0) {
 			cur_destination = board_loc;
 			if(cur_captures) {//if can capture
 				ListNode *cur_listnode = cur_captures;
-				if(! cur_capture_node) { //TODO: OPTIMIZE
+				if(! cur_capture_node) {
 					while(cur_listnode) {
 						Node *cur_node = cur_listnode->node;
 						while(cur_node->parent->parent) {
@@ -164,6 +165,8 @@ void play_player_move(int x, int y)
 				}
 				cur_piece = -1;
 			}
+		} else {
+			cur_capture_node = NULL;
 		}
 	}
 }
@@ -177,10 +180,6 @@ int play_game(void *ptr)
 	draw_event.type = DRAW_BOARD_EVENT;
 
 	init_board(cur_board);
-
-	cur_board[27] = -1;
-	cur_board[10] = 0;
-	cur_board[1] = 0;
 
 	SDL_PushEvent(&draw_event);
 
