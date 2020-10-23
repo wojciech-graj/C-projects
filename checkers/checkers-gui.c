@@ -81,7 +81,7 @@ void draw_board(void)
 
 		int x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
 		int y = (i / 5) * PIECE_SIZE;
-		int piece = flip ? (BOARD_SIZE - i) : i;
+		int piece = flip ? (BOARD_SIZE - i - 1) : i;
 
 		//draw highlights
 		if(cur_piece == piece) {
@@ -123,7 +123,7 @@ void play_player_move(int x, int y)
 	int *board = cur_board;
 	int row = y / PIECE_SIZE;
 	int col = x / PIECE_SIZE;
-	int board_loc = 5 * (flip ? (9 - row) : row) + (flip ? (11 - col) : col) / 2;
+	int board_loc = 5 * (flip ? (9 - row) : row) + (flip ? (10 - col) : col) / 2;
 	if(row == 10) {//if selecting menu
 		if(col == 8) {//rotate board
 			flip = !flip;
