@@ -128,7 +128,7 @@ void play_player_move(int x, int y)
 		if(col == 8) {//rotate board
 			flip = !flip;
 		} else if(col == 9) {//resign
-
+			end_game(cur_color);
 		}
 	} else if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
 		if(cur_piece != board_loc && SAME_SIGN(board[board_loc], cur_color) && board[board_loc] != 0) {
@@ -386,6 +386,11 @@ int main(int argc, char *argv[])
 						cur_destination = -1;
 						prev_piece = -1;
 						prev_destination = -1;
+						if(cur_captures) {
+							delete_list(cur_captures);
+							cur_captures = NULL;
+						}
+						cur_capture_node = NULL;
 						get_players();
 						SDL_Thread *game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
 						assert(game_thread);
