@@ -25,8 +25,9 @@ SDL_Texture *load_texture(const char *path)
 	return texture;
 }
 
-void draw_board(int *board)
+void draw_board(void)
 {
+	int *board = cur_board;
 	SDL_RenderClear(rend);
 	SDL_Rect dest;
 	dest.w = BOARD_SIDELENGTH;
@@ -43,7 +44,7 @@ void draw_board(int *board)
 		dest.x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
 		dest.y = (i / 5) * PIECE_SIZE;
 
-		if(selected_piece == i) {
+		if(cur_piece == i) {
 			SDL_RenderCopy(rend, textures[hightlight_green], NULL, &dest);
 		}
 
@@ -70,49 +71,55 @@ void draw_board(int *board)
 	SDL_RenderPresent(rend);
 }
 
-void play_player_move(int color, int *board)
+void play_player_move(int x, int y)
 {
-	int destination;
-	SDL_Event event;
-	while(true)
-	{
-		while (SDL_PollEvent(&event)) {
-			 if (event.type == SDL_MOUSEBUTTONDOWN) {
-				if (event.button.button == SDL_BUTTON_LEFT) {
-					int x, y;
-					SDL_GetMouseState(&x, &y);
-					int row = y / PIECE_SIZE;
-					int board_loc = 5 * row + (x / PIECE_SIZE) / 2;
-					if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
-						if(selected_piece != board_loc && SAME_SIGN(board[board_loc], color) && board[board_loc] != 0) {
-							selected_piece = board_loc;
-							draw_board(board);
-						} else if(board[board_loc] == 0) {
-							destination = board_loc;
-							//check if can move
-						}
-					}
-				}
+	int *board = cur_board;
+	int row = y / PIECE_SIZE;
+	int board_loc = 5 * row + (x / PIECE_SIZE) / 2;
+	if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
+		if(cur_piece != board_loc && SAME_SIGN(board[board_loc], cur_color) && board[board_loc] != 0) {
+			cur_piece = board_loc;
+		} else if(board[board_loc] == 0 && cur_piece != -1) {
+			cur_destination = board_loc;
+			int difference = cur_destination - cur_piece + (int) (cur_piece % 10 > 4);
+			int direction = 0;
+			while(direction <= 3 && NEIGHBORS[direction] != difference) direction++;
+			if(direction != 4
+				&& ! SAME_SIGN(difference, cur_color)
+				&& NOT_OVER_EDGE(cur_piece, cur_destination, direction, 1)) {
+				execute_move(board, cur_piece, cur_destination);
+				cur_color *= -1;
+			} else {
+				cur_piece = -1;
 			}
 		}
-		SDL_Delay(1000 / POLLING_FREQ);
 	}
 }
 
-int quit_check(void *ptr)
+int play_game(void *ptr)
 {
 	(void) ptr;
-	SDL_Event event;
-	while(true)
-	{
-		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT) {
-				end_program();
+
+	SDL_Event draw_event;
+	SDL_zero(draw_event);
+	draw_event.type = DRAW_BOARD_EVENT;
+
+	init_board(cur_board);
+	SDL_PushEvent(&draw_event);
+
+    while(true) {
+		if(players[(1 - cur_color) / 2] == 'C') {
+			(void) play_engine_move(cur_color, cur_board, computer_depth[(1 - cur_color) / 2], true, MIN_EVAL, -MIN_EVAL);
+			SDL_PushEvent(&draw_event);
+			cur_color *= -1;
+		} else if(players[(1 - cur_color) / 2] == 'P') {
+			int color = cur_color;
+			while(cur_color == color)
+			{
+				SDL_Delay(1000 / POLLING_FREQ);
 			}
 		}
-		SDL_Delay(1000 / POLLING_FREQ);
-	}
-
+    }
 }
 
 int main(int argc, char *argv[])
@@ -134,29 +141,28 @@ int main(int argc, char *argv[])
 	for(i = 0; i < NUM_TEXTURES; i++)
 	    textures[i] = load_texture(texture_filenames[i]);
 
-	int board[BOARD_SIZE];
-	init_board(board);
+	DRAW_BOARD_EVENT = SDL_RegisterEvents(1);
+	assert(DRAW_BOARD_EVENT);
 
-	draw_board(board);
+	SDL_Thread *game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
+	assert(game_thread);
 
-	SDL_Thread *quit_check_thread = SDL_CreateThread(quit_check, "quit_check_thread", (void *)NULL);
-	assert(quit_check_thread);
-
-	//TODO: Allow user to select who plays
-	char players[2] = {'P', 'C'};
-	int computer_depth[2] = {9, 6};
-
-	i=0;
-	int color = 1;
-    while(true) {
-		if(players[i % 2] == 'C') {
-			(void) play_engine_move(color, board, computer_depth[i % 2], true, MIN_EVAL, -MIN_EVAL);
-		} else if(players[i % 2] == 'P') {
-			play_player_move(color, board);
+	SDL_Event event;
+	while(true)
+	{
+		while (SDL_WaitEvent(&event) >= 0) {
+			if (event.type == SDL_QUIT) {
+				end_program();
+			} else if(event.type == SDL_MOUSEBUTTONDOWN) {
+				if(event.button.button == SDL_BUTTON_LEFT && players[(1 - cur_color) / 2] == 'P') {
+					int x, y;
+					SDL_GetMouseState(&x, &y);
+					play_player_move(x, y);
+					draw_board();
+				}
+			} else if(event.type == DRAW_BOARD_EVENT) {
+				draw_board();
+			}
 		}
-		i++;
-		color *= -1;
-		draw_board(board);
-    }
-    return 0;
+	}
 }

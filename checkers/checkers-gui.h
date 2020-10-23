@@ -16,7 +16,7 @@
 #define WINDOW_SIZE_X 800
 #define WINDOW_SIZE_Y 900
 #define NUM_TEXTURES 7
-#define POLLING_FREQ 1000
+#define POLLING_FREQ 60
 
 const int PIECE_SIZE = BOARD_SIDELENGTH / 10;
 
@@ -34,6 +34,13 @@ SDL_Window* win;
 SDL_Renderer* rend;
 SDL_Texture *textures[NUM_TEXTURES];
 
-int selected_piece = -1;
+Uint32 DRAW_BOARD_EVENT;
+
+int cur_piece = -1;
+int cur_destination;
+int cur_color = 1;
+int cur_board[50];
+char players[2] = {'P', 'C'};
+int computer_depth[2] = {9, 6};
 
 #endif
