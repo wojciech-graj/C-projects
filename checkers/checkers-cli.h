@@ -3,6 +3,8 @@
 
 #include "checkers.h"
 
+static const char *PLAYER_COLORS[] = {"White", "Black"};
+
 const char *TITLE ="\
  ___                     _   _\n\
 |   \\ _ _ __ _ _  _ __ _| |_| |_ ___\n\
@@ -27,6 +29,7 @@ const char *HELP = "\
 |         | can be extended to perform a sequence of captures e.g. AxBxC |\n\
 +---------+--------------------------------------------------------------+\n";
 
+void end_game(int color);
 static void print_board(int *board);
 static void play_player_move(int color, int *board);
 

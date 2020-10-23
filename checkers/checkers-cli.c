@@ -1,6 +1,12 @@
 #include "checkers-cli.h"
 
-void print_board(int *board)
+void end_game(int color)
+{
+	printf("%s wins!\n", PLAYER_COLORS[(color + 1) / 2]);
+	exit(0);
+}
+
+static void print_board(int *board)
 {
 	printf("    1 2 3 4 5\n  ╔══════════╗");
 	int i;
@@ -41,7 +47,7 @@ void print_board(int *board)
 	printf("║\n  ╚══════════╝\n");
 }
 
-void play_player_move(int color, int *board)
+static void play_player_move(int color, int *board)
 {
 	//check if there exist any moves
 	int new_board[BOARD_SIZE];
