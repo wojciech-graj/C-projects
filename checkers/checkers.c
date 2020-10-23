@@ -262,6 +262,7 @@ int play_engine_move(int color, int *board, int remaining_depth, bool return_boa
 		if(game_over == true) {
 			if(return_board) {
 				end_game(color);
+				return 0;
 			} else {
 				evaluation = color * MIN_EVAL;
 			}
