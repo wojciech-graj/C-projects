@@ -18,11 +18,14 @@ void init_node(Node **node) {
 //node is the end node of tree
 void execute_captures(int *board, Node *node)
 {
-	board[node->destination] = node->type;
 	Node *cur_node = node;
 	while(cur_node->parent)
 	{
 		board[cur_node->captured] = 0; //TODO: optimize
+		if(! cur_node->parent->parent) {
+			board[node->destination] = board[cur_node->piece];
+			if(PROMOTING(board[node->destination], node->destination)) board[node->destination] *= 2;
+		}
 		board[cur_node->piece] = 0;
 		cur_node = cur_node->parent;
 	}
@@ -55,7 +58,6 @@ static void append_tree(Node *head, int piece, int captured, int destination, in
 	node->piece = piece;
 	node->captured = captured;
 	node->destination = destination;
-	node->type = new_board[destination];
 
 	int new_direction;
 	for(new_direction = 0; new_direction < 4; new_direction++)
