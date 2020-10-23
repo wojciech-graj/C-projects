@@ -25,6 +25,16 @@ SDL_Texture *load_texture(const char *path)
 	return texture;
 }
 
+void draw_texture(int x, int y, int w, int h, int texture_id)
+{
+	SDL_Rect rect;
+	rect.x = x;
+	rect.y = y;
+	rect.w = w;
+	rect.h = h;
+	SDL_RenderCopy(rend, textures[texture_id], NULL, &rect);
+}
+
 void change_color()
 {
 	prev_piece = cur_piece;
@@ -38,45 +48,29 @@ void draw_board(void)
 {
 	int *board = cur_board;
 	SDL_RenderClear(rend);
-	SDL_Rect dest;
-	dest.w = BOARD_SIDELENGTH;
-	dest.h = BOARD_SIDELENGTH;
-	dest.x = 0;
-	dest.y = 0;
-	SDL_RenderCopy(rend, textures[board_texture], NULL, &dest);
 
+	draw_texture(0, 0, BOARD_SIDELENGTH, BOARD_SIDELENGTH, board_texture);
 
 	//Draw winner text
-	dest.h = PIECE_SIZE;
-	dest.y = BOARD_SIDELENGTH;
 	if(!playing) {
-		dest.w = 560;
-		dest.x = 0;
 		if(w_color == 1) {
-			SDL_RenderCopy(rend, textures[wW], NULL, &dest);
+			draw_texture(0, BOARD_SIDELENGTH, 560, PIECE_SIZE, wW);
 		} else if(w_color == -1) {
-			SDL_RenderCopy(rend, textures[bW], NULL, &dest);
+			draw_texture(0, BOARD_SIDELENGTH, 560, PIECE_SIZE, bW);
 		}
-		dest.w = PIECE_SIZE;
-		dest.x = 560;
-		SDL_RenderCopy(rend, textures[replay], NULL, &dest);
+		draw_texture(560, BOARD_SIDELENGTH, PIECE_SIZE, PIECE_SIZE, replay);
 	}
 
 	//draw flip and resign buttons
-	dest.w = PIECE_SIZE;
-	dest.x = WINDOW_SIZE_X - PIECE_SIZE;
-	SDL_RenderCopy(rend, textures[flag], NULL, &dest);
-	dest.x -= PIECE_SIZE;
-	SDL_RenderCopy(rend, textures[rotate], NULL, &dest);
+	draw_texture(BOARD_SIDELENGTH - PIECE_SIZE, BOARD_SIDELENGTH, PIECE_SIZE, PIECE_SIZE, flag);
+	draw_texture(BOARD_SIDELENGTH - 2 * PIECE_SIZE, BOARD_SIDELENGTH, PIECE_SIZE, PIECE_SIZE, rotate);
 
 	//draw highlights for captures
 	if(cur_capture_node) {
 		Node *cur_node = cur_capture_node;
 		while(cur_node->parent)
 		{
-			dest.x = (cur_node->destination % 5 * 2 + (int) (cur_node->destination % 10 <= 4)) * PIECE_SIZE;
-			dest.y = (cur_node->destination / 5) * PIECE_SIZE;
-			SDL_RenderCopy(rend, textures[hightlight_red], NULL, &dest);
+			draw_texture((cur_node->destination % 5 * 2 + (int) (cur_node->destination % 10 <= 4)) * PIECE_SIZE, (cur_node->destination / 5) * PIECE_SIZE, PIECE_SIZE, PIECE_SIZE, highlight_red);
 			cur_node = cur_node->parent;
 		}
 	}
@@ -84,42 +78,42 @@ void draw_board(void)
 	int i;
 	for(i = 0; i < BOARD_SIZE; i++)
 	{
-		dest.x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
-		dest.y = (i / 5) * PIECE_SIZE;
 
+		int x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
+		int y = (i / 5) * PIECE_SIZE;
 		int piece = flip ? (BOARD_SIZE - i) : i;
 
 		//draw highlights
 		if(cur_piece == piece) {
-			SDL_RenderCopy(rend, textures[hightlight_green], NULL, &dest);
+			draw_texture(x, y, PIECE_SIZE, PIECE_SIZE, highlight_green);
 		}
 		if(prev_piece == piece) {
-			SDL_RenderCopy(rend, textures[hightlight_lgreen], NULL, &dest);
+			draw_texture(x, y, PIECE_SIZE, PIECE_SIZE, highlight_lgreen);
 		}
 		if(prev_destination == piece) {
-			SDL_RenderCopy(rend, textures[hightlight_lred], NULL, &dest);
+			draw_texture(x, y, PIECE_SIZE, PIECE_SIZE, highlight_lred);
 		}
 
 		//draw piece
-		SDL_Texture *cur_texture;
+		int cur_texture;
 		switch(board[piece])
 		{
 			case -2:
-				cur_texture = textures[bK];
+				cur_texture = bK;
 				break;
 			case -1:
-				cur_texture = textures[bM];
+				cur_texture = bM;
 				break;
 			case 1:
-				cur_texture = textures[wM];
+				cur_texture = wM;
 				break;
 			case 2:
-				cur_texture = textures[wK];
+				cur_texture = wK;
 				break;
 			default:
 				continue;
 		}
-		SDL_RenderCopy(rend, cur_texture, NULL, &dest);
+		draw_texture(x, y, PIECE_SIZE, PIECE_SIZE, cur_texture);
 	}
 	SDL_RenderPresent(rend);
 }
@@ -278,6 +272,74 @@ int play_game(void *ptr)
 	return 0;
 }
 
+void draw_menu(bool show_begin)
+{
+	SDL_RenderClear(rend);
+
+	draw_texture(0, 0, PIECE_SIZE * 5, PIECE_SIZE, wMenu);
+	draw_texture(0, PIECE_SIZE, PIECE_SIZE * 8, PIECE_SIZE, playerMenu);
+	draw_texture(0, PIECE_SIZE * 4, PIECE_SIZE * 5, PIECE_SIZE, bMenu);
+	draw_texture(0, PIECE_SIZE * 5, PIECE_SIZE * 8, PIECE_SIZE, playerMenu);
+
+	int i;
+	for(i = 0; i < 2; i++)
+	{
+		if(players[i] == 'C') {
+			draw_texture(0, (4 * i + 1) * PIECE_SIZE, 172, PIECE_SIZE, highlight_green);
+			draw_texture(0, (4 * i + 2) * PIECE_SIZE, 720, PIECE_SIZE, depthMenu);
+			if(computer_depth[i] != 0) {
+				draw_texture((computer_depth[i] - 1) * PIECE_SIZE, (4 * i + 2) * PIECE_SIZE, PIECE_SIZE, PIECE_SIZE, highlight_green);
+			}
+		} else if(players[i] == 'P') {
+			draw_texture(231, (4 * i + 1) * PIECE_SIZE, 342, PIECE_SIZE, highlight_green);
+		}
+	}
+	if(show_begin) draw_texture(0, 7 * PIECE_SIZE, 320, PIECE_SIZE, startMenu);
+	SDL_RenderPresent(rend);
+}
+
+void get_players()
+{
+	bool show_start = false;
+	draw_menu(show_start);
+	SDL_Event event;
+	while(true)
+	{
+		while (SDL_WaitEvent(&event) >= 0) {
+			if (event.type == SDL_QUIT) {
+				end_program();
+			} else if(event.type == SDL_MOUSEBUTTONDOWN) {
+				if(event.button.button == SDL_BUTTON_LEFT) {
+					int x, y;
+					SDL_GetMouseState(&x, &y);
+					int row = y / PIECE_SIZE;
+					int col = x / PIECE_SIZE;
+					if(row == 1 || row == 5) {
+						if(col >= 0 && col <= 1) {
+							players[(row - 1) / 4] = 'C';
+						} else if(col >= 3 && col <= 6) {
+							players[(row - 1) / 4] = 'P';
+							computer_depth[(row - 1) / 4] = 0;
+						}
+					} else if(row == 2 || row == 6) {
+						if(col >= 0 && col <= 8) {
+							computer_depth[(row - 1) / 4] = col + 1;
+						}
+					}
+					if((players[0] == 'P' || (players[0] == 'C' && computer_depth[0] != 0))
+						&& (players[1] == 'P' || (players[1] == 'C' && computer_depth[1] != 0))) {
+						show_start = true;
+						if(row == 7 && col >= 0 && col <= 4) return;
+					} else {
+						show_start = false;
+					}
+					draw_menu(show_start);
+				}
+			}
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	int init = SDL_Init(SDL_INIT_EVERYTHING);
@@ -299,6 +361,8 @@ int main(int argc, char *argv[])
 
 	DRAW_BOARD_EVENT = SDL_RegisterEvents(1);
 	assert(DRAW_BOARD_EVENT);
+
+	get_players();
 
 	SDL_Thread *game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
 	assert(game_thread);
@@ -322,6 +386,7 @@ int main(int argc, char *argv[])
 						cur_destination = -1;
 						prev_piece = -1;
 						prev_destination = -1;
+						get_players();
 						SDL_Thread *game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
 						assert(game_thread);
 					}

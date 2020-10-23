@@ -16,13 +16,13 @@
 #define BOARD_SIDELENGTH 800
 #define WINDOW_SIZE_X 800
 #define WINDOW_SIZE_Y 880
-#define NUM_TEXTURES 14
+#define NUM_TEXTURES 19
 #define POLLING_FREQ 60
 #define PIECE_SIZE 80
 
 static const char *PLAYER_COLORS[] = {"White", "Black"};
 
-enum texture_names{wK, wM, bK, bM, board_texture, hightlight_green, hightlight_red, hightlight_lgreen, hightlight_lred, flag, rotate, wW, bW, replay};
+enum texture_names{wK, wM, bK, bM, board_texture, highlight_green, highlight_red, highlight_lgreen, highlight_lred, flag, rotate, wW, bW, replay, wMenu, bMenu, playerMenu, depthMenu, startMenu};
 
 const char *texture_filenames[] = {
 	"resources/wK.svg",
@@ -38,7 +38,12 @@ const char *texture_filenames[] = {
 	"resources/rotate.png",
 	"resources/wW.png",
 	"resources/bW.png",
-	"resources/replay.png"};
+	"resources/replay.png",
+	"resources/wMenu.png",
+	"resources/bMenu.png",
+	"resources/playerMenu.png",
+	"resources/depthMenu.png",
+	"resources/startMenu.png"};
 
 SDL_Window* win;
 SDL_Renderer* rend;
@@ -53,8 +58,8 @@ int prev_destination = -1;
 
 int cur_color = 1;
 int cur_board[50];
-char players[2] = {'C', 'C'};
-int computer_depth[2] = {9, 6};
+char players[2] = {' ', ' '};
+int computer_depth[2] = {0, 0};
 
 bool playing = true;
 int w_color; //winner color
