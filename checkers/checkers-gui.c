@@ -25,6 +25,15 @@ SDL_Texture *load_texture(const char *path)
 	return texture;
 }
 
+void change_color()
+{
+	prev_piece = cur_piece;
+	prev_destination = cur_destination;
+	cur_piece = -1;
+	cur_destination = -1;
+	cur_color *= -1;
+}
+
 void draw_board(void)
 {
 	int *board = cur_board;
@@ -51,18 +60,24 @@ void draw_board(void)
 		}
 	}
 
-	//draw pieces
 	int i;
-	for(i = 0; i < 50; i++)
+	for(i = 0; i < BOARD_SIZE; i++)
 	{
 		dest.x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
 		dest.y = (i / 5) * PIECE_SIZE;
 
-		//draw highlight for selected piece
+		//draw highlights
 		if(cur_piece == i) {
 			SDL_RenderCopy(rend, textures[hightlight_green], NULL, &dest);
 		}
+		if(prev_piece == i) {
+			SDL_RenderCopy(rend, textures[hightlight_lgreen], NULL, &dest);
+		}
+		if(prev_destination == i) {
+			SDL_RenderCopy(rend, textures[hightlight_lred], NULL, &dest);
+		}
 
+		//draw piece
 		SDL_Texture *cur_texture;
 		switch(board[i])
 		{
@@ -131,7 +146,8 @@ void play_player_move(int x, int y)
 				if(! cur_capture_node->child) {
 					execute_captures(cur_board, cur_capture_node);
 					cur_capture_node = NULL;
-					cur_color *= -1;
+					change_color();
+					return;
 				}
 			} else if(! cur_captures) {
 				int difference = cur_destination - cur_piece;
@@ -143,7 +159,8 @@ void play_player_move(int x, int y)
 						&& ! SAME_SIGN(difference, cur_color)
 						&& NOT_OVER_EDGE(cur_piece, cur_destination, direction, 1)) {
 						execute_move(board, cur_piece, cur_destination);
-						cur_color *= -1;
+						change_color();
+						return;
 					}
 				} else { //if queen
 					int direction;
@@ -155,7 +172,7 @@ void play_player_move(int x, int y)
 						{
 							if(next_temp_piece == cur_destination) {
 								execute_move(cur_board, cur_piece, cur_destination);
-								cur_color *= -1;
+								change_color();
 								return;
 							}
 							temp_piece = next_temp_piece;
@@ -184,14 +201,29 @@ int play_game(void *ptr)
 	SDL_PushEvent(&draw_event);
 
     while(true) {
+		int new_board[BOARD_SIZE];
+		memcpy(new_board, cur_board, BOARD_SIZE * sizeof(int));
+
 		if(players[(1 - cur_color) / 2] == 'C') {
 			(void) play_engine_move(cur_color, cur_board, computer_depth[(1 - cur_color) / 2], true, MIN_EVAL, -MIN_EVAL);
+
+			//calculate where previous move highlights should go
+			int i;
+			for(i = 0; i < BOARD_SIZE; i++)
+			{
+				if(new_board[i] != cur_board[i]) {
+					if(SAME_SIGN(new_board[i], cur_color) && new_board[i] != 0) {
+						cur_piece = i;
+					} else if(SAME_SIGN(cur_board[i], cur_color) && new_board[i] == 0) {
+						cur_destination = i;
+					}
+				}
+			}
+
+			change_color();
 			SDL_PushEvent(&draw_event);
-			cur_color *= -1;
 		} else if(players[(1 - cur_color) / 2] == 'P') {
 			//check if current player has moves
-			int new_board[BOARD_SIZE];
-			memcpy(new_board, cur_board, BOARD_SIZE * sizeof(int));
 			(void) play_engine_move(cur_color, new_board, 0, true, -MIN_EVAL, MIN_EVAL);
 
 			Node *head;

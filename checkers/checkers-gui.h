@@ -15,14 +15,14 @@
 #define BOARD_SIDELENGTH 800
 #define WINDOW_SIZE_X 800
 #define WINDOW_SIZE_Y 900
-#define NUM_TEXTURES 7
+#define NUM_TEXTURES 9
 #define POLLING_FREQ 60
 
 static const char *PLAYER_COLORS[] = {"White", "Black"};
 
 const int PIECE_SIZE = BOARD_SIDELENGTH / 10;
 
-enum texture_names{wK, wM, bK, bM, board_texture, hightlight_green, hightlight_red};
+enum texture_names{wK, wM, bK, bM, board_texture, hightlight_green, hightlight_red, hightlight_lgreen, hightlight_lred};
 
 const char *texture_filenames[] = {"resources/wK.svg",
 	"resources/wM.svg",
@@ -30,7 +30,9 @@ const char *texture_filenames[] = {"resources/wK.svg",
 	"resources/bM.svg",
 	"resources/board.png",
 	"resources/highlight_green.png",
-	"resources/highlight_red.png"};
+	"resources/highlight_red.png",
+	"resources/highlight_lgreen.png",
+	"resources/highlight_lred.png"};
 
 SDL_Window* win;
 SDL_Renderer* rend;
@@ -39,7 +41,10 @@ SDL_Texture *textures[NUM_TEXTURES];
 Uint32 DRAW_BOARD_EVENT;
 
 int cur_piece = -1;
-int cur_destination;
+int cur_destination = -1;
+int prev_piece = -1;
+int prev_destination = -1;
+
 int cur_color = 1;
 int cur_board[50];
 char players[2] = {'P', 'C'};
