@@ -35,15 +35,30 @@ void draw_board(void)
 	dest.x = 0;
 	dest.y = 0;
 	SDL_RenderCopy(rend, textures[board_texture], NULL, &dest);
-	int i;
 
+	dest.w = PIECE_SIZE;
+	dest.h = PIECE_SIZE;
+
+	//draw highlights for captures
+	if(cur_capture_node) {
+		Node *cur_node = cur_capture_node;
+		while(cur_node->parent)
+		{
+			dest.x = (cur_node->destination % 5 * 2 + (int) (cur_node->destination % 10 <= 4)) * PIECE_SIZE;
+			dest.y = (cur_node->destination / 5) * PIECE_SIZE;
+			SDL_RenderCopy(rend, textures[hightlight_red], NULL, &dest);
+			cur_node = cur_node->parent;
+		}
+	}
+
+	//draw pieces
+	int i;
 	for(i = 0; i < 50; i++)
 	{
-		dest.w = PIECE_SIZE;
-		dest.h = PIECE_SIZE;
 		dest.x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
 		dest.y = (i / 5) * PIECE_SIZE;
 
+		//draw highlight for selected piece
 		if(cur_piece == i) {
 			SDL_RenderCopy(rend, textures[hightlight_green], NULL, &dest);
 		}
@@ -79,11 +94,45 @@ void play_player_move(int x, int y)
 	if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
 		if(cur_piece != board_loc && SAME_SIGN(board[board_loc], cur_color) && board[board_loc] != 0) {
 			cur_piece = board_loc;
-		} else if(cur_piece != -1) {
-			if(board[board_loc] != 0 && cur_captures) {//if can capture
-
-			} else if(board[board_loc] == 0 && ! cur_captures) {
-				cur_destination = board_loc;
+		} else if(cur_piece != -1 && board[board_loc] == 0) {
+			cur_destination = board_loc;
+			if(cur_captures) {//if can capture
+				ListNode *cur_listnode = cur_captures;
+				if(! cur_capture_node) { //TODO: OPTIMIZE
+					while(cur_listnode) {
+						Node *cur_node = cur_listnode->node;
+						while(cur_node->parent->parent) {
+							cur_node = cur_node->parent;
+						}
+						if(cur_node->piece == cur_piece && cur_node->destination == cur_destination) {
+							cur_capture_node = cur_node;
+							goto END_OF_CAPTURES;
+						}
+						cur_listnode = cur_listnode->node_next;
+					}
+				} else {
+					while(cur_listnode) {
+						Node *cur_node = cur_listnode->node;
+						while(cur_node->parent->parent) {
+							if(cur_node->parent == cur_capture_node && cur_destination == cur_node->destination) {
+								cur_capture_node = cur_node;
+								goto END_OF_CAPTURES;
+							}
+							cur_node = cur_node->parent;
+						}
+						cur_listnode = cur_listnode->node_next;
+					}
+					cur_capture_node = NULL;
+				}
+				cur_piece = -1;
+				return;
+				END_OF_CAPTURES:
+				if(! cur_capture_node->child) {
+					execute_captures(cur_board, cur_capture_node);
+					cur_capture_node = NULL;
+					cur_color *= -1;
+				}
+			} else if(! cur_captures) {
 				int difference = cur_destination - cur_piece;
 				if(fabs(board[cur_piece]) == 1) {
 					difference += (int) (cur_piece % 10 > 4);
@@ -94,8 +143,6 @@ void play_player_move(int x, int y)
 						&& NOT_OVER_EDGE(cur_piece, cur_destination, direction, 1)) {
 						execute_move(board, cur_piece, cur_destination);
 						cur_color *= -1;
-					} else {
-						cur_piece = -1;
 					}
 				} else { //if queen
 					int direction;
@@ -114,8 +161,8 @@ void play_player_move(int x, int y)
 							next_temp_piece += NEIGHBOR_DIFF(next_temp_piece, direction);
 						}
 					}
-					cur_piece = -1;
 				}
+				cur_piece = -1;
 			}
 		}
 	}
@@ -130,6 +177,11 @@ int play_game(void *ptr)
 	draw_event.type = DRAW_BOARD_EVENT;
 
 	init_board(cur_board);
+
+	cur_board[27] = -1;
+	cur_board[10] = 0;
+	cur_board[1] = 0;
+
 	SDL_PushEvent(&draw_event);
 
     while(true) {

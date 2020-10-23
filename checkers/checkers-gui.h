@@ -18,6 +18,8 @@
 #define NUM_TEXTURES 7
 #define POLLING_FREQ 60
 
+static const char *PLAYER_COLORS[] = {"White", "Black"};
+
 const int PIECE_SIZE = BOARD_SIDELENGTH / 10;
 
 enum texture_names{wK, wM, bK, bM, board_texture, hightlight_green, hightlight_red};
@@ -44,5 +46,6 @@ char players[2] = {'P', 'C'};
 int computer_depth[2] = {9, 6};
 
 ListNode *cur_captures = NULL;
+Node *cur_capture_node = NULL;
 
 #endif
