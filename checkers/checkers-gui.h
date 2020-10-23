@@ -43,4 +43,6 @@ int cur_board[50];
 char players[2] = {'P', 'C'};
 int computer_depth[2] = {9, 6};
 
+ListNode *cur_captures = NULL;
+
 #endif

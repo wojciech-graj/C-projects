@@ -79,18 +79,43 @@ void play_player_move(int x, int y)
 	if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
 		if(cur_piece != board_loc && SAME_SIGN(board[board_loc], cur_color) && board[board_loc] != 0) {
 			cur_piece = board_loc;
-		} else if(board[board_loc] == 0 && cur_piece != -1) {
-			cur_destination = board_loc;
-			int difference = cur_destination - cur_piece + (int) (cur_piece % 10 > 4);
-			int direction = 0;
-			while(direction <= 3 && NEIGHBORS[direction] != difference) direction++;
-			if(direction != 4
-				&& ! SAME_SIGN(difference, cur_color)
-				&& NOT_OVER_EDGE(cur_piece, cur_destination, direction, 1)) {
-				execute_move(board, cur_piece, cur_destination);
-				cur_color *= -1;
-			} else {
-				cur_piece = -1;
+		} else if(cur_piece != -1) {
+			if(board[board_loc] != 0 && cur_captures) {//if can capture
+
+			} else if(board[board_loc] == 0 && ! cur_captures) {
+				cur_destination = board_loc;
+				int difference = cur_destination - cur_piece;
+				if(fabs(board[cur_piece]) == 1) {
+					difference += (int) (cur_piece % 10 > 4);
+					int direction = 0;
+					while(direction <= 3 && NEIGHBORS[direction] != difference) direction++;
+					if(direction != 4
+						&& ! SAME_SIGN(difference, cur_color)
+						&& NOT_OVER_EDGE(cur_piece, cur_destination, direction, 1)) {
+						execute_move(board, cur_piece, cur_destination);
+						cur_color *= -1;
+					} else {
+						cur_piece = -1;
+					}
+				} else { //if queen
+					int direction;
+					for(direction = 2 * (int) (difference > 0); direction < 2 + 2 * (int) (difference > 0); direction++) //only check directions with same sign as difference, either 0,1 or 2,3
+					{
+						int temp_piece = cur_piece;
+						int next_temp_piece = cur_piece + NEIGHBOR_DIFF(cur_piece, direction);
+						while(NOT_OVER_EDGE(temp_piece, next_temp_piece, direction, 1) && cur_board[next_temp_piece] == 0)
+						{
+							if(next_temp_piece == cur_destination) {
+								execute_move(cur_board, cur_piece, cur_destination);
+								cur_color *= -1;
+								return;
+							}
+							temp_piece = next_temp_piece;
+							next_temp_piece += NEIGHBOR_DIFF(next_temp_piece, direction);
+						}
+					}
+					cur_piece = -1;
+				}
 			}
 		}
 	}
@@ -113,10 +138,27 @@ int play_game(void *ptr)
 			SDL_PushEvent(&draw_event);
 			cur_color *= -1;
 		} else if(players[(1 - cur_color) / 2] == 'P') {
+			//check if current player has moves
+			int new_board[BOARD_SIZE];
+			memcpy(new_board, cur_board, BOARD_SIZE * sizeof(int));
+			(void) play_engine_move(cur_color, new_board, 0, true, -MIN_EVAL, MIN_EVAL);
+
+			Node *head;
+			init_node(&head);
+			int max_depth = create_capture_tree(cur_color, cur_board, head);
+			if(head->child) get_nodes_at_depth(head, 0, max_depth, &cur_captures);
+
 			int color = cur_color;
 			while(cur_color == color)
 			{
 				SDL_Delay(1000 / POLLING_FREQ);
+			}
+
+			//clean up
+			delete_tree(head);
+			if(cur_captures) {
+				delete_list(cur_captures);
+				cur_captures = NULL;
 			}
 		}
     }
