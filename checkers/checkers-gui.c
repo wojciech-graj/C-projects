@@ -14,8 +14,8 @@ void end_program()
 
 void end_game(int color)
 {
-	printf("%s wins!\n", PLAYER_COLORS[(color + 1) / 2]);
-	end_program();
+	w_color = -1 * color;
+	playing = false;
 }
 
 SDL_Texture *load_texture(const char *path)
@@ -45,8 +45,29 @@ void draw_board(void)
 	dest.y = 0;
 	SDL_RenderCopy(rend, textures[board_texture], NULL, &dest);
 
-	dest.w = PIECE_SIZE;
+
+	//Draw winner text
 	dest.h = PIECE_SIZE;
+	dest.y = BOARD_SIDELENGTH;
+	if(!playing) {
+		dest.w = 560;
+		dest.x = 0;
+		if(w_color == 1) {
+			SDL_RenderCopy(rend, textures[wW], NULL, &dest);
+		} else if(w_color == -1) {
+			SDL_RenderCopy(rend, textures[bW], NULL, &dest);
+		}
+		dest.w = PIECE_SIZE;
+		dest.x = 560;
+		SDL_RenderCopy(rend, textures[replay], NULL, &dest);
+	}
+
+	//draw flip and resign buttons
+	dest.w = PIECE_SIZE;
+	dest.x = WINDOW_SIZE_X - PIECE_SIZE;
+	SDL_RenderCopy(rend, textures[flag], NULL, &dest);
+	dest.x -= PIECE_SIZE;
+	SDL_RenderCopy(rend, textures[rotate], NULL, &dest);
 
 	//draw highlights for captures
 	if(cur_capture_node) {
@@ -66,20 +87,22 @@ void draw_board(void)
 		dest.x = (i % 5 * 2 + (int) (i % 10 <= 4)) * PIECE_SIZE;
 		dest.y = (i / 5) * PIECE_SIZE;
 
+		int piece = flip ? (BOARD_SIZE - i) : i;
+
 		//draw highlights
-		if(cur_piece == i) {
+		if(cur_piece == piece) {
 			SDL_RenderCopy(rend, textures[hightlight_green], NULL, &dest);
 		}
-		if(prev_piece == i) {
+		if(prev_piece == piece) {
 			SDL_RenderCopy(rend, textures[hightlight_lgreen], NULL, &dest);
 		}
-		if(prev_destination == i) {
+		if(prev_destination == piece) {
 			SDL_RenderCopy(rend, textures[hightlight_lred], NULL, &dest);
 		}
 
 		//draw piece
 		SDL_Texture *cur_texture;
-		switch(board[i])
+		switch(board[piece])
 		{
 			case -2:
 				cur_texture = textures[bK];
@@ -105,8 +128,15 @@ void play_player_move(int x, int y)
 {
 	int *board = cur_board;
 	int row = y / PIECE_SIZE;
-	int board_loc = 5 * row + (x / PIECE_SIZE) / 2;
-	if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
+	int col = x / PIECE_SIZE;
+	int board_loc = 5 * (flip ? (9 - row) : row) + (flip ? (11 - col) : col) / 2;
+	if(row == 10) {//if selecting menu
+		if(col == 8) {//rotate board
+			flip = !flip;
+		} else if(col == 9) {//resign
+
+		}
+	} else if(! SAME_SIGN((2 * (row % 2) - 1), (x % (2 * PIECE_SIZE) - PIECE_SIZE))) {//if selecting dark square
 		if(cur_piece != board_loc && SAME_SIGN(board[board_loc], cur_color) && board[board_loc] != 0) {
 			cur_piece = board_loc;
 			cur_capture_node = NULL;
@@ -200,7 +230,7 @@ int play_game(void *ptr)
 
 	SDL_PushEvent(&draw_event);
 
-    while(true) {
+    while(playing) {
 		int new_board[BOARD_SIZE];
 		memcpy(new_board, cur_board, BOARD_SIZE * sizeof(int));
 
@@ -245,6 +275,7 @@ int play_game(void *ptr)
 			}
 		}
     }
+	return 0;
 }
 
 int main(int argc, char *argv[])
@@ -279,10 +310,21 @@ int main(int argc, char *argv[])
 			if (event.type == SDL_QUIT) {
 				end_program();
 			} else if(event.type == SDL_MOUSEBUTTONDOWN) {
-				if(event.button.button == SDL_BUTTON_LEFT && players[(1 - cur_color) / 2] == 'P') {
+				if(event.button.button == SDL_BUTTON_LEFT) {
 					int x, y;
 					SDL_GetMouseState(&x, &y);
-					play_player_move(x, y);
+					if(players[(1 - cur_color) / 2] == 'P' && playing) {
+						play_player_move(x, y);
+					} else if(! playing && y / PIECE_SIZE == 10 && x / PIECE_SIZE == 7) {//restart
+						playing = true;
+						cur_color = 1;
+						cur_piece = -1;
+						cur_destination = -1;
+						prev_piece = -1;
+						prev_destination = -1;
+						SDL_Thread *game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
+						assert(game_thread);
+					}
 					draw_board();
 				}
 			} else if(event.type == DRAW_BOARD_EVENT) {
