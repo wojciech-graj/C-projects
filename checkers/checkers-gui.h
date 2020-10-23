@@ -2,6 +2,7 @@
 #define CHECKERS_GUI_H
 
 #include <stdbool.h>
+#include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 
