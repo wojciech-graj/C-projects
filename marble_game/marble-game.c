@@ -5,10 +5,11 @@
 #include <math.h>
 
 #define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
-#define level_width 4
-#define level_height 4
+#define WINDOW_HEIGHT 640
+#define level_width 5
+#define level_height 10
 #define MIN_HEIGHT -2
+#define M_TAO (M_PI * 2)
 
 SDL_Window *window;
 SDL_GLContext main_context;
@@ -16,12 +17,25 @@ SDL_GLContext main_context;
 int cur_row = 0;
 
 float level[][4] = {
-	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-			{3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}, {3, 3, 3, 3},
-	{3, 3, 3, 3}, {3, 5, 5, 3}, {3, 3, 3, 3}, {6, 6, 6, 6},
-			{3, 3, 3, 3}, {3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}};
+	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
+			{3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 4, 3},
+	{3, 3, 3, 3}, {3, 5, 5, 3}, {3, 3, 3, 3}, {6, 6, 6, 6}, {4, 3, 3, 3},
+			{3, 3, 3, 3}, {3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}, {3, 3, 3, 3},
+	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
+		{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
+	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
+		{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
+	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
+		{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}};
+
+float ball_pos[2];
+float frac_ball_pos[2];
+int ball_tile;
 
 float level_projection[level_width * level_height][4];
+
+int num_ball_points = 12;
+float ball_rad = .2;
 
 enum directions{l, t, r, b};
 
@@ -77,6 +91,7 @@ void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s,
 void draw(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//draw board
 	int x, y;
 	for(y = 0; y < level_height; y++)
 	{
@@ -84,7 +99,8 @@ void draw(void)
 		glColor3f(1, 1, offset);
 		for(x = 0; x < level_width; x++)
 		{
-			float *tile = level_projection[y * level_width + x];
+			int tile_i = y * level_width + x;
+			float *tile = level_projection[tile_i];
 			float x_l = x - .5 + offset/2.;
 			float x_m = x + offset/2.;
 			float x_r = x + .5 + offset/2.;
@@ -129,14 +145,29 @@ void draw(void)
 			glVertex2f(x_r, tile[r]);
 			glVertex2f(x_m, tile[b]);
 			glEnd();
+
+			//draw ball
+			if(ball_tile == tile_i) {
+				float angle;
+				glColor3fv(GREEN);
+				glBegin(GL_POLYGON);
+				for(angle = 0; angle < M_TAO; angle += M_TAO / num_ball_points)
+				{
+
+					glVertex2f(ball_rad * cos(angle) + x_l + (x_r - x_l) * frac_ball_pos[0],
+						ball_rad * sin(angle) + ball_rad + tile[b] + (tile[t] - tile[b]) * (-frac_ball_pos[1] + 1));
+				}
+				glEnd();
+			}
 		}
 	}
+
 	SDL_GL_SwapWindow(window);
 }
 
 void calculate_projection(void)
 {
-	int y,x;
+	int y, x;
 	for(y = 0; y < level_height; y++)
 	{
 		for(x = 0; x < level_width; x++)
@@ -150,15 +181,71 @@ void calculate_projection(void)
 	}
 }
 
+//TODO: OPTIMIZE... there ought to exist some one equation for this
+void calculate_ball_tile(void)
+{
+	int tile_x = round(ball_pos[0]);
+	int tile_y = round(ball_pos[1]);
+	float sum = ball_pos[0] + ball_pos[1];
+	ball_tile = 2 * tile_y * level_width + tile_x;
+	frac_ball_pos[0] = ball_pos[0] + .5 - tile_x;
+	frac_ball_pos[1] = ball_pos[1] + .5 - tile_y;
+	if(sum < tile_x + tile_y - .5) {//TL
+		ball_tile -= level_width + 1;
+		frac_ball_pos[0] += .5;
+		frac_ball_pos[1] += .5;
+	} else if(sum > tile_x + tile_y + .5) {//BR
+		ball_tile += level_width;
+		frac_ball_pos[0] -= .5;
+		frac_ball_pos[1] -= .5;
+	} else if(ball_pos[0] < tile_x
+		&& ball_pos[1] > tile_y
+		&& ball_pos[1] - tile_y > ball_pos[0] - tile_x + .5) { //BL
+		ball_tile += level_width - 1;
+		frac_ball_pos[0] += .5;
+		frac_ball_pos[1] -= .5;
+	} else if(ball_pos[0] > tile_x
+		&& ball_pos[1] < tile_y
+		&& ball_pos[1] - tile_y + .5 < ball_pos[0] - tile_x) { //TR
+		ball_tile -= level_width;
+		frac_ball_pos[0] -= .5;
+		frac_ball_pos[1] += .5;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	init();
 
 	calculate_projection();
 
+	ball_pos[0] = 0;
+	ball_pos[1] = 0;
+	calculate_ball_tile();
 	draw();
 
-	sleep(30);
-
+	SDL_Event event;
+	while(1)
+	{
+		while (SDL_WaitEvent(&event) >= 0)
+		{
+			if (event.type == SDL_QUIT) {
+				quit();
+				return 0;
+			} else if (event.type == SDL_KEYDOWN) {
+				switch (event.key.keysym.sym)
+			    {
+			        case SDLK_LEFT:  ball_pos[0] -= .3; break;
+			        case SDLK_RIGHT: ball_pos[0] += .3; break;
+			        case SDLK_UP:    ball_pos[1] -= .3; break;
+			        case SDLK_DOWN:  ball_pos[1] += .3; break;
+			    }
+				calculate_ball_tile();
+				draw();
+			}
+		}
+	}
 	quit();
+	return 0;
+
 }
