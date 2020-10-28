@@ -8,13 +8,14 @@
 #define WINDOW_HEIGHT 480
 #define level_width 4
 #define level_height 4
+#define MIN_HEIGHT -2
 
 SDL_Window *window;
 SDL_GLContext main_context;
 
 int cur_row = 0;
 
-int level[][4] = {
+float level[][4] = {
 	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
 			{3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}, {3, 3, 3, 3},
 	{3, 3, 3, 3}, {3, 5, 5, 3}, {3, 3, 3, 3}, {6, 6, 6, 6},
@@ -24,7 +25,11 @@ float level_projection[level_width * level_height][4];
 
 enum directions{l, t, r, b};
 
-void init()
+const float RED[] = {1, 0, 0};
+const float GREEN[] = {0, 1, 0};
+const float BLUE[] = {0, 0, 1};
+
+void init(void)
 {
     assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
 
@@ -49,14 +54,27 @@ void init()
 	gluOrtho2D(-1, 7, -1, 7);
 }
 
-void quit()
+void quit(void)
 {
 	SDL_GL_DeleteContext(main_context);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 }
 
-void draw()
+void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s, const float *color)
+{
+	if(t_b != b_s || t_s != b_t) {
+		glColor3fv(color);
+		glBegin(GL_QUADS);
+		glVertex2f(x_m, t_b);
+		glVertex2f(x_s, t_s);
+		glVertex2f(x_s, b_t);
+		glVertex2f(x_m, b_s);
+		glEnd();
+	}
+}
+
+void draw(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	int x, y;
@@ -89,40 +107,21 @@ void draw()
 			glEnd();
 
 			//side fill
-			float *tile_br = level_projection[(y + 1) * level_width + x + offset];
 			float *tile_bl = level_projection[(y + 1) * level_width + x + offset - 1];
-			float br_t = tile_br[t];
-			float br_l = tile_br[l];
-			float bl_t = tile_bl[t];
-			float bl_r = tile_bl[r];
 			if(x == 0 && ! offset || y == level_height - 1) {
-				bl_t = -2;
-				bl_r = -2;
-			}
-			if(x == level_width - 1 && offset || y == level_height - 1) {
-				br_t = -2;
-				br_l = -2;
-			}
-			if(tile[b] != br_t || tile[r] != br_t) {
-				glColor3f(0, 0, .7);
-				glBegin(GL_QUADS);
-				glVertex2f(x_m, tile[b]);
-				glVertex2f(x_r, tile[r]);
-				glVertex2f(x_r, br_t);
-				glVertex2f(x_m, br_l);
-				glEnd();
-			}
-			if(tile[b] != bl_r || tile[l] != bl_t) {
-				glColor3f(0, .7, 0);
-				glBegin(GL_QUADS);
-				glVertex2f(x_m, tile[b]);
-				glVertex2f(x_l, tile[l]);
-				glVertex2f(x_l, bl_t);
-				glVertex2f(x_m, bl_r);
-				glEnd();
+				draw_side(x_m, x_l, tile[b], tile[l], MIN_HEIGHT, MIN_HEIGHT, BLUE);
+			} else {
+				draw_side(x_m, x_l, tile[b], tile[l], tile_bl[t], tile_bl[r], BLUE);
 			}
 
-			//outline
+			float *tile_br = level_projection[(y + 1) * level_width + x + offset];
+			if(x == level_width - 1 && offset || y == level_height - 1) {
+				draw_side(x_m, x_r, tile[b], tile[r], MIN_HEIGHT, MIN_HEIGHT, RED);
+			} else {
+				draw_side(x_m, x_r, tile[b], tile[r], tile_br[t], tile_br[l], RED);
+			}
+
+			//tile outline
 			glColor3f(1, 1, 1);
 			glBegin(GL_LINE_LOOP);
 			glVertex2f(x_l, tile[l]);
@@ -135,7 +134,7 @@ void draw()
 	SDL_GL_SwapWindow(window);
 }
 
-void calculate_projection()
+void calculate_projection(void)
 {
 	int y,x;
 	for(y = 0; y < level_height; y++)
