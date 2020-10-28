@@ -13,10 +13,10 @@ SDL_GLContext main_context;
 int cur_row = 0;
 
 int level[] = {
-	0, 5, 5, 5, 5, 5,
-	  4, 4, 4, 4, 4, 4,
-	4, 4, 4, 4, 4, 4,
-	  4, 3, 3, 3, 3, 4,
+	0, 4, 3, 8, 8, 3,
+	  4, 3, 8, 8, 8, 3,
+	4, 4, 3, 8, 8, 3,
+	  4, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3,
 	  3, 3, 3, 3, 3, 3,
 	0, 3, 3, 3, 3, 3};
@@ -46,7 +46,7 @@ void init()
     glDepthFunc(GL_LEQUAL);
     glShadeModel(GL_SMOOTH);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	gluOrtho2D(-1, 5, -1, 5);
+	gluOrtho2D(-1, 7, -1, 7);
 }
 
 void quit()
@@ -63,6 +63,14 @@ void triangle(float x1, float y1, float x2, float y2, float x3, float y3)
 	glVertex2f(x3, y3);
 }
 
+void quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+{
+	glVertex2f(x1, y1);
+	glVertex2f(x2, y2);
+	glVertex2f(x3, y3);
+	glVertex2f(x4, y4);
+}
+
 void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -71,38 +79,69 @@ void draw()
 	{
 		int offset = y % 2;
 		glColor3f(1, 1, offset);
-		for(x = 0; x < level_width; x++)
+		for(x = 0; x < level_width - 1; x++)
 		{
-			float x_vals[] = {
-				x - .5 + offset/2., //Left
-				x + offset/2., //middle
-				x + .5 + offset/2.}; //right
-			float y_vals[] = {
-				level[y * level_width + x]/2. - y/4., //left
-				level[(y - 1) * level_width + x + offset]/2. - y/4. + .25, //top
-				level[y * level_width + x + 1]/2. - y/4., //right
-				level[(y + 1) * level_width + x + offset]/2. - y/4. - .25}; //bottom
-			int slope_sign = (signbit(y_vals[0] - y_vals[2]) ?  -1 : 1);
-			float l_r_avg = (y_vals[0] + y_vals[2]) / 2;
+			int sq_l = level[y * level_width + x];
+			int sq_r = level[y * level_width + x + 1];
+			int sq_t = level[(y - 1) * level_width + x + offset];
+			int sq_b = level[(y + 1) * level_width + x + offset];
+			if(sq_t - sq_b >= 2) sq_t = sq_b;
+			if(sq_b - sq_t >= 2) sq_b = sq_t;
+			if(sq_l - sq_r >= 2) sq_l = sq_t;
+			if(sq_r - sq_l >= 2) sq_r = sq_t;
+			float x_l = x - .5 + offset/2.;
+			float x_m = x + offset/2.;
+			float x_r = x + .5 + offset/2.;
+			float y_l = sq_l/2. - y/4.;
+			float y_t = sq_t/2. - y/4. + .25;
+			float y_r = sq_r/2. - y/4.;
+			float y_b = sq_b/2. - y/4. - .25;
+
+			int slope_sign = (signbit(y_l - y_r) ?  -1 : 1);
+
+			float c_l = .5 + ((y_l - y_b) / 3) * slope_sign; //color
+			float c_r = .5 + ((y_t - y_r) / 3) * slope_sign;
 
 			glBegin(GL_TRIANGLES);
-			double cmul = ((y_vals[1] - y_vals[2]) / 4) * slope_sign; //color multiplier
-
-			glColor3f(.5 + cmul, .5 + cmul, .5 + cmul);
-			triangle(x_vals[0], y_vals[0], x_vals[2], y_vals[2], x_vals[1], y_vals[1]); //top triangle
-
-			cmul = ((y_vals[0] - y_vals[3]) / 4) * slope_sign;
-			glColor3f(.5 + cmul, .5 + cmul, .5 + cmul);
-			triangle(x_vals[0], y_vals[0], x_vals[2], y_vals[2], x_vals[1], y_vals[3]); // bottom triangle
+			glColor3f(c_l, c_l, c_l);
+			triangle(x_m, y_b,
+				x_l, y_l,
+				x_m, y_t); //left triangle
+			glColor3f(c_r, c_r, c_r);
+			triangle(x_m, y_b,
+				x_r, y_r,
+				x_m, y_t); // right triangle
 			glEnd();
 
 			glColor3f(0, 0, 0);
-			glBegin(GL_LINE_STRIP);
-			glVertex2f(x_vals[0], y_vals[0]); //L
-			glVertex2f(x_vals[1], y_vals[1]); //T
-			glVertex2f(x_vals[2], y_vals[2]); //R
-			glVertex2f(x_vals[1], y_vals[3]); //B
+			glBegin(GL_LINE_LOOP);
+			quad(x_l, y_l,
+				x_m, y_t,
+				x_r, y_r,
+				x_m, y_b);
 			glEnd();
+
+			if(y < level_height - 3)
+			{
+				if(sq_r - level[(y+2) * level_width + x + 1] >= 2) {
+					glColor3f(0, 1, 0);
+					glBegin(GL_QUADS);
+					quad(x_r, y_r,
+						x_m, y_b,
+						x_m, level[(y + 3) * level_width + x + offset]/2. - y/4. - .25,
+						x_r, level[(y + 2) * level_width + x + 1]/2. - y/4.);
+					glEnd();
+				}
+				if(sq_l - level[(y+2) * level_width + x] >= 2) {
+					glColor3f(0, 1, 1);
+					glBegin(GL_QUADS);
+					quad(x_l, y_l,
+						x_m, y_b,
+						x_m, level[(y + 3) * level_width + x+ offset]/2. - y/4. - .25,
+						x_l, level[(y + 2) * level_width + x - 1]/2. - y/4.);
+					glEnd();
+				}
+			}
 		}
 	}
 	SDL_GL_SwapWindow(window);
@@ -114,7 +153,7 @@ int main(int argc, char *argv[])
 
 	draw();
 
-	sleep(20);
+	sleep(30);
 
 	quit();
 }
