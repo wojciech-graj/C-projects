@@ -16,13 +16,13 @@ int cur_row = 0;
 
 int level[][4] = {
 	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-			{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
+			{3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}, {3, 3, 3, 3},
 	{3, 3, 3, 3}, {3, 5, 5, 3}, {3, 3, 3, 3}, {6, 6, 6, 6},
-			{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}};
+			{3, 3, 3, 3}, {3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}};
 
 float level_projection[level_width * level_height][4];
 
-enum dir{l, t, r, b};
+enum directions{l, t, r, b};
 
 void init()
 {
@@ -56,21 +56,6 @@ void quit()
 	SDL_Quit();
 }
 
-void triangle(float x1, float y1, float x2, float y2, float x3, float y3)
-{
-	glVertex2f(x1, y1);
-	glVertex2f(x2, y2);
-	glVertex2f(x3, y3);
-}
-
-void quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
-{
-	glVertex2f(x1, y1);
-	glVertex2f(x2, y2);
-	glVertex2f(x3, y3);
-	glVertex2f(x4, y4);
-}
-
 void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -85,33 +70,66 @@ void draw()
 			float x_l = x - .5 + offset/2.;
 			float x_m = x + offset/2.;
 			float x_r = x + .5 + offset/2.;
-
-			int slope_sign = (signbit(tile[l] - tile[r]) ?  -1 : 1);
+			float tb_avg = (tile[b] + tile[t])/2.;
 
 			//top surface
-			float c_l = .5 + ((tile[l] - tile[b]) / 3) * slope_sign; //color
-			float c_r = .5 + ((tile[t] - tile[r]) / 3) * slope_sign;
+			float c_l = .5 + fabs((tile[l] - tb_avg) / 3); //color
+			float c_r = .5 + fabs((tile[r] - tb_avg) / 3);
 			glBegin(GL_TRIANGLES);
+			//left triangle
 			glColor3f(c_l, c_l, c_l);
-			triangle(x_m, tile[b],
-				x_l, tile[l],
-				x_m, tile[t]); //left triangle
+			glVertex2f(x_m, tile[b]);
+			glVertex2f(x_l, tile[l]);
+			glVertex2f(x_m, tile[t]);
+			// right triangle
 			glColor3f(c_r, c_r, c_r);
-			triangle(x_m, tile[b],
-				x_r, tile[r],
-				x_m, tile[t]); // right triangle
+			glVertex2f(x_m, tile[b]);
+			glVertex2f(x_r, tile[r]);
+			glVertex2f(x_m, tile[t]);
 			glEnd();
+
+			//side fill
+			float *tile_br = level_projection[(y + 1) * level_width + x + offset];
+			float *tile_bl = level_projection[(y + 1) * level_width + x + offset - 1];
+			float br_t = tile_br[t];
+			float br_l = tile_br[l];
+			float bl_t = tile_bl[t];
+			float bl_r = tile_bl[r];
+			if(x == 0 && ! offset || y == level_height - 1) {
+				bl_t = -2;
+				bl_r = -2;
+			}
+			if(x == level_width - 1 && offset || y == level_height - 1) {
+				br_t = -2;
+				br_l = -2;
+			}
+			if(tile[b] != br_t || tile[r] != br_t) {
+				glColor3f(0, 0, .7);
+				glBegin(GL_QUADS);
+				glVertex2f(x_m, tile[b]);
+				glVertex2f(x_r, tile[r]);
+				glVertex2f(x_r, br_t);
+				glVertex2f(x_m, br_l);
+				glEnd();
+			}
+			if(tile[b] != bl_r || tile[l] != bl_t) {
+				glColor3f(0, .7, 0);
+				glBegin(GL_QUADS);
+				glVertex2f(x_m, tile[b]);
+				glVertex2f(x_l, tile[l]);
+				glVertex2f(x_l, bl_t);
+				glVertex2f(x_m, bl_r);
+				glEnd();
+			}
 
 			//outline
-			glColor3f(0, 0, 0);
+			glColor3f(1, 1, 1);
 			glBegin(GL_LINE_LOOP);
-			quad(x_l, tile[l],
-				x_m, tile[t],
-				x_r, tile[r],
-				x_m, tile[b]);
+			glVertex2f(x_l, tile[l]);
+			glVertex2f(x_m, tile[t]);
+			glVertex2f(x_r, tile[r]);
+			glVertex2f(x_m, tile[b]);
 			glEnd();
-
-			//
 		}
 	}
 	SDL_GL_SwapWindow(window);
