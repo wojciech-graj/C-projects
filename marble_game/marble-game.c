@@ -1,47 +1,4 @@
-#include <SDL2/SDL.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <assert.h>
-#include <math.h>
-
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 640
-#define level_width 5
-#define level_height 10
-#define MIN_HEIGHT -2
-#define M_TAO (M_PI * 2)
-
-SDL_Window *window;
-SDL_GLContext main_context;
-
-int cur_row = 0;
-
-float level[][4] = {
-	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-			{3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 4, 3},
-	{3, 3, 3, 3}, {3, 5, 5, 3}, {3, 3, 3, 3}, {6, 6, 6, 6}, {4, 3, 3, 3},
-			{3, 3, 3, 3}, {3, 3, 3, 3}, {5, 5, 5, 5}, {3, 3, 3, 3}, {3, 3, 3, 3},
-	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-		{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-		{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-	{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3},
-		{3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}, {3, 3, 3, 3}};
-
-float ball_pos[2];
-float frac_ball_pos[2];
-int ball_tile;
-
-float level_projection[level_width * level_height][4];
-
-int num_ball_points = 12;
-float ball_rad = .2;
-
-enum directions{l, t, r, b};
-
-const float RED[] = {1, 0, 0};
-const float GREEN[] = {0, 1, 0};
-const float BLUE[] = {0, 0, 1};
+#include "marble-game.h"
 
 void init(void)
 {
@@ -146,6 +103,8 @@ void draw(void)
 			glVertex2f(x_m, tile[b]);
 			glEnd();
 
+			//TODO: fix movement over slopes
+
 			//draw ball
 			if(ball_tile == tile_i) {
 				float angle;
@@ -153,7 +112,6 @@ void draw(void)
 				glBegin(GL_POLYGON);
 				for(angle = 0; angle < M_TAO; angle += M_TAO / num_ball_points)
 				{
-
 					glVertex2f(ball_rad * cos(angle) + x_l + (x_r - x_l) * frac_ball_pos[0],
 						ball_rad * sin(angle) + ball_rad + tile[b] + (tile[t] - tile[b]) * (-frac_ball_pos[1] + 1));
 				}
@@ -181,7 +139,9 @@ void calculate_projection(void)
 	}
 }
 
-//TODO: OPTIMIZE... there ought to exist some one equation for this
+//TODO:
+//OPTIMIZE: there ought to exist some one equation for this
+//ADD: Testing for edge cases
 void calculate_ball_tile(void)
 {
 	int tile_x = round(ball_pos[0]);
@@ -213,6 +173,39 @@ void calculate_ball_tile(void)
 	}
 }
 
+int process_input(void *ptr)
+{
+	(void) ptr;
+	SDL_Event event;
+
+	while(1)
+	{
+		while (SDL_WaitEvent(&event) >= 0)
+		{
+			if (event.type == SDL_QUIT) {
+				quit();
+				exit(0);
+			} else if (event.type == SDL_KEYDOWN) {
+				switch (event.key.keysym.sym)
+				{
+					case SDLK_LEFT:
+						ball_vel[0] -= .01;
+						break;
+					case SDLK_RIGHT:
+						ball_vel[0] += .01;
+						break;
+					case SDLK_UP:
+						ball_vel[1] -= .01;
+						break;
+					case SDLK_DOWN:
+						ball_vel[1] += .01;
+						break;
+				}
+			}
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	init();
@@ -224,26 +217,16 @@ int main(int argc, char *argv[])
 	calculate_ball_tile();
 	draw();
 
-	SDL_Event event;
+	SDL_Thread *input_thread = SDL_CreateThread(process_input, "input_thread", (void *)NULL);
+	assert(input_thread);
+
 	while(1)
 	{
-		while (SDL_WaitEvent(&event) >= 0)
-		{
-			if (event.type == SDL_QUIT) {
-				quit();
-				return 0;
-			} else if (event.type == SDL_KEYDOWN) {
-				switch (event.key.keysym.sym)
-			    {
-			        case SDLK_LEFT:  ball_pos[0] -= .3; break;
-			        case SDLK_RIGHT: ball_pos[0] += .3; break;
-			        case SDLK_UP:    ball_pos[1] -= .3; break;
-			        case SDLK_DOWN:  ball_pos[1] += .3; break;
-			    }
-				calculate_ball_tile();
-				draw();
-			}
-		}
+		ball_pos[0] += ball_vel[0];
+		ball_pos[1] += ball_vel[1];
+		calculate_ball_tile();
+		draw();
+		SDL_Delay(1000. / 30.);
 	}
 	quit();
 	return 0;
