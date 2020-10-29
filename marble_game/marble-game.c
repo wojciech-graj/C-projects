@@ -109,9 +109,9 @@ void draw(void)
 				float ball_x = (x_r - x_l) * frac_ball_pos[0];
 				float ball_y = (tile[t] - tile[b]) * (.5 - frac_ball_pos[1]);
 				if(frac_ball_pos[0] < 0.5 && tile[l] != tb_avg) {
-					ball_y += (tb_avg - tile[l]) * 2 * (frac_ball_pos[0]) + tile[l];
+					ball_y += 2 * (tb_avg - tile[l]) * (frac_ball_pos[0]) + tile[l];
 				} else if(frac_ball_pos[0] >= 0.5 && tile[r] != tb_avg) {
-					ball_y += (tile[r] - tb_avg) * 2 * (frac_ball_pos[0]) + tile[l];
+					ball_y += 2 * (tb_avg - tile[r]) * (1 - frac_ball_pos[0]) + tile[r];
 				} else {
 					ball_y += tb_avg;
 				}
