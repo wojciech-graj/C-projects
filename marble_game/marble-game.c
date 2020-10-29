@@ -103,23 +103,30 @@ void draw(void)
 			glVertex2f(x_m, tile[b]);
 			glEnd();
 
-			//TODO: fix movement over slopes
-
 			//draw ball
 			if(ball_tile == tile_i) {
 				float angle;
+				float ball_x = (x_r - x_l) * frac_ball_pos[0];
+				float ball_y = (tile[t] - tile[b]) * (.5 - frac_ball_pos[1]);
+				if(frac_ball_pos[0] < 0.5 && tile[l] != tb_avg) {
+					ball_y += (tb_avg - tile[l]) * 2 * (frac_ball_pos[0]) + tile[l];
+				} else if(frac_ball_pos[0] >= 0.5 && tile[r] != tb_avg) {
+					ball_y += (tile[r] - tb_avg) * 2 * (frac_ball_pos[0]) + tile[l];
+				} else {
+					ball_y += tb_avg;
+				}
+
 				glColor3fv(GREEN);
 				glBegin(GL_POLYGON);
 				for(angle = 0; angle < M_TAO; angle += M_TAO / num_ball_points)
 				{
-					glVertex2f(ball_rad * cos(angle) + x_l + (x_r - x_l) * frac_ball_pos[0],
-						ball_rad * sin(angle) + ball_rad + tile[b] + (tile[t] - tile[b]) * (-frac_ball_pos[1] + 1));
+					glVertex2f(ball_rad * cos(angle) + x_l + ball_x,
+						ball_rad * sin(angle) + ball_rad + ball_y);
 				}
 				glEnd();
 			}
 		}
 	}
-
 	SDL_GL_SwapWindow(window);
 }
 
