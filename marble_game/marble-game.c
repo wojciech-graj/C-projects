@@ -23,6 +23,9 @@ void init_sdl(void)
 	main_context = SDL_GL_CreateContext(window);
 	assert(main_context);
 
+	keystates = SDL_GetKeyboardState(NULL);
+	assert(keystates);
+
 	assert(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == 0);
 	assert(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == 0);
 
@@ -217,37 +220,30 @@ void init_marble(Marble **marble)
 	(*marble)->physics_process = &physics_process_marble;
 }
 
-int process_input(void *ptr)
+void process_input(void)
 {
-	(void) ptr;
 	SDL_Event event;
 
-	while(true)
+	while (SDL_PollEvent(&event) > 0)
 	{
-		while (SDL_WaitEvent(&event) >= 0)
-		{
-			if (event.type == SDL_QUIT) {
-				quit();
-				exit(0);
-			} else if (event.type == SDL_KEYDOWN) {
-				switch (event.key.keysym.sym)
-				{
-					case SDLK_LEFT:
-						player_marble->velocity[x] -= .01;
-						break;
-					case SDLK_RIGHT:
-						player_marble->velocity[x] += .01;
-						break;
-					case SDLK_UP:
-						player_marble->velocity[y] -= .01;
-						break;
-					case SDLK_DOWN:
-						player_marble->velocity[y] += .01;
-						break;
-				}
-			}
+		if (event.type == SDL_QUIT) {
+			quit();
+			exit(0);
 		}
 	}
+
+    if(keystates[SDL_SCANCODE_LEFT]) {
+		player_marble->velocity[x] -= MARBLE_ACCELERATION;
+    }
+    if(keystates[SDL_SCANCODE_RIGHT]) {
+		player_marble->velocity[x] += MARBLE_ACCELERATION;
+    }
+    if(keystates[SDL_SCANCODE_UP]) {
+		player_marble->velocity[y] -= MARBLE_ACCELERATION;
+    }
+    if(keystates[SDL_SCANCODE_DOWN]) {
+		player_marble->velocity[y] += MARBLE_ACCELERATION;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -259,12 +255,10 @@ int main(int argc, char *argv[])
 	init_marble(&player_marble);
 	assert(player_marble);
 
-	SDL_Thread *input_thread = SDL_CreateThread(process_input, "input_thread", (void *)NULL);
-	assert(input_thread);
-
 	while(true)
 	{
 		int frame_start = SDL_GetTicks();
+		process_input();
 		player_marble->physics_process(player_marble);
 		draw();
 		int frame_time = SDL_GetTicks() - frame_start;

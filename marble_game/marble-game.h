@@ -22,13 +22,15 @@
 #define NUM_CIRCLE_POINTS 12
 #define GRAVITY_ACCELERATION .01
 #define FRICTION .02
+#define MARBLE_ACCELERATION .003
 
 const float RED[] = {1, 0, 0};
 const float GREEN[] = {0, 1, 0};
 const float BLUE[] = {0, 0, 1};
 
-SDL_Window *window;
-SDL_GLContext main_context;
+SDL_Window *window = NULL;
+SDL_GLContext main_context = NULL;
+const Uint8 *keystates = NULL;
 
 enum tile_directions{l, t, r, b};
 enum vector2d{x, y};
