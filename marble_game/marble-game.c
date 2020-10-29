@@ -1,6 +1,15 @@
 #include "marble-game.h"
 
-void init(void)
+typedef struct Marble {
+	float position[2];
+	int tile;
+	float tile_position[2];
+	float velocity[2];
+	float radius;
+	void (*physics_process)(Marble*);
+} Marble;
+
+void init_sdl(void)
 {
     assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
 
@@ -49,18 +58,18 @@ void draw(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//draw board
-	int x, y;
-	for(y = 0; y < level_height; y++)
+	int tile_position[2];
+	for(tile_position[y] = 0; tile_position[y] < level_height; tile_position[y]++)
 	{
-		int offset = y % 2;
+		int offset = tile_position[y] % 2;
 		glColor3f(1, 1, offset);
-		for(x = 0; x < level_width; x++)
+		for(tile_position[x] = 0; tile_position[x] < level_width; tile_position[x]++)
 		{
-			int tile_i = y * level_width + x;
-			float *tile = level_projection[tile_i];
-			float x_l = x - .5 + offset/2.;
-			float x_m = x + offset/2.;
-			float x_r = x + .5 + offset/2.;
+			int tile_index = tile_position[y] * level_width + tile_position[x];
+			float *tile = level_projection[tile_index];
+			float x_l = tile_position[x] - .5 + offset/2.;
+			float x_m = tile_position[x] + offset/2.;
+			float x_r = tile_position[x] + .5 + offset/2.;
 			float tb_avg = (tile[b] + tile[t])/2.;
 
 			//top surface
@@ -80,15 +89,15 @@ void draw(void)
 			glEnd();
 
 			//side fill
-			float *tile_bl = level_projection[(y + 1) * level_width + x + offset - 1];
-			if(x == 0 && ! offset || y == level_height - 1) {
+			float *tile_bl = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset - 1];
+			if(tile_position[x] == 0 && ! offset || tile_position[y] == level_height - 1) {
 				draw_side(x_m, x_l, tile[b], tile[l], MIN_HEIGHT, MIN_HEIGHT, BLUE);
 			} else {
 				draw_side(x_m, x_l, tile[b], tile[l], tile_bl[t], tile_bl[r], BLUE);
 			}
 
-			float *tile_br = level_projection[(y + 1) * level_width + x + offset];
-			if(x == level_width - 1 && offset || y == level_height - 1) {
+			float *tile_br = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset];
+			if(tile_position[x] == level_width - 1 && offset || tile_position[y] == level_height - 1) {
 				draw_side(x_m, x_r, tile[b], tile[r], MIN_HEIGHT, MIN_HEIGHT, RED);
 			} else {
 				draw_side(x_m, x_r, tile[b], tile[r], tile_br[t], tile_br[l], RED);
@@ -104,24 +113,24 @@ void draw(void)
 			glEnd();
 
 			//draw ball
-			if(ball_tile == tile_i) {
+			if(player_marble->tile == tile_index) {
 				float angle;
-				float ball_x = (x_r - x_l) * frac_ball_pos[0];
-				float ball_y = (tile[t] - tile[b]) * (.5 - frac_ball_pos[1]);
-				if(frac_ball_pos[0] < 0.5 && tile[l] != tb_avg) {
-					ball_y += 2 * (tb_avg - tile[l]) * (frac_ball_pos[0]) + tile[l];
-				} else if(frac_ball_pos[0] >= 0.5 && tile[r] != tb_avg) {
-					ball_y += 2 * (tb_avg - tile[r]) * (1 - frac_ball_pos[0]) + tile[r];
+				float ball_x = (x_r - x_l) * player_marble->tile_position[0];
+				float ball_y = (tile[t] - tile[b]) * (.5 - player_marble->tile_position[y]);
+				if(player_marble->tile_position[x] < 0.5 && tile[l] != tb_avg) {
+					ball_y += 2 * (tb_avg - tile[l]) * (player_marble->tile_position[x]) + tile[l];
+				} else if(player_marble->tile_position[x] >= 0.5 && tile[r] != tb_avg) {
+					ball_y += 2 * (tb_avg - tile[r]) * (1 - player_marble->tile_position[x]) + tile[r];
 				} else {
 					ball_y += tb_avg;
 				}
 
 				glColor3fv(GREEN);
 				glBegin(GL_POLYGON);
-				for(angle = 0; angle < M_TAO; angle += M_TAO / num_ball_points)
+				for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
 				{
-					glVertex2f(ball_rad * cos(angle) + x_l + ball_x,
-						ball_rad * sin(angle) + ball_rad + ball_y);
+					glVertex2f(player_marble->radius * cos(angle) + x_l + ball_x,
+						player_marble->radius * sin(angle) + player_marble->radius + ball_y);
 				}
 				glEnd();
 			}
@@ -132,52 +141,64 @@ void draw(void)
 
 void calculate_projection(void)
 {
-	int y, x;
-	for(y = 0; y < level_height; y++)
+	int tile_position[2];
+	for(tile_position[y] = 0; tile_position[y] < level_height; tile_position[y]++)
 	{
-		for(x = 0; x < level_width; x++)
+		for(tile_position[x] = 0; tile_position[x] < level_width; tile_position[x]++)
 		{
-			int i = y * level_width + x;
-			level_projection[i][l] = level[i][l]/2. - y/4.;
-			level_projection[i][t] = level[i][t]/2. - y/4. + .25;
-			level_projection[i][r] = level[i][r]/2. - y/4.;
-			level_projection[i][b] = level[i][b]/2. - y/4. - .25;
+			int i = tile_position[y] * level_width + tile_position[x];
+			level_projection[i][l] = level[i][l]/2. - tile_position[y]/4.;
+			level_projection[i][t] = level[i][t]/2. - tile_position[y]/4. + .25;
+			level_projection[i][r] = level[i][r]/2. - tile_position[y]/4.;
+			level_projection[i][b] = level[i][b]/2. - tile_position[y]/4. - .25;
 		}
 	}
 }
 
-//TODO:
-//OPTIMIZE: there ought to exist some one equation for this
-//ADD: Testing for edge cases
-void calculate_ball_tile(void)
+void physics_process_marble(Marble *marble)
 {
-	int tile_x = round(ball_pos[0]);
-	int tile_y = round(ball_pos[1]);
-	float sum = ball_pos[0] + ball_pos[1];
-	ball_tile = 2 * tile_y * level_width + tile_x;
-	frac_ball_pos[0] = ball_pos[0] + .5 - tile_x;
-	frac_ball_pos[1] = ball_pos[1] + .5 - tile_y;
+	marble->position[x] += marble->velocity[x];
+	marble->position[y] += marble->velocity[y];
+
+	//TODO: OPTIMIZE: there ought to exist some one equation for this
+	int tile_x = round(marble->position[x]);
+	int tile_y = round(marble->position[y]);
+	float sum = marble->position[0] + marble->position[y];
+	marble->tile = 2 * tile_y * level_width + tile_x;
+	marble->tile_position[x] = marble->position[x] + .5 - tile_x;
+	marble->tile_position[y] = marble->position[y] + .5 - tile_y;
 	if(sum < tile_x + tile_y - .5) {//TL
-		ball_tile -= level_width + 1;
-		frac_ball_pos[0] += .5;
-		frac_ball_pos[1] += .5;
+		marble->tile -= level_width + 1;
+		marble->tile_position[x] += .5;
+		marble->tile_position[y] += .5;
 	} else if(sum > tile_x + tile_y + .5) {//BR
-		ball_tile += level_width;
-		frac_ball_pos[0] -= .5;
-		frac_ball_pos[1] -= .5;
-	} else if(ball_pos[0] < tile_x
-		&& ball_pos[1] > tile_y
-		&& ball_pos[1] - tile_y > ball_pos[0] - tile_x + .5) { //BL
-		ball_tile += level_width - 1;
-		frac_ball_pos[0] += .5;
-		frac_ball_pos[1] -= .5;
-	} else if(ball_pos[0] > tile_x
-		&& ball_pos[1] < tile_y
-		&& ball_pos[1] - tile_y + .5 < ball_pos[0] - tile_x) { //TR
-		ball_tile -= level_width;
-		frac_ball_pos[0] -= .5;
-		frac_ball_pos[1] += .5;
+		marble->tile += level_width;
+		marble->tile_position[x] -= .5;
+		marble->tile_position[y] -= .5;
+	} else if(marble->position[x] < tile_x
+		&& marble->position[y] > tile_y
+		&& marble->position[y] - tile_y > marble->position[0] - tile_x + .5) { //BL
+		marble->tile += level_width - 1;
+		marble->tile_position[x] += .5;
+		marble->tile_position[y] -= .5;
+	} else if(marble->position[x] > tile_x
+		&& marble->position[y] < tile_y
+		&& marble->position[y] - tile_y + .5 < marble->position[0] - tile_x) { //TR
+		marble->tile -= level_width;
+		marble->tile_position[x] -= .5;
+		marble->tile_position[y] += .5;
 	}
+}
+
+void init_marble(Marble **marble)
+{
+	*marble = malloc(sizeof(Marble));
+	(*marble)->position[x] = 0;
+	(*marble)->position[y] = 0;
+	(*marble)->velocity[x] = 0;
+	(*marble)->velocity[y] = 0;
+	(*marble)->radius = .2;
+	(*marble)->physics_process = &physics_process_marble;
 }
 
 int process_input(void *ptr)
@@ -185,7 +206,7 @@ int process_input(void *ptr)
 	(void) ptr;
 	SDL_Event event;
 
-	while(1)
+	while(true)
 	{
 		while (SDL_WaitEvent(&event) >= 0)
 		{
@@ -196,16 +217,16 @@ int process_input(void *ptr)
 				switch (event.key.keysym.sym)
 				{
 					case SDLK_LEFT:
-						ball_vel[0] -= .01;
+						player_marble->velocity[x] -= .01;
 						break;
 					case SDLK_RIGHT:
-						ball_vel[0] += .01;
+						player_marble->velocity[x] += .01;
 						break;
 					case SDLK_UP:
-						ball_vel[1] -= .01;
+						player_marble->velocity[y] -= .01;
 						break;
 					case SDLK_DOWN:
-						ball_vel[1] += .01;
+						player_marble->velocity[y] += .01;
 						break;
 				}
 			}
@@ -215,26 +236,25 @@ int process_input(void *ptr)
 
 int main(int argc, char *argv[])
 {
-	init();
+	init_sdl();
 
 	calculate_projection();
 
-	ball_pos[0] = 0;
-	ball_pos[1] = 0;
-	calculate_ball_tile();
-	draw();
+	init_marble(&player_marble);
+	assert(player_marble);
 
 	SDL_Thread *input_thread = SDL_CreateThread(process_input, "input_thread", (void *)NULL);
 	assert(input_thread);
 
-	while(1)
+	while(true)
 	{
-		ball_pos[0] += ball_vel[0];
-		ball_pos[1] += ball_vel[1];
-		calculate_ball_tile();
+		int frame_start = SDL_GetTicks();
+		player_marble->physics_process(player_marble);
 		draw();
-		SDL_Delay(1000. / 30.);
+		int frame_time = SDL_GetTicks() - frame_start;
+		SDL_Delay(FRAMETIME - frame_time);
 	}
+
 	quit();
 	return 0;
 
