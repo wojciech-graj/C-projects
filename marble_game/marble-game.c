@@ -157,10 +157,8 @@ void calculate_projection(void)
 
 void physics_process_marble(Marble *marble)
 {
-	marble->position[x] += marble->velocity[x];
-	marble->position[y] += marble->velocity[y];
-
 	//TODO: OPTIMIZE: there ought to exist some one equation for this
+	//calculate marble->tile and marble->tile_position
 	int tile_x = round(marble->position[x]);
 	int tile_y = round(marble->position[y]);
 	float sum = marble->position[0] + marble->position[y];
@@ -188,6 +186,24 @@ void physics_process_marble(Marble *marble)
 		marble->tile_position[x] -= .5;
 		marble->tile_position[y] += .5;
 	}
+
+	//calculate marble->velocity
+	float *tile = level[marble->tile];
+	float tb_avg = (tile[t] + tile[b])/2.;
+	if(marble->tile_position[x] <= .5 && tile[l] != tb_avg) {
+		marble->velocity[x] += (tile[l] - tb_avg) * GRAVITY_ACCELERATION;
+	} else if(marble->tile_position[x] > .5 && tile[r] != tb_avg) {
+		marble->velocity[x] += (tb_avg - tile[r]) * GRAVITY_ACCELERATION;
+	}
+	if(tile[t] != tile[b]) {
+		marble->velocity[y] += (tile[t] - tile[b])/2. * GRAVITY_ACCELERATION;
+	}
+	marble->velocity[x] -= FRICTION * marble->velocity[x];
+	marble->velocity[y] -= FRICTION * marble->velocity[y];
+
+	//calculate marble->position
+	marble->position[x] += marble->velocity[x];
+	marble->position[y] += marble->velocity[y];
 }
 
 void init_marble(Marble **marble)
