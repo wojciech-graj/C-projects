@@ -76,8 +76,8 @@ void draw(void)
 			float tb_avg = (tile[b] + tile[t])/2.;
 
 			//top surface
-			float c_l = .5 + fabs((tile[l] - tb_avg) / 3); //color
-			float c_r = .5 + fabs((tile[r] - tb_avg) / 3);
+			float c_l = .5 + (tb_avg - tile[l]) / 2.5; //color
+			float c_r = .5 + (tile[r] - tb_avg) / 2.5;
 			glBegin(GL_TRIANGLES);
 			//left triangle
 			glColor3f(c_l, c_l, c_l);
@@ -117,7 +117,6 @@ void draw(void)
 
 			//draw ball
 			if(player_marble->tile == tile_index) {
-				float angle;
 				float ball_x = (x_r - x_l) * player_marble->tile_position[0];
 				float ball_y = (tile[t] - tile[b]) * (.5 - player_marble->tile_position[y]);
 				if(player_marble->tile_position[x] < 0.5 && tile[l] != tb_avg) {
@@ -130,6 +129,7 @@ void draw(void)
 
 				glColor3fv(GREEN);
 				glBegin(GL_POLYGON);
+				float angle;
 				for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
 				{
 					glVertex2f(player_marble->radius * cos(angle) + x_l + ball_x,
@@ -158,12 +158,14 @@ void calculate_projection(void)
 	}
 }
 
+
+//calculates the z value of point (posx,posy) on the plane which intersects (x1,y1,z1),(x2,y2,z2),(x3,y3,z3)
 float calculate_z_on_plane(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float posx, float posy) {
 	float v1[3] = {x2 - x1, y2 - y1, z2 - z1};
 	float v2[3] = {x3 - x2, y3 - y2, z3 - z2};
 	float v1xv2[3] = {v1[y]*v2[z] - v1[z]*v2[y],
 		v1[z]*v2[x] - v1[x]*v2[z],
-		v1[x]*v2[y] - v1[y]*v2[x]};
+		v1[x]*v2[y] - v1[y]*v2[x]}; //cross product of v1 and v2
 	float d = v1xv2[x] * x1 + v1xv2[y] * y1 + v1xv2[z] * z1;
 	return (d - v1xv2[x] * posx - v1xv2[y] * posy) / v1xv2[z];
 }
@@ -254,7 +256,7 @@ void init_marble(Marble **marble)
 	(*marble)->position[y] = 0;
 	calculate_tile((*marble)->position, &((*marble)->tile), (*marble)->tile_position);
 	float *tile = level[(*marble)->tile];
-	(*marble)->position[z] = (tile[t] + tile[b])/2.;
+	(*marble)->position[z] = (tile[t] + tile[b])/2.; //assume that x is in middle of tile
 	(*marble)->velocity[x] = 0;
 	(*marble)->velocity[y] = 0;
 	(*marble)->radius = .2;
