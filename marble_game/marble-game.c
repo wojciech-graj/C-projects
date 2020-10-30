@@ -4,8 +4,9 @@ typedef struct Marble {
 	float position[3];
 	int tile;
 	float tile_position[2];
-	float velocity[2];
+	float velocity[3];
 	float radius;
+	bool in_air;
 	void (*physics_process)(Marble*);
 } Marble;
 
@@ -116,23 +117,17 @@ void draw(void)
 			glEnd();
 
 			//draw ball
-			if(player_marble->tile == tile_index) {
-				float ball_x = (x_r - x_l) * player_marble->tile_position[0];
-				float ball_y = (tile[t] - tile[b]) * (.5 - player_marble->tile_position[y]);
-				if(player_marble->tile_position[x] < 0.5 && tile[l] != tb_avg) {
-					ball_y += 2 * (tb_avg - tile[l]) * (player_marble->tile_position[x]) + tile[l];
-				} else if(player_marble->tile_position[x] > 0.5 && tile[r] != tb_avg) {
-					ball_y += 2 * (tb_avg - tile[r]) * (1 - player_marble->tile_position[x]) + tile[r];
-				} else {
-					ball_y += tb_avg;
-				}
+			//if(player_marble->tile == tile_index) {
+			if(tile_index == player_marble->tile) {
+				float ball_x = player_marble->position[x];
+				float ball_y = (player_marble->position[z] - player_marble->position[y])/2.;
 
 				glColor3fv(GREEN);
 				glBegin(GL_POLYGON);
 				float angle;
 				for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
 				{
-					glVertex2f(player_marble->radius * cos(angle) + x_l + ball_x,
+					glVertex2f(player_marble->radius * cos(angle) + ball_x,
 						player_marble->radius * sin(angle) + player_marble->radius + ball_y);
 				}
 				glEnd();
@@ -207,16 +202,20 @@ void physics_process_marble(Marble *marble)
 	//calculate marble->velocity
 	float *tile = level[marble->tile];
 	float tb_avg = (tile[t] + tile[b])/2.;
-	if(marble->tile_position[x] <= .5 && tile[l] != tb_avg) {
-		marble->velocity[x] += (tile[l] - tb_avg) * GRAVITY_ACCELERATION;
-	} else if(marble->tile_position[x] > .5 && tile[r] != tb_avg) {
-		marble->velocity[x] += (tb_avg - tile[r]) * GRAVITY_ACCELERATION;
+	if(!marble->in_air) {
+		if(marble->tile_position[x] <= .5 && tile[l] != tb_avg) {
+			marble->velocity[x] += (tile[l] - tb_avg) * GRAVITY_ACCELERATION;
+		} else if(marble->tile_position[x] > .5 && tile[r] != tb_avg) {
+			marble->velocity[x] += (tb_avg - tile[r]) * GRAVITY_ACCELERATION;
+		}
+		if(tile[t] != tile[b]) {
+			marble->velocity[y] += (tile[t] - tile[b])/2. * GRAVITY_ACCELERATION;
+		}
+		marble->velocity[x] -= FRICTION * marble->velocity[x];
+		marble->velocity[y] -= FRICTION * marble->velocity[y];
+	} else {
+		marble->velocity[z] -= GRAVITY_ACCELERATION;
 	}
-	if(tile[t] != tile[b]) {
-		marble->velocity[y] += (tile[t] - tile[b])/2. * GRAVITY_ACCELERATION;
-	}
-	marble->velocity[x] -= FRICTION * marble->velocity[x];
-	marble->velocity[y] -= FRICTION * marble->velocity[y];
 
 	float future_position[3];
 	future_position[x] = marble->position[x] + marble->velocity[x];
@@ -245,7 +244,14 @@ void physics_process_marble(Marble *marble)
 		marble->tile_position[y] = future_tile_position[y];
 		marble->position[x] = future_position[x];
 		marble->position[y] = future_position[y];
-		marble->position[z] = future_position[z];
+		if(marble->position[z] - future_position[z] > MAX_DELTA_Z) {
+			if(!marble->in_air) marble->in_air = true;
+			marble->position[z] += marble->velocity[z];
+		} else {
+			if(marble->in_air) marble->in_air = false;
+			marble->velocity[z] = future_position[z] - marble->position[z];
+		}
+		marble->position[z] += marble->velocity[z];
 	}
 }
 
@@ -260,6 +266,7 @@ void init_marble(Marble **marble)
 	(*marble)->velocity[x] = 0;
 	(*marble)->velocity[y] = 0;
 	(*marble)->radius = .2;
+	(*marble)->in_air = false;
 	(*marble)->physics_process = &physics_process_marble;
 }
 
@@ -274,20 +281,22 @@ void process_input(void)
 			exit(0);
 		}
 	}
-
-    if(keystates[SDL_SCANCODE_LEFT]) {
-		player_marble->velocity[x] -= MARBLE_ACCELERATION;
-    }
-    if(keystates[SDL_SCANCODE_RIGHT]) {
-		player_marble->velocity[x] += MARBLE_ACCELERATION;
-    }
-    if(keystates[SDL_SCANCODE_UP]) {
-		player_marble->velocity[y] -= MARBLE_ACCELERATION;
-    }
-    if(keystates[SDL_SCANCODE_DOWN]) {
-		player_marble->velocity[y] += MARBLE_ACCELERATION;
-    }
+	if(!player_marble->in_air) {
+		if(keystates[SDL_SCANCODE_LEFT]) {
+			player_marble->velocity[x] -= MARBLE_ACCELERATION;
+	    }
+	    if(keystates[SDL_SCANCODE_RIGHT]) {
+			player_marble->velocity[x] += MARBLE_ACCELERATION;
+	    }
+	    if(keystates[SDL_SCANCODE_UP]) {
+			player_marble->velocity[y] -= MARBLE_ACCELERATION;
+	    }
+	    if(keystates[SDL_SCANCODE_DOWN]) {
+			player_marble->velocity[y] += MARBLE_ACCELERATION;
+	    }
+	}
 }
+
 
 int main(int argc, char *argv[])
 {
