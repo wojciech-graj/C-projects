@@ -1,7 +1,7 @@
 #include "marble-game.h"
 
 typedef struct Marble {
-	float position[2];
+	float position[3];
 	int tile;
 	float tile_position[2];
 	float velocity[2];
@@ -122,7 +122,7 @@ void draw(void)
 				float ball_y = (tile[t] - tile[b]) * (.5 - player_marble->tile_position[y]);
 				if(player_marble->tile_position[x] < 0.5 && tile[l] != tb_avg) {
 					ball_y += 2 * (tb_avg - tile[l]) * (player_marble->tile_position[x]) + tile[l];
-				} else if(player_marble->tile_position[x] >= 0.5 && tile[r] != tb_avg) {
+				} else if(player_marble->tile_position[x] > 0.5 && tile[r] != tb_avg) {
 					ball_y += 2 * (tb_avg - tile[r]) * (1 - player_marble->tile_position[x]) + tile[r];
 				} else {
 					ball_y += tb_avg;
@@ -160,39 +160,10 @@ void calculate_projection(void)
 
 void physics_process_marble(Marble *marble)
 {
-	//TODO: OPTIMIZE: there ought to exist some one equation for this
-	//calculate marble->tile and marble->tile_position
-	int tile_x = round(marble->position[x]);
-	int tile_y = round(marble->position[y]);
-	float sum = marble->position[0] + marble->position[y];
-	marble->tile = 2 * tile_y * level_width + tile_x;
-	marble->tile_position[x] = marble->position[x] + .5 - tile_x;
-	marble->tile_position[y] = marble->position[y] + .5 - tile_y;
-	if(sum < tile_x + tile_y - .5) {//TL
-		marble->tile -= level_width + 1;
-		marble->tile_position[x] += .5;
-		marble->tile_position[y] += .5;
-	} else if(sum > tile_x + tile_y + .5) {//BR
-		marble->tile += level_width;
-		marble->tile_position[x] -= .5;
-		marble->tile_position[y] -= .5;
-	} else if(marble->position[x] < tile_x
-		&& marble->position[y] > tile_y
-		&& marble->position[y] - tile_y > marble->position[0] - tile_x + .5) { //BL
-		marble->tile += level_width - 1;
-		marble->tile_position[x] += .5;
-		marble->tile_position[y] -= .5;
-	} else if(marble->position[x] > tile_x
-		&& marble->position[y] < tile_y
-		&& marble->position[y] - tile_y + .5 < marble->position[0] - tile_x) { //TR
-		marble->tile -= level_width;
-		marble->tile_position[x] -= .5;
-		marble->tile_position[y] += .5;
-	}
-
 	//calculate marble->velocity
 	float *tile = level[marble->tile];
 	float tb_avg = (tile[t] + tile[b])/2.;
+
 	if(marble->tile_position[x] <= .5 && tile[l] != tb_avg) {
 		marble->velocity[x] += (tile[l] - tb_avg) * GRAVITY_ACCELERATION;
 	} else if(marble->tile_position[x] > .5 && tile[r] != tb_avg) {
@@ -204,9 +175,66 @@ void physics_process_marble(Marble *marble)
 	marble->velocity[x] -= FRICTION * marble->velocity[x];
 	marble->velocity[y] -= FRICTION * marble->velocity[y];
 
-	//calculate marble->position
-	marble->position[x] += marble->velocity[x];
-	marble->position[y] += marble->velocity[y];
+	float future_position[3];
+	future_position[x] = marble->position[x] + marble->velocity[x];
+	future_position[y] = marble->position[y] + marble->velocity[y];
+
+	//TODO: OPTIMIZE: there ought to exist some one equation for this
+	//calculate marble->tile and marble->tile_position
+	int tile_x = round(future_position[x]);
+	int tile_y = round(future_position[y]);
+	float sum = future_position[0] + future_position[y];
+	int future_tile = 2 * tile_y * level_width + tile_x;
+	float future_tile_position[2] = {future_position[x] + .5 - tile_x,
+		future_position[y] + .5 - tile_y};
+	if(sum < tile_x + tile_y - .5) {//TL
+		future_tile -= level_width + 1;
+		future_tile_position[x] += .5;
+		future_tile_position[y] += .5;
+	} else if(sum > tile_x + tile_y + .5) {//BR
+		future_tile += level_width;
+		future_tile_position[x] -= .5;
+		future_tile_position[y] -= .5;
+	} else if(future_position[x] < tile_x
+		&& future_position[y] > tile_y
+		&& future_position[y] - tile_y > future_position[0] - tile_x + .5) { //BL
+		future_tile += level_width - 1;
+		future_tile_position[x] += .5;
+		future_tile_position[y] -= .5;
+	} else if(future_position[x] > tile_x
+		&& future_position[y] < tile_y
+		&& future_position[y] - tile_y + .5 < future_position[0] - tile_x) { //TR
+		future_tile -= level_width;
+		future_tile_position[x] -= .5;
+		future_tile_position[y] += .5;
+	}
+
+	tile = level[future_tile];
+	tb_avg = (tile[t] + tile[b])/2.;
+
+	//calculate marble->position and collision
+	if(future_tile_position[x] < .5) {
+		future_position[z] = (-.25 * (tile[b] - tile[t]) + 0.5 * tile[l]
+			- (-.5 * tile[b] - .5 * tile[t] + tile[l]) * future_tile_position[x]
+			- (-.5 * (tile[b] - tile[t])) * future_tile_position[y])
+			/ .5;
+	} else {
+		future_position[z] = (-.25 * tile[b] - .75 * tile[t] + 0.5 * tile[r]
+			- (-.5 * tile[b] - .5 * tile[t] + tile[r]) * future_tile_position[x]
+			- (.5 * (tile[b] - tile[t])) * future_tile_position[y])
+			/ -.5;
+	}
+	if(future_position[z] - marble->position[z] > MAX_DELTA_Z) {
+		marble->velocity[x] = 0;
+		marble->velocity[y] = 0;
+	} else {
+		marble->tile = future_tile;
+		marble->tile_position[x] = future_tile_position[x];
+		marble->tile_position[y] = future_tile_position[y];
+		marble->position[x] = future_position[x];
+		marble->position[y] = future_position[y];
+		marble->position[z] = future_position[z];
+	}
 }
 
 void init_marble(Marble **marble)
@@ -255,17 +283,19 @@ int main(int argc, char *argv[])
 	init_marble(&player_marble);
 	assert(player_marble);
 
+	//TODO: do properly
+	player_marble->position[z] = 3;
+
 	while(true)
 	{
-		int frame_start = SDL_GetTicks();
+		Uint32 frame_start = SDL_GetTicks();
 		process_input();
 		player_marble->physics_process(player_marble);
 		draw();
-		int frame_time = SDL_GetTicks() - frame_start;
+		Uint32 frame_time = SDL_GetTicks() - frame_start;
 		SDL_Delay(FRAMETIME - frame_time);
 	}
 
 	quit();
 	return 0;
-
 }

@@ -23,6 +23,7 @@
 #define GRAVITY_ACCELERATION .01
 #define FRICTION .02
 #define MARBLE_ACCELERATION .003
+#define MAX_DELTA_Z .2
 
 const float RED[] = {1, 0, 0};
 const float GREEN[] = {0, 1, 0};
@@ -33,7 +34,7 @@ SDL_GLContext main_context = NULL;
 const Uint8 *keystates = NULL;
 
 enum tile_directions{l, t, r, b};
-enum vector2d{x, y};
+enum coordinates{x, y, z};
 
 float level_projection[level_width * level_height][4];
 float level[][4] = {
