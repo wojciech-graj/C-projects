@@ -23,6 +23,8 @@
 #define FRICTION .02
 #define MARBLE_ACCELERATION .003
 #define MAX_DELTA_Z .2
+#define MIN(a, b) ((a < b) ? a : b)
+#define MAX(a, b) ((a > b) ? a : b)
 
 short level_height;
 short level_width;

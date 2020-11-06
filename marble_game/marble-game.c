@@ -10,6 +10,8 @@ typedef struct Marble {
 	void (*physics_process)(Marble*);
 } Marble;
 
+//TODO: ADD DEPTH TO TILES
+
 void init_sdl(void)
 {
     assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
@@ -98,16 +100,20 @@ void draw(void)
 			float tb_avg = (tile[b] + tile[t])/2.;
 
 			//top surface
-			float c_l = .5 + (tb_avg - tile[l]) / 2.5; //color
-			float c_r = .5 + (tile[r] - tb_avg) / 2.5;
+			float cmul_l = 1 + (tb_avg - tile[l]);
+			float cmul_r = 1 + (tile[r] - tb_avg);
 			glBegin(GL_TRIANGLES);
 			//left triangle
-			glColor3f(c_l, c_l, c_l);
+			glColor3ub(MIN(MAX(0, floor_color[0] * cmul_l), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
+				MIN(MAX(0, floor_color[1] * cmul_l), 255),
+				MIN(MAX(0, floor_color[2] * cmul_l), 255));
 			glVertex2f(x_m, tile[b]);
 			glVertex2f(x_l, tile[l]);
 			glVertex2f(x_m, tile[t]);
 			// right triangle
-			glColor3f(c_r, c_r, c_r);
+			glColor3ub(MIN(MAX(0, floor_color[0] * cmul_r), 255),
+				MIN(MAX(0, floor_color[1] * cmul_r), 255),
+				MIN(MAX(0, floor_color[2] * cmul_r), 255));
 			glVertex2f(x_m, tile[b]);
 			glVertex2f(x_r, tile[r]);
 			glVertex2f(x_m, tile[t]);
