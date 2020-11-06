@@ -18,7 +18,7 @@
 #define M_TAO (M_PI * 2)
 #define FPS 30
 #define FRAMETIME (1000 / FPS)
-#define NUM_CIRCLE_POINTS 12
+#define NUM_CIRCLE_POINTS 16
 #define GRAVITY_ACCELERATION .01
 #define FRICTION .02
 #define MARBLE_ACCELERATION .003
@@ -27,9 +27,11 @@
 short level_height;
 short level_width;
 
-const float RED[] = {1, 0, 0};
+unsigned char floor_color[3];
+unsigned char left_color[3];
+unsigned char right_color[3];
+
 const float GREEN[] = {0, 1, 0};
-const float BLUE[] = {0, 0, 1};
 
 SDL_Window *window = NULL;
 SDL_GLContext main_context = NULL;

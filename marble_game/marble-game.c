@@ -46,10 +46,10 @@ void quit(void)
 	free(level);
 }
 
-void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s, const float *color)
+void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s, unsigned char *color)
 {
 	if(t_b != b_s || t_s != b_t) {
-		glColor3fv(color);
+		glColor3ubv(color);
 		glBegin(GL_QUADS);
 		glVertex2f(x_m, t_b);
 		glVertex2f(x_s, t_s);
@@ -116,16 +116,16 @@ void draw(void)
 			//side fill
 			float *tile_bl = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset - 1];
 			if(tile_position[x] == 0 && ! offset || tile_position[y] == level_height - 1) {
-				draw_side(x_m, x_l, tile[b], tile[l], MIN_HEIGHT, MIN_HEIGHT, BLUE);
+				draw_side(x_m, x_l, tile[b], tile[l], MIN_HEIGHT, MIN_HEIGHT, left_color);
 			} else {
-				draw_side(x_m, x_l, tile[b], tile[l], tile_bl[t], tile_bl[r], BLUE);
+				draw_side(x_m, x_l, tile[b], tile[l], tile_bl[t], tile_bl[r], left_color);
 			}
 
 			float *tile_br = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset];
 			if(tile_position[x] == level_width - 1 && offset || tile_position[y] == level_height - 1) {
-				draw_side(x_m, x_r, tile[b], tile[r], MIN_HEIGHT, MIN_HEIGHT, RED);
+				draw_side(x_m, x_r, tile[b], tile[r], MIN_HEIGHT, MIN_HEIGHT, right_color);
 			} else {
-				draw_side(x_m, x_r, tile[b], tile[r], tile_br[t], tile_br[l], RED);
+				draw_side(x_m, x_r, tile[b], tile[r], tile_br[t], tile_br[l], right_color);
 			}
 
 			//tile outline
@@ -181,12 +181,12 @@ x
 */
 void calculate_tile(float *position, int *tile_index, float *tile_position)
 {
-	int x_pos = floor(position[x] - position[y] + .5);
-	int y_pos = floor(position[x] + position[y] + .5);
+	int posx = floor(position[x] - position[y] + .5);
+	int posy = floor(position[x] + position[y] + .5);
 
-	*tile_index = level_width * (y_pos - x_pos) + x_pos + floor((y_pos - x_pos)/2.);
+	*tile_index = level_width * (posy - posx) + posx + floor((posy - posx)/2.);
 
-	float offset = .5 - .5 * ((abs(x_pos) + abs(y_pos)) % 2);
+	float offset = .5 * ((abs(posx) + abs(posy)) % 2 == 0);
 	double i;
 	tile_position[x] = modf(position[x] + offset, &i);
 	tile_position[y] = modf(position[y] + offset, &i);
@@ -285,6 +285,9 @@ void load_level(char *filename)
 			level[i][j] = buffer/2.;
 		}
 	}
+	fread(floor_color, sizeof(unsigned int), 3, file);
+	fread(left_color, sizeof(unsigned int), 3, file);
+	fread(right_color, sizeof(unsigned int), 3, file);
 
 	fclose(file);
 }
@@ -315,7 +318,6 @@ void input_process(void)
 	    }
 	}
 }
-
 
 int main(int argc, char *argv[])
 {
