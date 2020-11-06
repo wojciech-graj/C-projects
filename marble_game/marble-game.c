@@ -2,7 +2,7 @@
 
 typedef struct Marble {
 	float position[3];
-	int tile;
+	int tile_index;
 	float tile_position[2];
 	float velocity[3];
 	float radius;
@@ -35,7 +35,7 @@ void init_sdl(void)
     glDepthFunc(GL_LEQUAL);
     glShadeModel(GL_SMOOTH);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	gluOrtho2D(-1, 7, -1, 7);
+	gluOrtho2D(-.5, level_width, -1, level_width - .5);
 }
 
 void quit(void)
@@ -117,8 +117,7 @@ void draw(void)
 			glEnd();
 
 			//draw ball
-			//if(player_marble->tile == tile_index) {
-			if(tile_index == player_marble->tile) {
+			if(tile_index == player_marble->tile_index) {
 				float ball_x = player_marble->position[x];
 				float ball_y = (player_marble->position[z] - player_marble->position[y])/2.;
 
@@ -165,44 +164,36 @@ float calculate_z_on_plane(float x1, float y1, float z1, float x2, float y2, flo
 	return (d - v1xv2[x] * posx - v1xv2[y] * posy) / v1xv2[z];
 }
 
-//TODO: OPTIMIZE: there ought to exist some one equation for this
-void calculate_tile(float *position, int *tile, float *tile_position)
+//calculates tile_index and tile_position
+//x_pos and y_pos are coordinates from position, but with axes rotated 45 degrees anticlockwise, y shifted by .5, scaled up by sqrt(2)
+//tile_index and tile_position can be easily calculated using the rotated coordinates
+/* graph of tile indexes after rotation of axes:
+x
+2      2 5
+1    1 4 8
+0  0 3 7
+-1   6
+   1 2 3 4 y
+*/
+void calculate_tile(float *position, int *tile_index, float *tile_position)
 {
-	int tile_x = round(position[x]);
-	int tile_y = round(position[y]);
-	float sum = position[x] + position[y];
-	*tile = 2 * tile_y * level_width + tile_x;
-	tile_position[x] = position[x] + .5 - tile_x;
-	tile_position[y] = position[y] + .5 - tile_y;
-	if(sum < tile_x + tile_y - .5) {//TL
-		*tile -= level_width + 1;
-		tile_position[x] += .5;
-		tile_position[y] += .5;
-	} else if(sum > tile_x + tile_y + .5) {//BR
-		*tile += level_width;
-		tile_position[x] -= .5;
-		tile_position[y] -= .5;
-	} else if(position[x] < tile_x
-		&& position[y] > tile_y
-		&& position[y] - tile_y > position[0] - tile_x + .5) { //BL
-		*tile += level_width - 1;
-		tile_position[x] += .5;
-		tile_position[y] -= .5;
-	} else if(position[x] > tile_x
-		&& position[y] < tile_y
-		&& position[y] - tile_y + .5 < position[0] - tile_x) { //TR
-		*tile -= level_width;
-		tile_position[x] -= .5;
-		tile_position[y] += .5;
-	}
+	int x_pos = floor(position[x] - position[y] + .5);
+	int y_pos = floor(position[x] + position[y] + .5);
+
+	*tile_index = level_width * (y_pos - x_pos) + x_pos + floor((y_pos - x_pos)/2.);
+
+	float offset = .5 - .5 * ((abs(x_pos) + abs(y_pos)) % 2);
+	double i;
+	tile_position[x] = modf(position[x] + offset, &i);
+	tile_position[y] = modf(position[y] + offset, &i);
 }
 
 void physics_process_marble(Marble *marble)
 {
 	//calculate marble->velocity
-	float *tile = level[marble->tile];
+	float *tile = level[marble->tile_index];
 	float tb_avg = (tile[t] + tile[b])/2.;
-	if(!marble->in_air) {
+	if(! marble->in_air) {
 		if(marble->tile_position[x] <= .5 && tile[l] != tb_avg) {
 			marble->velocity[x] += (tile[l] - tb_avg) * GRAVITY_ACCELERATION;
 		} else if(marble->tile_position[x] > .5 && tile[r] != tb_avg) {
@@ -221,32 +212,31 @@ void physics_process_marble(Marble *marble)
 	future_position[x] = marble->position[x] + marble->velocity[x];
 	future_position[y] = marble->position[y] + marble->velocity[y];
 
-	//calculate marble->tile and marble->tile_position
-	int future_tile;
+	//calculate marble->tile_index and marble->tile_position
+	int future_tile_index;
 	float future_tile_position[2];
-	calculate_tile(future_position, &future_tile, future_tile_position);
+	calculate_tile(future_position, &future_tile_index, future_tile_position);
 
-	tile = level[future_tile];
-	tb_avg = (tile[t] + tile[b])/2.;
+	float *future_tile = level[future_tile_index];
+	tb_avg = (future_tile[t] + future_tile[b])/2.;
 
 	//calculate marble->position and collision
 	future_position[z] = calculate_z_on_plane(
-		round(future_tile_position[x]), .5, tile[(future_tile_position[x] < .5) ? l : r],
-		.5, 0, tile[t],
-		.5, 1, tile[b],
+		round(future_tile_position[x]), .5, future_tile[(future_tile_position[x] < .5) ? l : r],
+		.5, 0, future_tile[t],
+		.5, 1, future_tile[b],
 		future_tile_position[x], future_tile_position[y]);
 	if(future_position[z] - marble->position[z] > MAX_DELTA_Z) {
 		marble->velocity[x] = 0;
 		marble->velocity[y] = 0;
 	} else {
-		marble->tile = future_tile;
+		marble->tile_index = future_tile_index;
 		marble->tile_position[x] = future_tile_position[x];
 		marble->tile_position[y] = future_tile_position[y];
 		marble->position[x] = future_position[x];
 		marble->position[y] = future_position[y];
 		if(marble->position[z] - future_position[z] > MAX_DELTA_Z) {
 			if(!marble->in_air) marble->in_air = true;
-			marble->position[z] += marble->velocity[z];
 		} else {
 			if(marble->in_air) marble->in_air = false;
 			marble->velocity[z] = future_position[z] - marble->position[z];
@@ -260,8 +250,8 @@ void init_marble(Marble **marble)
 	*marble = malloc(sizeof(Marble));
 	(*marble)->position[x] = 0;
 	(*marble)->position[y] = 0;
-	calculate_tile((*marble)->position, &((*marble)->tile), (*marble)->tile_position);
-	float *tile = level[(*marble)->tile];
+	calculate_tile((*marble)->position, &((*marble)->tile_index), (*marble)->tile_position);
+	float *tile = level[(*marble)->tile_index];
 	(*marble)->position[z] = (tile[t] + tile[b])/2.; //assume that x is in middle of tile
 	(*marble)->velocity[x] = 0;
 	(*marble)->velocity[y] = 0;
