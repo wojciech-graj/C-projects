@@ -35,7 +35,7 @@ void init_sdl(void)
     glDepthFunc(GL_LEQUAL);
     glShadeModel(GL_SMOOTH);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	gluOrtho2D(-.5, level_width, -1, level_width - .5);
+	gluOrtho2D(-.5, 5, -1, 4.5);
 }
 
 void quit(void)
@@ -43,6 +43,7 @@ void quit(void)
 	SDL_GL_DeleteContext(main_context);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
+	free(level);
 }
 
 void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s, const float *color)
@@ -58,9 +59,29 @@ void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s,
 	}
 }
 
+void calculate_projection(float (*level_projection)[4])
+{
+	int tile_position[2];
+	for(tile_position[y] = 0; tile_position[y] < level_height; tile_position[y]++)
+	{
+		for(tile_position[x] = 0; tile_position[x] < level_width; tile_position[x]++)
+		{
+			int i = tile_position[y] * level_width + tile_position[x];
+			level_projection[i][l] = level[i][l]/2. - tile_position[y]/4.;
+			level_projection[i][t] = level[i][t]/2. - tile_position[y]/4. + .25;
+			level_projection[i][r] = level[i][r]/2. - tile_position[y]/4.;
+			level_projection[i][b] = level[i][b]/2. - tile_position[y]/4. - .25;
+		}
+	}
+}
+
 void draw(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	float level_projection[level_height * level_width][4];
+	calculate_projection(level_projection);
+
 	//draw board
 	int tile_position[2];
 	for(tile_position[y] = 0; tile_position[y] < level_height; tile_position[y]++)
@@ -136,23 +157,6 @@ void draw(void)
 	SDL_GL_SwapWindow(window);
 }
 
-void calculate_projection(void)
-{
-	int tile_position[2];
-	for(tile_position[y] = 0; tile_position[y] < level_height; tile_position[y]++)
-	{
-		for(tile_position[x] = 0; tile_position[x] < level_width; tile_position[x]++)
-		{
-			int i = tile_position[y] * level_width + tile_position[x];
-			level_projection[i][l] = level[i][l]/2. - tile_position[y]/4.;
-			level_projection[i][t] = level[i][t]/2. - tile_position[y]/4. + .25;
-			level_projection[i][r] = level[i][r]/2. - tile_position[y]/4.;
-			level_projection[i][b] = level[i][b]/2. - tile_position[y]/4. - .25;
-		}
-	}
-}
-
-
 //calculates the z value of point (posx,posy) on the plane which intersects (x1,y1,z1),(x2,y2,z2),(x3,y3,z3)
 float calculate_z_on_plane(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float posx, float posy) {
 	float v1[3] = {x2 - x1, y2 - y1, z2 - z1};
@@ -173,7 +177,7 @@ x
 1    1 4 8
 0  0 3 7
 -1   6
-   1 2 3 4 y
+   0 1 2 3 y
 */
 void calculate_tile(float *position, int *tile_index, float *tile_position)
 {
@@ -260,7 +264,32 @@ void init_marble(Marble **marble)
 	(*marble)->physics_process = &physics_process_marble;
 }
 
-void process_input(void)
+void load_level(char *filename)
+{
+	FILE *file = fopen(filename, "rb");
+	assert(file);
+	short buffer;
+
+	fread(&level_width, sizeof(short), 1, file);
+	fread(&level_height, sizeof(short), 1, file);
+
+	level = malloc(sizeof(float) * level_height * level_width * 4);
+
+	int i;
+	for(i = 0; i < level_width * level_height; i++)
+	{
+		int j;
+		for(j = 0; j < 4; j++)
+		{
+			fread(&buffer, sizeof(short), 1, file);
+			level[i][j] = buffer/2.;
+		}
+	}
+
+	fclose(file);
+}
+
+void input_process(void)
 {
 	SDL_Event event;
 
@@ -292,7 +321,7 @@ int main(int argc, char *argv[])
 {
 	init_sdl();
 
-	calculate_projection();
+	load_level("resources/level1");
 
 	init_marble(&player_marble);
 	assert(player_marble);
@@ -300,7 +329,7 @@ int main(int argc, char *argv[])
 	while(true)
 	{
 		Uint32 frame_start = SDL_GetTicks();
-		process_input();
+		input_process();
 		player_marble->physics_process(player_marble);
 		draw();
 		Uint32 frame_time = SDL_GetTicks() - frame_start;
