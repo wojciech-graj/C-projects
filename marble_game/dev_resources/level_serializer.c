@@ -58,14 +58,16 @@ int main(int argc, char *argv[])
 			for(i = 0; buffer[i] != '\0'; i++)
 			{
 				if(isdigit(buffer[i])) {
+					if(buffer[i] == 48 && cur_num == 0) goto WRITE_LEVEL;
 					cur_num = 10 * cur_num + buffer[i] - 48;
 				} else if(cur_num != 0) {
+					WRITE_LEVEL:
 					fwrite(&cur_num, sizeof(short), 1, output_file);
 					cur_num = 0;
 					num_cols++;
 				}
 			}
-			assert(num_cols == level_size[0] * 4);
+			assert(num_cols == level_size[0] * 5);
 		} else if(! strncmp("COLOR", buffer, 5)) {
 			memmove(buffer, buffer+5, strlen(buffer));
 			if(! strncmp("FLOOR", buffer, 5)) {

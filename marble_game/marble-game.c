@@ -61,6 +61,19 @@ void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s,
 	}
 }
 
+void calculate_side_to_draw(float x_m, float x_s, float t_b, float t_s, float t_d, float b_t, float b_s, bool on_edge, unsigned char *color)
+{
+	if(on_edge && t_d == 0) {
+		draw_side(x_m, x_s, t_b, t_s, MIN_HEIGHT, MIN_HEIGHT, color);
+	} else if(t_b > b_s || t_s > b_t) {
+		if(t_d == 0) {
+			draw_side(x_m, x_s, t_b, t_s, b_t, b_s, color);
+		} else {
+			draw_side(x_m, x_s, t_b, t_s, t_s - t_d/2., t_b - t_d/2., color);
+		}
+	}
+}
+
 void calculate_projection(float (*level_projection)[4])
 {
 	int tile_position[2];
@@ -119,20 +132,13 @@ void draw(void)
 			glVertex2f(x_m, tile[t]);
 			glEnd();
 
-			//side fill
+			//left side fill
 			float *tile_bl = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset - 1];
-			if(tile_position[x] == 0 && ! offset || tile_position[y] == level_height - 1) {
-				draw_side(x_m, x_l, tile[b], tile[l], MIN_HEIGHT, MIN_HEIGHT, left_color);
-			} else {
-				draw_side(x_m, x_l, tile[b], tile[l], tile_bl[t], tile_bl[r], left_color);
-			}
+			calculate_side_to_draw(x_m, x_l, tile[b], tile[l], level[tile_index][d], tile_bl[t], tile_bl[r], ((tile_position[x] == 0 && ! offset) || tile_position[y] == level_height - 1), left_color);
 
+			//right side fill
 			float *tile_br = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset];
-			if(tile_position[x] == level_width - 1 && offset || tile_position[y] == level_height - 1) {
-				draw_side(x_m, x_r, tile[b], tile[r], MIN_HEIGHT, MIN_HEIGHT, right_color);
-			} else {
-				draw_side(x_m, x_r, tile[b], tile[r], tile_br[t], tile_br[l], right_color);
-			}
+			calculate_side_to_draw(x_m, x_r, tile[b], tile[r], level[tile_index][d], tile_br[t], tile_br[l], ((tile_position[x] == level_width - 1 && offset) || tile_position[y] == level_height - 1), right_color);
 
 			//tile outline
 			glColor3f(1, 1, 1);
@@ -279,13 +285,13 @@ void load_level(char *filename)
 	fread(&level_width, sizeof(short), 1, file);
 	fread(&level_height, sizeof(short), 1, file);
 
-	level = malloc(sizeof(float) * level_height * level_width * 4);
+	level = malloc(sizeof(float) * level_height * level_width * 5);
 
 	int i;
 	for(i = 0; i < level_width * level_height; i++)
 	{
 		int j;
-		for(j = 0; j < 4; j++)
+		for(j = 0; j < 5; j++)
 		{
 			fread(&buffer, sizeof(short), 1, file);
 			level[i][j] = buffer/2.;
@@ -325,7 +331,7 @@ void input_process(void)
 	}
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	init_sdl();
 

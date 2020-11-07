@@ -39,10 +39,10 @@ SDL_Window *window = NULL;
 SDL_GLContext main_context = NULL;
 const Uint8 *keystates = NULL;
 
-enum tile_directions{l, t, r, b};
+enum tile_directions{l, t, r, b, d};
 enum coordinates{x, y, z};
 
-float (*level)[4];
+float (*level)[5];
 
 typedef struct Marble Marble;
 
