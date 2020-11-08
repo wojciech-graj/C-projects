@@ -10,8 +10,6 @@ typedef struct Marble {
 	void (*physics_process)(Marble*);
 } Marble;
 
-//TODO: ADD DEPTH TO TILES
-
 void init_sdl(void)
 {
     assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
@@ -32,12 +30,8 @@ void init_sdl(void)
 	assert(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == 0);
 	assert(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == 0);
 
-    glClearDepth(1.0f);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    glShadeModel(GL_SMOOTH);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	gluOrtho2D(-.5, 5, -1, 4.5);
+	gluOrtho2D(0, TILES_ON_SCREEN, 0, TILES_ON_SCREEN);
 }
 
 void quit(void)
@@ -48,28 +42,27 @@ void quit(void)
 	free(level);
 }
 
-void draw_side(float x_m, float x_s, float t_b, float t_s, float b_t, float b_s, unsigned char *color)
+void draw_side(float x_m, float x_s, float tile_b, float tile_s, float bottom_tile_t, float bottom_tile_s, unsigned char *color)
 {
-	if(t_b != b_s || t_s != b_t) {
-		glColor3ubv(color);
-		glBegin(GL_QUADS);
-		glVertex2f(x_m, t_b);
-		glVertex2f(x_s, t_s);
-		glVertex2f(x_s, b_t);
-		glVertex2f(x_m, b_s);
-		glEnd();
-	}
+	glColor3ubv(color);
+	glBegin(GL_QUADS);
+	glVertex2f(x_m, tile_b);
+	glVertex2f(x_s, tile_s);
+	glVertex2f(x_s, bottom_tile_t);
+	glVertex2f(x_m, bottom_tile_s);
+	glEnd();
 }
 
-void calculate_side_to_draw(float x_m, float x_s, float t_b, float t_s, float t_d, float b_t, float b_s, bool on_edge, unsigned char *color)
+void calculate_draw_side(float x_m, float x_s, float tile_b, float tile_s, float tile_d, int bottom_tile_index, int side, float (*level_projection)[4], bool on_edge, unsigned char *color)
 {
-	if(on_edge && t_d == 0) {
-		draw_side(x_m, x_s, t_b, t_s, MIN_HEIGHT, MIN_HEIGHT, color);
-	} else if(t_b > b_s || t_s > b_t) {
-		if(t_d == 0) {
-			draw_side(x_m, x_s, t_b, t_s, b_t, b_s, color);
-		} else {
-			draw_side(x_m, x_s, t_b, t_s, t_s - t_d/2., t_b - t_d/2., color);
+	if(on_edge && tile_d == 0) {
+		draw_side(x_m, x_s, tile_b, tile_s, tile_b - EDGE_HEIGHT, tile_s - EDGE_HEIGHT, color);
+	} else {
+		float *bottom_tile_tile = level_projection[bottom_tile_index];
+		if(tile_d != 0) {
+			draw_side(x_m, x_s, tile_b, tile_s, tile_s - tile_d/2., tile_b - tile_d/2., color);
+		} else if(tile_b > bottom_tile_tile[side] || tile_s > bottom_tile_tile[t]) {
+			draw_side(x_m, x_s, tile_b, tile_s, bottom_tile_tile[t], bottom_tile_tile[side], color);
 		}
 	}
 }
@@ -90,14 +83,57 @@ void calculate_projection(float (*level_projection)[4])
 	}
 }
 
+void draw_tile_triangle(float x_m, float x_s, float tile_b, float tile_s, float tile_t, float cmul)
+{
+	glBegin(GL_TRIANGLES);
+	glColor3ub(MIN(MAX(0, floor_color[0] * cmul), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
+		MIN(MAX(0, floor_color[1] * cmul), 255),
+		MIN(MAX(0, floor_color[2] * cmul), 255));
+	glVertex2f(x_m, tile_b);
+	glVertex2f(x_s, tile_s);
+	glVertex2f(x_m, tile_t);
+	glEnd();
+}
+
+void draw_tile_outline(float x_l, float x_m, float x_r, float *tile)
+{
+	glColor3f(1, 1, 1);
+	glBegin(GL_LINE_LOOP);
+	glVertex2f(x_l, tile[l]);
+	glVertex2f(x_m, tile[t]);
+	glVertex2f(x_r, tile[r]);
+	glVertex2f(x_m, tile[b]);
+	glEnd();
+}
+
+void draw_marble(Marble *marble)
+{
+	float ball_x = marble->position[x];
+	float ball_y = (marble->position[z] - marble->position[y])/2.;
+
+	glColor3fv(GREEN);
+	glBegin(GL_POLYGON);
+	float angle;
+	for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
+	{
+		glVertex2f(marble->radius * cos(angle) + ball_x,
+			marble->radius * sin(angle) + marble->radius + ball_y);
+	}
+	glEnd();
+}
+
 void draw(void)
 {
+	if(scroll) {
+		glLoadIdentity();
+		gluOrtho2D(0, TILES_ON_SCREEN, 0 - screen_scroll/2., TILES_ON_SCREEN - screen_scroll/2.);
+		scroll = false;
+	}
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	float level_projection[level_height * level_width][4];
 	calculate_projection(level_projection);
 
-	//draw board
 	int tile_position[2];
 	for(tile_position[y] = 0; tile_position[y] < level_height; tile_position[y]++)
 	{
@@ -112,57 +148,26 @@ void draw(void)
 			float x_r = tile_position[x] + .5 + offset/2.;
 			float tb_avg = (tile[b] + tile[t])/2.;
 
-			//top surface
-			float cmul_l = 1 + (tb_avg - tile[l]);
-			float cmul_r = 1 + (tile[r] - tb_avg);
-			glBegin(GL_TRIANGLES);
-			//left triangle
-			glColor3ub(MIN(MAX(0, floor_color[0] * cmul_l), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
-				MIN(MAX(0, floor_color[1] * cmul_l), 255),
-				MIN(MAX(0, floor_color[2] * cmul_l), 255));
-			glVertex2f(x_m, tile[b]);
-			glVertex2f(x_l, tile[l]);
-			glVertex2f(x_m, tile[t]);
-			// right triangle
-			glColor3ub(MIN(MAX(0, floor_color[0] * cmul_r), 255),
-				MIN(MAX(0, floor_color[1] * cmul_r), 255),
-				MIN(MAX(0, floor_color[2] * cmul_r), 255));
-			glVertex2f(x_m, tile[b]);
-			glVertex2f(x_r, tile[r]);
-			glVertex2f(x_m, tile[t]);
-			glEnd();
+			if(ON_SCREEN(tile[t]) || ON_SCREEN(tile[b])) {
+				draw_tile_triangle(x_m, x_l, tile[b], tile[l], tile[t], (1 + (tb_avg - tile[l]))); //left triangle
+				calculate_draw_side(x_m, x_l,
+					tile[b], tile[l],
+					level[tile_index][d],
+					((tile_position[y] + 1) * level_width + tile_position[x] + offset - 1), r, level_projection,
+					((tile_position[x] == 0 && ! offset) || tile_position[y] == level_height - 1),
+					left_color); //left side fill
+				draw_tile_triangle(x_m, x_r, tile[b], tile[r], tile[t], (1 + (tile[r] - tb_avg))); // right triangle
+				calculate_draw_side(x_m, x_r,
+					tile[b], tile[r],
+					level[tile_index][d],
+					((tile_position[y] + 1) * level_width + tile_position[x] + offset), l, level_projection,
+					((tile_position[x] == level_width - 1 && offset) || tile_position[y] == level_height - 1),
+					right_color); //right side fill
+				draw_tile_outline(x_l, x_m, x_r, tile);
+			}
 
-			//left side fill
-			float *tile_bl = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset - 1];
-			calculate_side_to_draw(x_m, x_l, tile[b], tile[l], level[tile_index][d], tile_bl[t], tile_bl[r], ((tile_position[x] == 0 && ! offset) || tile_position[y] == level_height - 1), left_color);
-
-			//right side fill
-			float *tile_br = level_projection[(tile_position[y] + 1) * level_width + tile_position[x] + offset];
-			calculate_side_to_draw(x_m, x_r, tile[b], tile[r], level[tile_index][d], tile_br[t], tile_br[l], ((tile_position[x] == level_width - 1 && offset) || tile_position[y] == level_height - 1), right_color);
-
-			//tile outline
-			glColor3f(1, 1, 1);
-			glBegin(GL_LINE_LOOP);
-			glVertex2f(x_l, tile[l]);
-			glVertex2f(x_m, tile[t]);
-			glVertex2f(x_r, tile[r]);
-			glVertex2f(x_m, tile[b]);
-			glEnd();
-
-			//draw ball
-			if(tile_index == player_marble->tile_index) {
-				float ball_x = player_marble->position[x];
-				float ball_y = (player_marble->position[z] - player_marble->position[y])/2.;
-
-				glColor3fv(GREEN);
-				glBegin(GL_POLYGON);
-				float angle;
-				for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
-				{
-					glVertex2f(player_marble->radius * cos(angle) + ball_x,
-						player_marble->radius * sin(angle) + player_marble->radius + ball_y);
-				}
-				glEnd();
+			if(tile_index == player_marble->tile_index) { //draw ball
+				draw_marble(player_marble);
 			}
 		}
 	}
@@ -258,6 +263,11 @@ void physics_process_marble(Marble *marble)
 			marble->velocity[z] = future_position[z] - marble->position[z];
 		}
 		marble->position[z] += marble->velocity[z];
+	}
+
+	if(marble->position[y] + 1 - screen_scroll >= TILES_ON_SCREEN/2.) {
+		screen_scroll = .1;
+		scroll = true;
 	}
 }
 

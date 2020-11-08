@@ -14,7 +14,8 @@
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
-#define MIN_HEIGHT -2
+#define TILES_ON_SCREEN 7
+#define EDGE_HEIGHT 8
 #define M_TAO (M_PI * 2)
 #define FPS 30
 #define FRAMETIME (1000 / FPS)
@@ -23,8 +24,10 @@
 #define FRICTION .02
 #define MARBLE_ACCELERATION .003
 #define MAX_DELTA_Z .2
+
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
+#define ON_SCREEN(y) (y >= -screen_scroll/2. && y <= TILES_ON_SCREEN -screen_scroll/2.)
 
 short level_height;
 short level_width;
@@ -47,5 +50,8 @@ float (*level)[5];
 typedef struct Marble Marble;
 
 Marble *player_marble = NULL;
+
+float screen_scroll = 0;
+bool scroll = false;
 
 #endif
