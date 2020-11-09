@@ -85,14 +85,12 @@ void calculate_projection(float (*level_projection)[4])
 
 void draw_tile_triangle(float x_m, float x_s, float tile_b, float tile_s, float tile_t, float cmul)
 {
-	glBegin(GL_TRIANGLES);
 	glColor3ub(MIN(MAX(0, floor_color[0] * cmul), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
 		MIN(MAX(0, floor_color[1] * cmul), 255),
 		MIN(MAX(0, floor_color[2] * cmul), 255));
 	glVertex2f(x_m, tile_b);
 	glVertex2f(x_s, tile_s);
 	glVertex2f(x_m, tile_t);
-	glEnd();
 }
 
 void draw_tile_outline(float x_l, float x_m, float x_r, float *tile)
@@ -108,27 +106,26 @@ void draw_tile_outline(float x_l, float x_m, float x_r, float *tile)
 
 void draw_marble(Marble *marble)
 {
-	float ball_x = marble->position[x];
-	float ball_y = (marble->position[z] - marble->position[y])/2.;
-
 	glColor3fv(GREEN);
 	glBegin(GL_POLYGON);
 	float angle;
 	for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
 	{
-		glVertex2f(marble->radius * cos(angle) + ball_x,
-			marble->radius * sin(angle) + marble->radius + ball_y);
+		glVertex2f(marble->radius * cos(angle) + marble->position[x],
+			marble->radius * sin(angle) + marble->radius + (marble->position[z] - marble->position[y])/2.);
 	}
 	glEnd();
 }
 
+void scroll_screen(void)
+{
+	glLoadIdentity();
+	gluOrtho2D(0 + scroll_offset[x], TILES_ON_SCREEN + scroll_offset[x],
+		0 - scroll_offset[y]/2., TILES_ON_SCREEN - scroll_offset[y]/2.);
+}
+
 void draw(void)
 {
-	if(scroll) {
-		glLoadIdentity();
-		gluOrtho2D(0, TILES_ON_SCREEN, 0 - screen_scroll/2., TILES_ON_SCREEN - screen_scroll/2.);
-		scroll = false;
-	}
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	float level_projection[level_height * level_width][4];
@@ -148,15 +145,18 @@ void draw(void)
 			float x_r = tile_position[x] + .5 + offset/2.;
 			float tb_avg = (tile[b] + tile[t])/2.;
 
-			if(ON_SCREEN(tile[t]) || ON_SCREEN(tile[b])) {
+			if((ON_SCREEN_Y(tile[t]) || ON_SCREEN_Y(tile[b]))
+				&& (ON_SCREEN_X(x_l) || ON_SCREEN_X(x_r))) {
+				glBegin(GL_TRIANGLES);
 				draw_tile_triangle(x_m, x_l, tile[b], tile[l], tile[t], (1 + (tb_avg - tile[l]))); //left triangle
+				draw_tile_triangle(x_m, x_r, tile[b], tile[r], tile[t], (1 + (tile[r] - tb_avg))); // right triangle
+				glEnd();
 				calculate_draw_side(x_m, x_l,
 					tile[b], tile[l],
 					level[tile_index][d],
 					((tile_position[y] + 1) * level_width + tile_position[x] + offset - 1), r, level_projection,
 					((tile_position[x] == 0 && ! offset) || tile_position[y] == level_height - 1),
 					left_color); //left side fill
-				draw_tile_triangle(x_m, x_r, tile[b], tile[r], tile[t], (1 + (tile[r] - tb_avg))); // right triangle
 				calculate_draw_side(x_m, x_r,
 					tile[b], tile[r],
 					level[tile_index][d],
@@ -265,9 +265,23 @@ void physics_process_marble(Marble *marble)
 		marble->position[z] += marble->velocity[z];
 	}
 
-	if(marble->position[y] + 1 - screen_scroll >= TILES_ON_SCREEN/2.) {
-		screen_scroll = .1;
-		scroll = true;
+	//scroll screen
+	float marble_screen_pos[2] = {marble->position[x] - scroll_offset[x], marble->position[z] - marble->position[y] + scroll_offset[y]};
+	if(marble_screen_pos[y] <= SCROLL_BORDER) {
+		scroll_offset[y] = marble->position[y] - marble->position[z] + SCROLL_BORDER;
+		scroll_screen();
+	}
+	if(marble_screen_pos[y] >= TILES_ON_SCREEN * 2 - SCROLL_BORDER) {
+		scroll_offset[y] = marble->position[y] - marble->position[z] - SCROLL_BORDER + TILES_ON_SCREEN * 2;
+		scroll_screen();
+	}
+	if(marble_screen_pos[x] >= TILES_ON_SCREEN - SCROLL_BORDER) {
+		scroll_offset[x] = marble->position[x] + SCROLL_BORDER - TILES_ON_SCREEN;
+		scroll_screen();
+	}
+	if(marble_screen_pos[x] <= SCROLL_BORDER) {
+		scroll_offset[x] = marble->position[x] - SCROLL_BORDER;
+		scroll_screen();
 	}
 }
 

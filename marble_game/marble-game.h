@@ -7,14 +7,14 @@
 #include <stdlib.h>
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
 
 #include <GL/gl.h>
 #include <GL/glu.h>
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
-#define TILES_ON_SCREEN 7
+#define TILES_ON_SCREEN 8
+#define SCROLL_BORDER 2
 #define EDGE_HEIGHT 8
 #define M_TAO (M_PI * 2)
 #define FPS 30
@@ -23,11 +23,14 @@
 #define GRAVITY_ACCELERATION .01
 #define FRICTION .02
 #define MARBLE_ACCELERATION .003
-#define MAX_DELTA_Z .2
+#define MAX_DELTA_Z .3
 
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
-#define ON_SCREEN(y) (y >= -screen_scroll/2. && y <= TILES_ON_SCREEN -screen_scroll/2.)
+#define ON_SCREEN_Y(posy) (posy >= -scroll_offset[y]/2.\
+	&& posy <= TILES_ON_SCREEN -scroll_offset[y]/2.)
+#define ON_SCREEN_X(posx) (posx >= 0 + scroll_offset[x]\
+	&& posx <= TILES_ON_SCREEN + scroll_offset[x])
 
 short level_height;
 short level_width;
@@ -51,7 +54,6 @@ typedef struct Marble Marble;
 
 Marble *player_marble = NULL;
 
-float screen_scroll = 0;
-bool scroll = false;
+float scroll_offset[2] = {0, 0};
 
 #endif
