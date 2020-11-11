@@ -24,6 +24,7 @@
 #define FRICTION .02
 #define MARBLE_ACCELERATION .003
 #define MAX_DELTA_Z .3
+#define NUM_TEXTURES 1
 
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
@@ -32,26 +33,26 @@
 #define ON_SCREEN_X(posx) (posx >= 0 + scroll_offset[x]\
 	&& posx <= TILES_ON_SCREEN + scroll_offset[x])
 
-short level_height;
-short level_width;
+enum coordinates{x, y, z};
 
+const float GREEN[] = {0, 1, 0};
 unsigned char floor_color[3];
 unsigned char left_color[3];
 unsigned char right_color[3];
 
-const float GREEN[] = {0, 1, 0};
-
+const Uint8 *keystates = NULL;
 SDL_Window *window = NULL;
 SDL_GLContext main_context = NULL;
-const Uint8 *keystates = NULL;
 
 enum tile_directions{l, t, r, b, d};
-enum coordinates{x, y, z};
-
+short level_height;
+short level_width;
 float (*level)[5];
 
-typedef struct Marble Marble;
+enum texture_names{T_GOAL};
+unsigned int textures[NUM_TEXTURES];
 
+typedef struct Marble Marble;
 Marble *player_marble = NULL;
 
 float scroll_offset[2] = {0, 0};

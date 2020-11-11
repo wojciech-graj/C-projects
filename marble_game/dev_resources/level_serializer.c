@@ -1,4 +1,4 @@
-//creates a binary file which contains level information obtained from the input file.
+//creates a binary file which contains level information obtained from the input file
 //data types:
 //	short: level width, level height, level data
 //	unsigned char: floor color, left color, right color
@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
 			for(i = 0; buffer[i] != '\0'; i++)
 			{
 				if(isdigit(buffer[i])) {
-					if(buffer[i] == 48 && cur_num == 0) goto WRITE_LEVEL;
-					cur_num = 10 * cur_num + buffer[i] - 48;
+					if(buffer[i] == '0' && cur_num == 0) goto WRITE_LEVEL;
+					cur_num = 10 * cur_num + buffer[i] - '0';
 				} else if(cur_num != 0) {
 					WRITE_LEVEL:
 					fwrite(&cur_num, sizeof(short), 1, output_file);
@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
 			for(i = 1; buffer[i - 1] != '\0'; i++)
 			{
 				if(isdigit(buffer[i])) {
-					if(buffer[i] == 48 && cur_num == 0) goto WRITE_COLOR;
-					cur_num = 10 * cur_num + buffer[i] - 48;
+					if(buffer[i] == '0' && cur_num == 0) goto WRITE_COLOR;
+					cur_num = 10 * cur_num + buffer[i] - '0';
 				} else if(cur_num != 0) {
 					WRITE_COLOR:
 					fwrite(&cur_num, sizeof(unsigned char), 1, output_file);

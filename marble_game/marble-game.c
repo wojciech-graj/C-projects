@@ -30,6 +30,9 @@ void init_sdl(void)
 	assert(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == 0);
 	assert(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == 0);
 
+	glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	gluOrtho2D(0, TILES_ON_SCREEN, 0, TILES_ON_SCREEN);
 }
@@ -147,6 +150,7 @@ void draw(void)
 
 			if((ON_SCREEN_Y(tile[t]) || ON_SCREEN_Y(tile[b]))
 				&& (ON_SCREEN_X(x_l) || ON_SCREEN_X(x_r))) {
+
 				glBegin(GL_TRIANGLES);
 				draw_tile_triangle(x_m, x_l, tile[b], tile[l], tile[t], (1 + (tb_avg - tile[l]))); //left triangle
 				draw_tile_triangle(x_m, x_r, tile[b], tile[r], tile[t], (1 + (tile[r] - tb_avg))); // right triangle
@@ -169,6 +173,22 @@ void draw(void)
 			if(tile_index == player_marble->tile_index) { //draw ball
 				draw_marble(player_marble);
 			}
+			//uncomment following lines for demonstration of texture drawing
+			/*
+			if(tile_index == 35) {
+				glEnable(GL_TEXTURE_2D);
+				glBegin(GL_QUADS);
+				glTexCoord2f(0., 1.);
+				glVertex2f(x_l, tile[t]);
+				glTexCoord2f(0., 0.);
+				glVertex2f(x_l, tile[b]);
+				glTexCoord2f(1., 0.);
+				glVertex2f(x_r, tile[b]);
+				glTexCoord2f(1., 1.);
+				glVertex2f(x_r, tile[t]);
+				glEnd();
+				glDisable(GL_TEXTURE_2D);
+			}*/
 		}
 	}
 	SDL_GL_SwapWindow(window);
@@ -266,7 +286,8 @@ void physics_process_marble(Marble *marble)
 	}
 
 	//scroll screen
-	float marble_screen_pos[2] = {marble->position[x] - scroll_offset[x], marble->position[z] - marble->position[y] + scroll_offset[y]};
+	float marble_screen_pos[2] = {marble->position[x] - scroll_offset[x],
+		marble->position[z] - marble->position[y] + scroll_offset[y]};
 	if(marble_screen_pos[y] <= SCROLL_BORDER) {
 		scroll_offset[y] = marble->position[y] - marble->position[z] + SCROLL_BORDER;
 		scroll_screen();
@@ -321,9 +342,42 @@ void load_level(char *filename)
 			level[i][j] = buffer/2.;
 		}
 	}
-	fread(floor_color, sizeof(unsigned int), 3, file);
-	fread(left_color, sizeof(unsigned int), 3, file);
-	fread(right_color, sizeof(unsigned int), 3, file);
+
+	fread(floor_color, sizeof(unsigned char), 3, file);
+	fread(left_color, sizeof(unsigned char), 3, file);
+	fread(right_color, sizeof(unsigned char), 3, file);
+
+	fclose(file);
+}
+
+void init_texture(unsigned char (*texture)[4], short *dimensions, unsigned int index)
+{
+	glBindTexture(GL_TEXTURE_2D, index);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dimensions[x], dimensions[y], 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+}
+
+void load_textures(char *filename)
+{
+	glGenTextures(NUM_TEXTURES, textures);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+	FILE *file = fopen(filename, "rb");
+	assert(file);
+
+	int i;
+	for(i = 0; i < NUM_TEXTURES; i++)
+	{
+		short image_dimensions[2];
+		fread(image_dimensions, sizeof(short), 2, file);
+
+		int image_size = image_dimensions[x] * image_dimensions[y];
+		unsigned char image[image_size][4];
+		fread(image, sizeof(unsigned char), image_size * 4, file);
+
+		init_texture(image, image_dimensions, i);
+	}
 
 	fclose(file);
 }
@@ -360,6 +414,8 @@ int main(void)
 	init_sdl();
 
 	load_level("resources/level1");
+
+	load_textures("resources/textures");
 
 	init_marble(&player_marble);
 	assert(player_marble);
