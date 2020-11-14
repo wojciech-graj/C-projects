@@ -99,6 +99,26 @@ int main(int argc, char *argv[])
 				}
 			}
 			assert(num_vals == 3);
+		} else if(! strncmp("GOAL", buffer, 4)) {
+			assert(element_num == 7);
+			element_num++;
+
+			int num_vals = 0;
+			short cur_num;
+			int i;
+			for(i = 0; buffer[i] != '\0'; i++)
+			{
+				if(isdigit(buffer[i])) {
+					if(buffer[i] == '0' && cur_num == 0) goto WRITE_GOAL;
+					cur_num = 10 * cur_num + buffer[i] - '0';
+				} else if(cur_num != 0) {
+					WRITE_GOAL:
+					fwrite(&cur_num, sizeof(short), 1, output_file);
+					cur_num = 0;
+					num_vals++;
+				}
+			}
+			assert(num_vals == 8);
 		}
     }
 
