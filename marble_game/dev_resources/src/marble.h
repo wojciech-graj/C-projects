@@ -4,8 +4,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "global_constants.h"
+#include "global.h"
 #include "context.h"
+#include "object.h"
 #include "math_functions.h"
 #include "level.h"
 
@@ -14,18 +15,17 @@
 #define MARBLE_ACCELERATION .003
 #define MAX_DELTA_Z .3
 
-typedef struct Marble Marble;
 typedef struct Marble {
+	void (*physics_process)(Context*, Object*);
 	float position[3];
 	int tile_index;
 	float tile_position[2];
 	float velocity[3];
 	float radius;
 	bool in_air;
-	void (*physics_process)(Marble*, Context*);
 } Marble;
 
-Marble *init_marble(Context *level);
-void physics_process_marble(Marble *marble, Context *context);
+Marble *init_marble(Context *context);
+void physics_process_marble(Context *context, Object *object);
 
 #endif

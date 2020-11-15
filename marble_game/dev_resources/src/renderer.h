@@ -5,7 +5,8 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#include "global_constants.h"
+#include "global.h"
+#include "math_functions.h"
 #include "context.h"
 #include "marble.h"
 #include "level.h"
@@ -19,6 +20,8 @@
 	&& posy <= TILES_ON_SCREEN -scroll_offset[Y]/2.)
 #define ON_SCREEN_X(posx, scroll_offset) (posx >= 0 + scroll_offset[X]\
 	&& posx <= TILES_ON_SCREEN + scroll_offset[X])
+
+static const float GREEN[] = {0, 1, 0};
 
 typedef struct SDL_Context {
 	const Uint8 *keystates;

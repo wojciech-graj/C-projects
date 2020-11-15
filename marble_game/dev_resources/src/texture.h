@@ -7,7 +7,7 @@
 
 #include <GL/gl.h>
 
-#include "global_constants.h"
+#include "global.h"
 #include "context.h"
 
 void init_texture(unsigned char (*image)[4], short *dimensions, unsigned int texture);

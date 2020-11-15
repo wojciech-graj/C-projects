@@ -1,6 +1,7 @@
-GAME_FILES := game.c area.c context.c texture.c level.c marble.c math_functions.c renderer.c
+GAME_FILES := game.c area.c context.c texture.c level.c marble.c math_functions.c renderer.c object.c
 GAME_PATH = dev_resources/src/
-GAME_CFLAGS := -lm -g `sdl2-config --libs --cflags` -lGL -lGLU -Wall -Wextra
+GAME_CFLAGS := -lm `sdl2-config --libs --cflags` -lGL -lGLU -Wall -Wextra
+DEBUG_CFLAGS := -g -fsanitize=address
 
 TOOLS_PATH = dev_resources/tools/
 

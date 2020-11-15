@@ -3,6 +3,7 @@
 Marble *init_marble(Context *context)
 {
 	Marble *marble = malloc(sizeof(Marble));
+	marble->physics_process = &physics_process_marble;
 	marble->position[X] = 0;
 	marble->position[Y] = 0;
 	calculate_tile(marble->position, &(marble->tile_index), marble->tile_position, context);
@@ -12,16 +13,17 @@ Marble *init_marble(Context *context)
 	marble->velocity[Y] = 0;
 	marble->radius = .2;
 	marble->in_air = false;
-	marble->physics_process = &physics_process_marble;
 	return marble;
 }
 
-void physics_process_marble(Marble *marble, Context *context)
+void physics_process_marble(Context *context, Object *object)
 {
+	Marble *marble = object->marble;
 	//calculate marble->velocity
 	float *tile = context->level[marble->tile_index];
 	float tb_avg = (tile[T] + tile[B])/2.;
 	if(! marble->in_air) {
+		context->can_control = true;
 		if(marble->tile_position[X] <= .5 && tile[L] != tb_avg) {
 			marble->velocity[X] += (tile[L] - tb_avg) * GRAVITY_ACCELERATION;
 		} else if(marble->tile_position[X] > .5 && tile[R] != tb_avg) {
@@ -33,6 +35,7 @@ void physics_process_marble(Marble *marble, Context *context)
 		marble->velocity[X] -= FRICTION * marble->velocity[X];
 		marble->velocity[Y] -= FRICTION * marble->velocity[Y];
 	} else {
+		context->can_control = false;
 		marble->velocity[Z] -= GRAVITY_ACCELERATION;
 	}
 

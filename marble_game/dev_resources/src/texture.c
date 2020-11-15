@@ -1,8 +1,8 @@
 #include "texture.h"
 
-void init_texture(unsigned char (*image)[4], short *dimensions, unsigned int texture)
+void init_texture(unsigned char (*image)[4], short *dimensions, unsigned int texture_id)
 {
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dimensions[X], dimensions[Y], 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
@@ -26,7 +26,7 @@ void load_textures(char *filename, Context *context)
 		unsigned char image[image_size][4];
 		fread(image, sizeof(unsigned char), image_size * 4, file);
 
-		init_texture(image, image_dimensions, i);
+		init_texture(image, image_dimensions, context->textures[i]);
 	}
 
 	fclose(file);

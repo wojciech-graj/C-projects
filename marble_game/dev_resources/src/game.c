@@ -48,18 +48,18 @@ int input_process(SDL_Context *sdl_context, Context *context)
 			return 1;
 		}
 	}
-	if(!context->player_marble->in_air) {
+	if(context->can_control) {
 		if(sdl_context->keystates[SDL_SCANCODE_LEFT]) {
-			context->player_marble->velocity[X] -= MARBLE_ACCELERATION;
+			context->objects[ID_PLAYER_MARBLE].marble->velocity[X] -= MARBLE_ACCELERATION;
 	    }
 	    if(sdl_context->keystates[SDL_SCANCODE_RIGHT]) {
-			context->player_marble->velocity[X] += MARBLE_ACCELERATION;
+			context->objects[ID_PLAYER_MARBLE].marble->velocity[X] += MARBLE_ACCELERATION;
 	    }
 	    if(sdl_context->keystates[SDL_SCANCODE_UP]) {
-			context->player_marble->velocity[Y] -= MARBLE_ACCELERATION;
+			context->objects[ID_PLAYER_MARBLE].marble->velocity[Y] -= MARBLE_ACCELERATION;
 	    }
 	    if(sdl_context->keystates[SDL_SCANCODE_DOWN]) {
-			context->player_marble->velocity[Y] += MARBLE_ACCELERATION;
+			context->objects[ID_PLAYER_MARBLE].marble->velocity[Y] += MARBLE_ACCELERATION;
 	    }
 	}
 	return 0;
@@ -73,15 +73,22 @@ int main(void)
 	load_level("resources/level1", context);
 	load_textures("resources/textures", context);
 
-	context->player_marble = init_marble(context);
-	assert(context->player_marble);
-
 	while(true)
 	{
 		Uint32 frame_start = SDL_GetTicks();
+
 		if(input_process(sdl_context, context) == 1) break;
-		context->player_marble->physics_process(context->player_marble, context);
+
+		int i;
+		for(i = 0; i < NUM_OBJECTS; i++)
+		{
+			if(context->objects[i].common->physics_process) {
+				context->objects[i].common->physics_process(context, &(context->objects[i]));
+			}
+		}
+
 		draw(sdl_context, context);
+
 		Uint32 frame_time = SDL_GetTicks() - frame_start;
 		SDL_Delay(FRAMETIME - frame_time);
 	}

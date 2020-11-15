@@ -1,5 +1,7 @@
 #include "renderer.h"
 
+//TODO: IMPROVE GOAL RENDERING TO ALLOW BALL TO BE ABOVE GOAL
+
 static void draw_side(float x_m, float x_s, float tile_b, float tile_s, float bottom_tile_t, float bottom_tile_s, unsigned char *color)
 {
 	glColor3ubv(color);
@@ -11,7 +13,6 @@ static void draw_side(float x_m, float x_s, float tile_b, float tile_s, float bo
 	glEnd();
 }
 
-//TODO: maybe use Context
 static void calculate_draw_side(float x_m, float x_s, float tile_b, float tile_s, float tile_d, int bottom_tile_index, int side, float (*level_projection)[4], bool on_edge, unsigned char *color)
 {
 	if(on_edge && tile_d == 0) {
@@ -28,9 +29,9 @@ static void calculate_draw_side(float x_m, float x_s, float tile_b, float tile_s
 
 static void draw_tile_triangle(float x_m, float x_s, float tile_b, float tile_s, float tile_t, float cmul, unsigned char *floor_color)
 {
-	glColor3ub(MIN(MAX(0, floor_color[0] * cmul), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
-		MIN(MAX(0, floor_color[1] * cmul), 255),
-		MIN(MAX(0, floor_color[2] * cmul), 255));
+	glColor3ub(imin(imax(0, floor_color[0] * cmul), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
+		imin(imax(0, floor_color[1] * cmul), 255),
+		imin(imax(0, floor_color[2] * cmul), 255));
 	glVertex2f(x_m, tile_b);
 	glVertex2f(x_s, tile_s);
 	glVertex2f(x_m, tile_t);
@@ -60,7 +61,6 @@ static void draw_area(Area *area, float (*projection)[4]) {
 
 static void draw_marble(Marble *marble)
 {
-	const float GREEN[] = {0, 1, 0};
 	glColor3fv(GREEN);
 	glBegin(GL_POLYGON);
 	float angle;
@@ -122,17 +122,17 @@ void draw(SDL_Context *sdl_context, Context *context)
 				draw_tile_outline(x_l, x_m, x_r, tile);
 			}
 
-			if(tile_index == context->player_marble->tile_index) { //draw ball
-				draw_marble(context->player_marble);
+			if(tile_index == context->objects[ID_PLAYER_MARBLE].marble->tile_index) { //draw ball
+				draw_marble(context->objects[ID_PLAYER_MARBLE].marble);
 			}
 		}
 	}
 
 	//draw goal
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, context->goal->texture);
+	glBindTexture(GL_TEXTURE_2D, context->textures[context->objects[ID_GOAL].area->texture_index]);
 	glBegin(GL_QUADS);
-	draw_area(context->goal, context->projection);
+	draw_area(context->objects[ID_GOAL].area, context->projection);
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 

@@ -1,9 +1,10 @@
 #include "area.h"
 
-Area *init_area(unsigned int texture, short tile_positions[4][2], short level_width)
+Area *init_area(int texture_index, short tile_positions[4][2], short level_width)
 {
 	Area *area = malloc(sizeof(Area));
-	area->texture =  texture;
+	area->texture_index = texture_index;
+	area->physics_process = NULL;
 	int i;
 	for(i = 0; i < 4; i++)
 	{

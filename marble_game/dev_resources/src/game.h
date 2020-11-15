@@ -9,8 +9,9 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#include "global_constants.h"
+#include "global.h"
 #include "context.h"
+#include "object.h"
 #include "marble.h"
 #include "level.h"
 #include "area.h"

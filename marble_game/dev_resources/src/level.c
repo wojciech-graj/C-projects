@@ -28,9 +28,13 @@ void load_level(char *filename, Context *context)
 	fread(context->left_color, sizeof(unsigned char), 3, file);
 	fread(context->right_color, sizeof(unsigned char), 3, file);
 
+	context->objects = init_objectlist(NUM_OBJECTS);
+
+	context->objects[ID_PLAYER_MARBLE].marble = init_marble(context);
+
 	short tile_positions[4][2];
 	fread(tile_positions, sizeof(short), 8, file);
-	context->goal = init_area(T_GOAL, tile_positions, context->width);
+	context->objects[ID_GOAL].area = init_area(T_GOAL, tile_positions, context->width);
 
 	fclose(file);
 }
