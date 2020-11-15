@@ -9,8 +9,8 @@ Area *init_area(int texture_index, short tile_positions[4][2], short level_width
 	for(i = 0; i < 4; i++)
 	{
 		int offset = tile_positions[i][Y] % 2;
-		area->positions[i][X] = tile_positions[i][X] + offset/2. + ((i - 1) % 2)/2.;
-		area->positions[i][Y] = tile_positions[i][Y]/2. + ((i - 2) % 2)/2.;
+		area->positions[i][X] = tile_positions[i][X] + offset/2.f + ((i - 1) % 2)/2.f;
+		area->positions[i][Y] = tile_positions[i][Y]/2.f + ((i - 2) % 2)/2.f;
 		area->tile_indexes[i] = tile_positions[i][Y] * level_width + tile_positions[i][X];
 	}
 	return area;

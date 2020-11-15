@@ -5,8 +5,7 @@
 #include <stdbool.h>
 
 #include "global.h"
-
-typedef union Object Object;
+#include "object.h"
 
 typedef struct Context {
 	short height;

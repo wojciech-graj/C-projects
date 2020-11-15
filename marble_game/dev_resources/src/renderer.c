@@ -20,7 +20,7 @@ static void calculate_draw_side(float x_m, float x_s, float tile_b, float tile_s
 	} else {
 		float *bottom_tile_tile = level_projection[bottom_tile_index];
 		if(tile_d != 0) {
-			draw_side(x_m, x_s, tile_b, tile_s, tile_s - tile_d/2., tile_b - tile_d/2., color);
+			draw_side(x_m, x_s, tile_b, tile_s, tile_s - tile_d/2.f, tile_b - tile_d/2.f, color);
 		} else if(tile_b > bottom_tile_tile[side] || tile_s > bottom_tile_tile[T]) {
 			draw_side(x_m, x_s, tile_b, tile_s, bottom_tile_tile[T], bottom_tile_tile[side], color);
 		}
@@ -49,25 +49,25 @@ static void draw_tile_outline(float x_l, float x_m, float x_r, float *tile)
 }
 
 static void draw_area(Area *area, float (*projection)[4]) {
-	glTexCoord2f(0., 0.);
+	glTexCoord2f(0.f, 0.f);
 	glVertex2f(area->positions[L][X], projection[area->tile_indexes[L]][L]);
-	glTexCoord2f(0., 1.);
+	glTexCoord2f(0.f, 1.f);
 	glVertex2f(area->positions[T][X], projection[area->tile_indexes[T]][T]);
-	glTexCoord2f(1., 1.);
+	glTexCoord2f(1.f, 1.f);
 	glVertex2f(area->positions[R][X], projection[area->tile_indexes[R]][R]);
-	glTexCoord2f(1., 0.);
+	glTexCoord2f(1.f, 0.f);
 	glVertex2f(area->positions[B][X], projection[area->tile_indexes[B]][B]);
 }
 
 static void draw_marble(Marble *marble)
 {
-	glColor3fv(GREEN);
+	glColor3ubv(marble->color);
 	glBegin(GL_POLYGON);
 	float angle;
 	for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
 	{
-		glVertex2f(marble->radius * cos(angle) + marble->position[X],
-			marble->radius * sin(angle) + marble->radius + (marble->position[Z] - marble->position[Y])/2.);
+		glVertex2f(marble->radius * (float) cos(angle) + marble->position[X],
+			marble->radius * (float) sin(angle) + marble->radius + (marble->position[Z] - marble->position[Y])/2.f);
 	}
 	glEnd();
 }
@@ -76,7 +76,7 @@ static void scroll_screen(Context *context)
 {
 	glLoadIdentity();
 	gluOrtho2D(0 + context->scroll_offset[X], TILES_ON_SCREEN + context->scroll_offset[X],
-		0 - context->scroll_offset[Y]/2., TILES_ON_SCREEN - context->scroll_offset[Y]/2.);
+		0 - context->scroll_offset[Y]/2.f, TILES_ON_SCREEN - context->scroll_offset[Y]/2.f);
 }
 
 void draw(SDL_Context *sdl_context, Context *context)
@@ -96,10 +96,10 @@ void draw(SDL_Context *sdl_context, Context *context)
 		{
 			int tile_index = tile_position[Y] * context->width + tile_position[X];
 			float *tile = context->projection[tile_index];
-			float x_l = tile_position[X] - .5 + offset/2.;
-			float x_m = tile_position[X] + offset/2.;
-			float x_r = tile_position[X] + .5 + offset/2.;
-			float tb_avg = (tile[B] + tile[T])/2.;
+			float x_l = tile_position[X] - .5f + offset/2.f;
+			float x_m = tile_position[X] + offset/2.f;
+			float x_r = tile_position[X] + .5f + offset/2.f;
+			float tb_avg = (tile[B] + tile[T])/2.f;
 
 			if((ON_SCREEN_Y(tile[T], context->scroll_offset) || ON_SCREEN_Y(tile[B], context->scroll_offset))
 				&& (ON_SCREEN_X(x_l, context->scroll_offset) || ON_SCREEN_X(x_r, context->scroll_offset))) {

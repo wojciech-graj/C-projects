@@ -17,6 +17,6 @@ void delete_context(Context *context)
 {
 	free(context->level);
 	free(context->projection);
-	free(context->objects);
+	delete_objectlist(context->objects, NUM_OBJECTS);
 	free(context);
 }

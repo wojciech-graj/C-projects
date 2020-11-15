@@ -34,6 +34,7 @@ void quit(SDL_Context *sdl_context, Context *context)
 	delete_context(context);
 	SDL_GL_DeleteContext(sdl_context->main_context);
 	SDL_DestroyWindow(sdl_context->window);
+	free(sdl_context);
 	SDL_Quit();
 	exit(0);
 }

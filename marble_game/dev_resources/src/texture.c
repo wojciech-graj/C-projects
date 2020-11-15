@@ -20,11 +20,11 @@ void load_textures(char *filename, Context *context)
 	for(i = 0; i < NUM_TEXTURES; i++)
 	{
 		short image_dimensions[2];
-		fread(image_dimensions, sizeof(short), 2, file);
+		assert(fread(image_dimensions, sizeof(short), 2, file) == 2);
 
 		int image_size = image_dimensions[X] * image_dimensions[Y];
 		unsigned char image[image_size][4];
-		fread(image, sizeof(unsigned char), image_size * 4, file);
+		assert(fread(image, sizeof(unsigned char), image_size * 4, file) == (size_t)(image_size * 4));
 
 		init_texture(image, image_dimensions, context->textures[i]);
 	}

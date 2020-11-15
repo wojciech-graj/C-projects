@@ -20,5 +20,6 @@ typedef union Object {
 } Object;
 
 Object *init_objectlist(int num_objects);
+void delete_objectlist(Object *objects, int num_objects);
 
 #endif

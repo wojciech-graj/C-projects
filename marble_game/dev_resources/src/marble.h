@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "global.h"
 #include "context.h"
@@ -10,10 +11,10 @@
 #include "math_functions.h"
 #include "level.h"
 
-#define GRAVITY_ACCELERATION .01
-#define FRICTION .02
-#define MARBLE_ACCELERATION .003
-#define MAX_DELTA_Z .3
+#define GRAVITY_ACCELERATION .01f
+#define FRICTION .02f
+#define MARBLE_ACCELERATION .003f
+#define MAX_DELTA_Z .3f
 
 typedef struct Marble {
 	void (*physics_process)(Context*, Object*);
@@ -23,9 +24,10 @@ typedef struct Marble {
 	float velocity[3];
 	float radius;
 	bool in_air;
+	unsigned char color[3];
 } Marble;
 
-Marble *init_marble(Context *context);
+Marble *init_marble(Context *context, unsigned char color[3]);
 void physics_process_marble(Context *context, Object *object);
 
 #endif

@@ -1,6 +1,6 @@
 #include "marble.h"
 
-Marble *init_marble(Context *context)
+Marble *init_marble(Context *context, unsigned char color[3])
 {
 	Marble *marble = malloc(sizeof(Marble));
 	marble->physics_process = &physics_process_marble;
@@ -8,11 +8,12 @@ Marble *init_marble(Context *context)
 	marble->position[Y] = 0;
 	calculate_tile(marble->position, &(marble->tile_index), marble->tile_position, context);
 	float *tile = context->level[marble->tile_index];
-	marble->position[Z] = (tile[T] + tile[B])/2.; //assume that x is in middle of tile
+	marble->position[Z] = (tile[T] + tile[B])/2.f; //assume that x is in middle of tile
 	marble->velocity[X] = 0;
 	marble->velocity[Y] = 0;
 	marble->radius = .2;
 	marble->in_air = false;
+	memcpy(marble->color, color, sizeof(unsigned char) * 3);
 	return marble;
 }
 
@@ -21,16 +22,16 @@ void physics_process_marble(Context *context, Object *object)
 	Marble *marble = object->marble;
 	//calculate marble->velocity
 	float *tile = context->level[marble->tile_index];
-	float tb_avg = (tile[T] + tile[B])/2.;
+	float tb_avg = (tile[T] + tile[B])/2.f;
 	if(! marble->in_air) {
 		context->can_control = true;
-		if(marble->tile_position[X] <= .5 && tile[L] != tb_avg) {
+		if(marble->tile_position[X] <= .5f && tile[L] != tb_avg) {
 			marble->velocity[X] += (tile[L] - tb_avg) * GRAVITY_ACCELERATION;
-		} else if(marble->tile_position[X] > .5 && tile[R] != tb_avg) {
+		} else if(marble->tile_position[X] > .5f && tile[R] != tb_avg) {
 			marble->velocity[X] += (tb_avg - tile[R]) * GRAVITY_ACCELERATION;
 		}
 		if(tile[T] != tile[B]) {
-			marble->velocity[Y] += (tile[T] - tile[B])/2. * GRAVITY_ACCELERATION;
+			marble->velocity[Y] += (tile[T] - tile[B])/2.f * GRAVITY_ACCELERATION;
 		}
 		marble->velocity[X] -= FRICTION * marble->velocity[X];
 		marble->velocity[Y] -= FRICTION * marble->velocity[Y];
@@ -49,13 +50,13 @@ void physics_process_marble(Context *context, Object *object)
 	calculate_tile(future_position, &future_tile_index, future_tile_position, context);
 
 	float *future_tile = context->level[future_tile_index];
-	tb_avg = (future_tile[T] + future_tile[B])/2.;
+	tb_avg = (future_tile[T] + future_tile[B])/2.f;
 
 	//calculate marble->position and collision
 	future_position[Z] = calculate_z_on_plane(
-		round(future_tile_position[X]), .5, future_tile[(future_tile_position[X] < .5) ? L : R],
-		.5, 0, future_tile[T],
-		.5, 1, future_tile[B],
+		round(future_tile_position[X]), .5f, future_tile[(future_tile_position[X] < .5f) ? L : R],
+		.5f, 0, future_tile[T],
+		.5f, 1, future_tile[B],
 		future_tile_position[X], future_tile_position[Y]);
 	if(future_position[Z] - marble->position[Z] > MAX_DELTA_Z) {
 		marble->velocity[X] = 0;

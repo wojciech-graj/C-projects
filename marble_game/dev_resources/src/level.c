@@ -6,8 +6,8 @@ void load_level(char *filename, Context *context)
 	assert(file);
 	short buffer;
 
-	fread(&(context->width), sizeof(short), 1, file);
-	fread(&(context->height), sizeof(short), 1, file);
+	assert(fread(&(context->width), sizeof(short), 1, file) == 1);
+	assert(fread(&(context->height), sizeof(short), 1, file) == 1);
 
 	context->level = malloc(sizeof(float) * context->height * context->width * 5);
 
@@ -17,23 +17,24 @@ void load_level(char *filename, Context *context)
 		int j;
 		for(j = 0; j < 5; j++)
 		{
-			fread(&buffer, sizeof(short), 1, file);
-			context->level[i][j] = buffer/2.;
+			assert(fread(&buffer, sizeof(short), 1, file) == 1);
+			context->level[i][j] = buffer/2.f;
 		}
 	}
 
 	calculate_level_projection(context);
 
-	fread(context->floor_color, sizeof(unsigned char), 3, file);
-	fread(context->left_color, sizeof(unsigned char), 3, file);
-	fread(context->right_color, sizeof(unsigned char), 3, file);
+	assert(fread(context->floor_color, sizeof(unsigned char), 3, file) == 3);
+	assert(fread(context->left_color, sizeof(unsigned char), 3, file) == 3);
+	assert(fread(context->right_color, sizeof(unsigned char), 3, file) == 3);
 
 	context->objects = init_objectlist(NUM_OBJECTS);
 
-	context->objects[ID_PLAYER_MARBLE].marble = init_marble(context);
+	unsigned char marble_color[3] = {0, 255, 0};
+	context->objects[ID_PLAYER_MARBLE].marble = init_marble(context, marble_color);
 
 	short tile_positions[4][2];
-	fread(tile_positions, sizeof(short), 8, file);
+	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
 	context->objects[ID_GOAL].area = init_area(T_GOAL, tile_positions, context->width);
 
 	fclose(file);
@@ -52,8 +53,8 @@ x
 */
 void calculate_tile(float *position, int *tile_index, float *tile_position, Context *context)
 {
-	int posx = floor(position[X] - position[Y] + .5);
-	int posy = floor(position[X] + position[Y] + .5);
+	int posx = floor(position[X] - position[Y] + .5f);
+	int posy = floor(position[X] + position[Y] + .5f);
 
 	*tile_index = context->width * (posy - posx) + posx + floor((posy - posx)/2.);
 
@@ -72,10 +73,10 @@ void calculate_level_projection(Context *context)
 		for(tile_position[X] = 0; tile_position[X] < context->width; tile_position[X]++)
 		{
 			int i = tile_position[Y] * context->width + tile_position[X];
-			context->projection[i][L] = context->level[i][L]/2. - tile_position[Y]/4.;
-			context->projection[i][T] = context->level[i][T]/2. - tile_position[Y]/4. + .25;
-			context->projection[i][R] = context->level[i][R]/2. - tile_position[Y]/4.;
-			context->projection[i][B] = context->level[i][B]/2. - tile_position[Y]/4. - .25;
+			context->projection[i][L] = context->level[i][L]/2.f - tile_position[Y]/4.f;
+			context->projection[i][T] = context->level[i][T]/2.f - tile_position[Y]/4.f + .25f;
+			context->projection[i][R] = context->level[i][R]/2.f - tile_position[Y]/4.f;
+			context->projection[i][B] = context->level[i][B]/2.f - tile_position[Y]/4.f - .25f;
 		}
 	}
 }
