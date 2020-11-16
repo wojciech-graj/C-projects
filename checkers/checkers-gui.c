@@ -259,6 +259,7 @@ int play_game(void *ptr)
 			while(cur_color == color)
 			{
 				SDL_Delay(1000 / POLLING_FREQ);
+				if(! playing) return 0;
 			}
 
 			//clean up
@@ -298,7 +299,7 @@ void draw_menu(bool show_begin)
 	SDL_RenderPresent(rend);
 }
 
-void get_players()
+void get_players(void)
 {
 	bool show_start = false;
 	draw_menu(show_start);
@@ -392,7 +393,7 @@ int main(int argc, char *argv[])
 						cur_capture_node = NULL;
 						get_players();
 						cur_color = 1;
-						SDL_Thread *game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
+						game_thread = SDL_CreateThread(play_game, "game_thread", (void *)NULL);
 						assert(game_thread);
 					}
 					draw_board();
