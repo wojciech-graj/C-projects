@@ -31,6 +31,7 @@ void execute_captures(int *board, Node *node)
 	}
 }
 
+//returns if promoted
 void execute_move(int *board, int piece, int destination)
 {
 	board[destination] = board[piece];
@@ -49,15 +50,20 @@ static void append_tree(Node *head, int piece, int captured, int destination, in
 	}
 	*cur_sibling = node;
 
-	int new_board[BOARD_SIZE];
-	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
-	new_board[captured] = 0;
-	execute_move(new_board, piece, destination);
-
 	node->parent = head;
 	node->piece = piece;
 	node->captured = captured;
 	node->destination = destination;
+
+	int new_board[BOARD_SIZE];
+	memcpy(new_board, board, BOARD_SIZE * sizeof(int));
+	new_board[destination] = new_board[piece];
+	new_board[piece] = 0;
+	new_board[captured] = 0;
+	if(PROMOTING(board[destination], destination)) {
+		new_board[destination] *= 2;
+		return;
+	}
 
 	int new_direction;
 	for(new_direction = 0; new_direction < 4; new_direction++)
