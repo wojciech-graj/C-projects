@@ -15,3 +15,8 @@ float dot_product(float *v1, float *v2)
 {
 	return v1[X] * v2[X] + v1[Y] * v2[Y];
 }
+
+float distance(float *p1, float *p2)
+{
+	return sqrt(pow(p2[X] - p1[X], 2) + pow(p2[Y] - p1[Y], 2));
+}

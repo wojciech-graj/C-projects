@@ -1,7 +1,5 @@
 #include "renderer.h"
 
-//TODO: IMPROVE GOAL RENDERING TO ALLOW BALL TO BE ABOVE GOAL
-
 static void draw_side(float x_m, float x_s, float tile_b, float tile_s, float bottom_tile_t, float bottom_tile_s, unsigned char *color)
 {
 	glColor3ubv(color);
@@ -48,15 +46,35 @@ static void draw_tile_outline(float x_l, float x_m, float x_r, float *tile)
 	glEnd();
 }
 
-static void draw_area(Area *area, float (*projection)[4]) {
-	glTexCoord2f(0.f, 0.f);
-	glVertex2f(area->positions[L][X], projection[area->tile_indexes[L]][L]);
-	glTexCoord2f(0.f, 1.f);
-	glVertex2f(area->positions[T][X], projection[area->tile_indexes[T]][T]);
-	glTexCoord2f(1.f, 1.f);
-	glVertex2f(area->positions[R][X], projection[area->tile_indexes[R]][R]);
-	glTexCoord2f(1.f, 0.f);
-	glVertex2f(area->positions[B][X], projection[area->tile_indexes[B]][B]);
+//TODO: optimize
+static void draw_area(Area *area, float *tile, float *sub_texture, float x_l, float x_m, float x_r) {
+	int mul_flip_x = 1 - area->flip_x * 2;
+	int mul_flip_y = 1 - area->flip_y * 2;
+
+	float tex_x[4] = {mul_flip_x * (sub_texture[X] - area->half_tile_side_lengths[X]) + area->flip_x,
+		mul_flip_x * (sub_texture[X] + area->half_tile_side_lengths[X]) + area->flip_x,
+		mul_flip_x * (sub_texture[X] + area->half_tile_side_lengths[X]) + area->flip_x,
+		mul_flip_x * (sub_texture[X] - area->half_tile_side_lengths[X]) + area->flip_x};
+
+	float tex_y[4] = {mul_flip_y * (sub_texture[Y] - area->half_tile_side_lengths[Y]) + area->flip_y,
+		mul_flip_y * (sub_texture[Y] - area->half_tile_side_lengths[Y]) + area->flip_y,
+		mul_flip_y * (sub_texture[Y] + area->half_tile_side_lengths[Y]) + area->flip_y,
+		mul_flip_y * (sub_texture[Y] + area->half_tile_side_lengths[Y]) + area->flip_y};
+
+	float xpos[4] = {x_l, x_m, x_r, x_m};
+	int i;
+	for(i = 0; i < 4; i++)
+	{
+		switch(area->rotate)
+		{
+			case false:
+				glTexCoord2f(tex_x[i], tex_y[i]);
+				break;
+			case true:
+				glTexCoord2f(tex_y[i], tex_x[i]);
+		}
+		glVertex2f(xpos[i], tile[i]);
+	}
 }
 
 static void draw_marble(Marble *marble)
@@ -81,7 +99,7 @@ static void scroll_screen(Context *context)
 
 void draw(SDL_Context *sdl_context, Context *context)
 {
-	if(context->scroll) {
+	if(context->scroll) 	{
 		context->scroll = false;
 		scroll_screen(context);
 	}
@@ -101,8 +119,10 @@ void draw(SDL_Context *sdl_context, Context *context)
 			float x_r = tile_position[X] + .5f + offset/2.f;
 			float tb_avg = (tile[B] + tile[T])/2.f;
 
-			if((ON_SCREEN_Y(tile[T], context->scroll_offset) || ON_SCREEN_Y(tile[B], context->scroll_offset))
-				&& (ON_SCREEN_X(x_l, context->scroll_offset) || ON_SCREEN_X(x_r, context->scroll_offset))) {
+			if((ON_SCREEN_Y(tile[T], context->scroll_offset)
+				|| ON_SCREEN_Y(tile[B], context->scroll_offset))
+				&& (ON_SCREEN_X(x_l, context->scroll_offset)
+				|| ON_SCREEN_X(x_r, context->scroll_offset))) {
 				glBegin(GL_TRIANGLES);
 				draw_tile_triangle(x_m, x_l, tile[B], tile[L], tile[T], (1 + (tb_avg - tile[L])), context->floor_color); //draw left triangle
 				draw_tile_triangle(x_m, x_r, tile[B], tile[R], tile[T], (1 + (tile[R] - tb_avg)), context->floor_color); //draw right triangle
@@ -122,19 +142,28 @@ void draw(SDL_Context *sdl_context, Context *context)
 				draw_tile_outline(x_l, x_m, x_r, tile);
 			}
 
+			Area *goal = context->objects[ID_GOAL].area;
+			if((ON_SCREEN_X(goal->corner_positions[L][X], context->scroll_offset)
+			|| ON_SCREEN_X(goal->corner_positions[R][X], context->scroll_offset))
+			&& (ON_SCREEN_Y(goal->corner_projections[T], context->scroll_offset)
+			|| ON_SCREEN_Y(goal->corner_projections[B], context->scroll_offset))) {//draw goal
+				float position[2] = {tile_position[X] + offset/2.f, tile_position[Y]/2.f};
+				float area_position[2];
+				if(in_area(goal, position, area_position)) {
+					glBindTexture(GL_TEXTURE_2D, context->textures[goal->texture_index]);
+					glEnable(GL_TEXTURE_2D);
+					glBegin(GL_QUADS);
+					draw_area(goal, tile, area_position, x_l, x_m, x_r);
+					glEnd();
+					glDisable(GL_TEXTURE_2D);
+				}
+			}
+
 			if(tile_index == context->objects[ID_PLAYER_MARBLE].marble->tile_index) { //draw ball
 				draw_marble(context->objects[ID_PLAYER_MARBLE].marble);
 			}
 		}
 	}
-
-	//draw goal
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, context->textures[context->objects[ID_GOAL].area->texture_index]);
-	glBegin(GL_QUADS);
-	draw_area(context->objects[ID_GOAL].area, context->projection);
-	glEnd();
-	glDisable(GL_TEXTURE_2D);
 
 	SDL_GL_SwapWindow(sdl_context->window);
 }

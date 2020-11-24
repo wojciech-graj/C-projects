@@ -35,7 +35,8 @@ void load_level(char *filename, Context *context)
 
 	short tile_positions[4][2];
 	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
-	context->objects[ID_GOAL].area = init_area(T_GOAL, tile_positions, context->width);
+	//TODO: ADD AREA PARAMS TO SERIALIZER
+	context->objects[ID_GOAL].area = init_area(context, T_GOAL, tile_positions, true, false, false);
 
 	fclose(file);
 }

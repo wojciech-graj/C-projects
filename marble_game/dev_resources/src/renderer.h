@@ -17,7 +17,7 @@
 #define NUM_CIRCLE_POINTS 12
 
 #define ON_SCREEN_Y(posy, scroll_offset) (posy >= -scroll_offset[Y]/2.f\
-	&& posy <= TILES_ON_SCREEN -scroll_offset[Y]/2.f)
+	&& posy <= TILES_ON_SCREEN - scroll_offset[Y]/2.f)
 #define ON_SCREEN_X(posx, scroll_offset) (posx >= 0 + scroll_offset[X]\
 	&& posx <= TILES_ON_SCREEN + scroll_offset[X])
 
