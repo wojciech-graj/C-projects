@@ -99,7 +99,7 @@ static void scroll_screen(Context *context)
 
 void draw(SDL_Context *sdl_context, Context *context)
 {
-	if(context->scroll) 	{
+	if(context->scroll) {
 		context->scroll = false;
 		scroll_screen(context);
 	}

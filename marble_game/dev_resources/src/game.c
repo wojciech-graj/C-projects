@@ -66,7 +66,7 @@ int input_process(SDL_Context *sdl_context, Context *context)
 	return 0;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	SDL_Context *sdl_context = init_sdl();
 	Context *context = init_context();
