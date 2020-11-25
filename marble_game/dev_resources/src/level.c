@@ -8,11 +8,11 @@ void load_level(char *filename, Context *context)
 
 	assert(fread(&(context->width), sizeof(short), 1, file) == 1);
 	assert(fread(&(context->height), sizeof(short), 1, file) == 1);
+	int level_size = context->height * context->width;
 
-	context->level = malloc(sizeof(float) * context->height * context->width * 5);
-
+	context->level = malloc(sizeof(float) * level_size * 5);
 	int i;
-	for(i = 0; i < context->width * context->height; i++)
+	for(i = 0; i < level_size; i++)
 	{
 		int j;
 		for(j = 0; j < 5; j++)
@@ -24,7 +24,9 @@ void load_level(char *filename, Context *context)
 
 	calculate_level_projection(context);
 
-	assert(fread(context->floor_color, sizeof(unsigned char), 3, file) == 3);
+	context->floor_colors = malloc(sizeof(unsigned char) * level_size * 3);
+	assert(fread(context->floor_colors, sizeof(unsigned char), level_size * 3, file) == (size_t) (level_size * 3));
+
 	assert(fread(context->left_color, sizeof(unsigned char), 3, file) == 3);
 	assert(fread(context->right_color, sizeof(unsigned char), 3, file) == 3);
 

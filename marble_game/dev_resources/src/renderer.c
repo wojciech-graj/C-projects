@@ -47,7 +47,7 @@ static void draw_tile_outline(float x_l, float x_m, float x_r, float *tile)
 }
 
 //TODO: optimize
-static void draw_area(Area *area, float *tile, float *sub_texture, float x_l, float x_m, float x_r) {
+static void draw_flat_area(Area *area, float *tile, float *sub_texture, float x_l, float x_m, float x_r) {
 	int mul_flip_x = 1 - area->flip_x * 2;
 	int mul_flip_y = 1 - area->flip_y * 2;
 
@@ -124,8 +124,8 @@ void draw(SDL_Context *sdl_context, Context *context)
 				&& (ON_SCREEN_X(x_l, context->scroll_offset)
 				|| ON_SCREEN_X(x_r, context->scroll_offset))) {
 				glBegin(GL_TRIANGLES);
-				draw_tile_triangle(x_m, x_l, tile[B], tile[L], tile[T], (1 + (tb_avg - tile[L])), context->floor_color); //draw left triangle
-				draw_tile_triangle(x_m, x_r, tile[B], tile[R], tile[T], (1 + (tile[R] - tb_avg)), context->floor_color); //draw right triangle
+				draw_tile_triangle(x_m, x_l, tile[B], tile[L], tile[T], (1 + (tb_avg - tile[L])), context->floor_colors[tile_index]); //draw left triangle
+				draw_tile_triangle(x_m, x_r, tile[B], tile[R], tile[T], (1 + (tile[R] - tb_avg)), context->floor_colors[tile_index]); //draw right triangle
 				glEnd();
 				calculate_draw_side(x_m, x_l,
 					tile[B], tile[L],
@@ -153,7 +153,7 @@ void draw(SDL_Context *sdl_context, Context *context)
 					glBindTexture(GL_TEXTURE_2D, context->textures[goal->texture_index]);
 					glEnable(GL_TEXTURE_2D);
 					glBegin(GL_QUADS);
-					draw_area(goal, tile, area_position, x_l, x_m, x_r);
+					draw_flat_area(goal, tile, area_position, x_l, x_m, x_r);
 					glEnd();
 					glDisable(GL_TEXTURE_2D);
 				}
@@ -164,6 +164,5 @@ void draw(SDL_Context *sdl_context, Context *context)
 			}
 		}
 	}
-
 	SDL_GL_SwapWindow(sdl_context->window);
 }
