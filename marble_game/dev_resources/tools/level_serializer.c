@@ -32,6 +32,24 @@ void write_array_line(char *buffer, FILE *output_file, int num_elems, size_t siz
 	assert(num_cols == num_elems);
 }
 
+void write_bool(char text, FILE *output_file)
+{
+	bool selection;
+	switch(text)
+	{
+		case 'F':
+			selection = false;
+			break;
+		case 'T':
+			selection = true;
+			break;
+		default:
+			printf("INVALID BOOLEAN VALUE\n");
+			exit(1);
+	}
+	fwrite(&selection, sizeof(bool), 1, output_file);
+}
+
 int main(int argc, char *argv[])
 {
 	assert(argc == 3);
@@ -44,68 +62,82 @@ int main(int argc, char *argv[])
 	short num_rows = 0;
 	bool level = false;
 	bool color = false;
+	bool area = false;
 	int element_num = 0;
 	while (fgets(buffer, 254, input_file))
     {
         buffer[strcspn(buffer, "\n")] = '\0';
 		if(! strncmp("WIDTH", buffer, 5)) {
-			assert(element_num == 0);
-			element_num++;
-
+			assert(element_num++ == 0);
 			memmove(buffer, buffer+6, strlen(buffer));
 			level_size[0] = atoi(buffer);
 		} else if(! strncmp("HEIGHT", buffer, 6)) {
-			assert(element_num == 1);
-			element_num++;
-
+			assert(element_num++ == 1);
 			memmove(buffer, buffer+7, strlen(buffer));
 			level_size[1] = atoi(buffer);
-		} else if(! strncmp("LEVELSTART", buffer, 10)) {
-			assert(element_num == 2);
-			element_num++;
-
-			fwrite(level_size, sizeof(short), 2, output_file);
-			level = true;
-		} else if(! strncmp("LEVELEND", buffer, 8)) {
-			assert(num_rows == level_size[1] && element_num == 3);
-			element_num++;
-
-			level = false;
+		} else if(! strncmp("START", buffer, 5)) {
+			memmove(buffer, buffer+5, strlen(buffer));
+			if(! strncmp("LEVEL", buffer, 5)) {
+				assert(element_num++ == 2);
+				fwrite(level_size, sizeof(short), 2, output_file);
+				level = true;
+			} else if(! strncmp("COLOR", buffer, 5)) {
+				assert(element_num++ == 4);
+				color = true;
+			} else if(! strncmp("AREA", buffer, 4)) {
+				assert(element_num++ == 8);
+				area = true;
+			}
+		} else if(! strncmp("END", buffer, 3)) {
+			memmove(buffer, buffer+3, strlen(buffer));
+			if(! strncmp("LEVEL", buffer, 5)) {
+				assert(num_rows == level_size[1] && element_num++ == 3);
+				level = false;
+			} else if(! strncmp("COLOR", buffer, 5)) {
+				assert(num_rows == level_size[1] && element_num++ == 5);
+				color = false;
+			} else if(! strncmp("AREA", buffer, 4)) {
+				assert(num_rows == 5 && element_num++ == 9);
+				area = false;
+			}
+			num_rows = 0;
 		} else if(level) {
 			num_rows++;
 			write_array_line(buffer, output_file, level_size[0] * 5, sizeof(short));
-		} else if(! strncmp("COLORSTART", buffer, 10)) {
-			assert(element_num == 4);
-			element_num++;
-
-			num_rows = 0;
-			color = true;
-		} else if(! strncmp("COLOREND", buffer, 8)) {
-			assert(num_rows == level_size[1] && element_num == 5);
-			element_num++;
-
-			color = false;
 		} else if(color) {
 			num_rows++;
 			write_array_line(buffer, output_file, level_size[0] * 3, sizeof(unsigned char));
 		} else if(! strncmp("COLOR", buffer, 5)) {
 			memmove(buffer, buffer+5, strlen(buffer));
 			if(! strncmp("LEFT", buffer, 4)) {
-				assert(element_num == 6);
+				assert(element_num++ == 6);
 			} else if(! strncmp("RIGHT", buffer, 5)) {
-				assert(element_num == 7);
+				assert(element_num++ == 7);
 			} else {
 				printf("UNRECOGNIZED COMMAND: %s\n", buffer);
 				return 1;
 			}
-			element_num++;
-
 			write_array_line(buffer, output_file, 3, sizeof(unsigned char));
-		} else if(! strncmp("GOAL", buffer, 4)) {
-			assert(element_num == 8);
-			element_num++;
-
-			write_array_line(buffer, output_file, 8, sizeof(short));
+		} else if(area) { //TODO: add assertions
+			if(! strncmp("TEXTURE", buffer, 7)) {
+				assert(num_rows++ == 0);
+				write_array_line(buffer, output_file, 1, sizeof(int));
+			} else if(! strncmp("COORDINATES", buffer, 11)) {
+				assert(num_rows++ == 1);
+				write_array_line(buffer, output_file, 8, sizeof(short));
+			} else if(! strncmp("ROTATE", buffer, 6)) {
+				assert(num_rows++ == 2);
+				write_bool(buffer[7], output_file);
+			} else if(! strncmp("FLIPX", buffer, 5)) {
+				assert(num_rows++ == 3);
+				write_bool(buffer[6], output_file);
+			} else if(! strncmp("FLIPY", buffer, 5)) {
+				assert(num_rows++ == 4);
+				write_bool(buffer[6], output_file);
+			} else {
+				printf("UNRECOGNIZED COMMAND: %s\n", buffer);
+				return 1;
+			}
 		}
     }
 

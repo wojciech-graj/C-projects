@@ -21,12 +21,10 @@ void load_level(char *filename, Context *context)
 			context->level[i][j] = buffer/2.f;
 		}
 	}
-
 	calculate_level_projection(context);
 
 	context->floor_colors = malloc(sizeof(unsigned char) * level_size * 3);
 	assert(fread(context->floor_colors, sizeof(unsigned char), level_size * 3, file) == (size_t) (level_size * 3));
-
 	assert(fread(context->left_color, sizeof(unsigned char), 3, file) == 3);
 	assert(fread(context->right_color, sizeof(unsigned char), 3, file) == 3);
 
@@ -35,10 +33,13 @@ void load_level(char *filename, Context *context)
 	unsigned char marble_color[3] = {0, 255, 0};
 	context->objects[ID_PLAYER_MARBLE].marble = init_marble(context, marble_color);
 
+	int area_texture_index;
+	assert(fread(&area_texture_index, sizeof(int), 1, file) == 1);
 	short tile_positions[4][2];
 	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
-	//TODO: ADD AREA PARAMS TO SERIALIZER
-	context->objects[ID_GOAL].area = init_area(context, T_GOAL, tile_positions, true, false, false);
+	bool transforms[3];
+	assert(fread(transforms, sizeof(bool), 3, file) == 3);
+	context->objects[ID_GOAL].area = init_area(context, area_texture_index, tile_positions, transforms[0], transforms[1], transforms[2]);
 
 	fclose(file);
 }
