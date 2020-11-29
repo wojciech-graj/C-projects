@@ -1,5 +1,28 @@
 #include "level.h"
 
+//TODO: MAKE PROPER FUNCTIONS FOR MAKING VARIOUS OBJECTS
+
+static void read_area(Context *context, FILE *file, int object_index)
+{
+	int texture_index;
+	assert(fread(&texture_index, sizeof(int), 1, file) == 1);
+	short tile_positions[4][2];
+	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
+	bool transforms[3];
+	assert(fread(transforms, sizeof(bool), 3, file) == 3);
+	float corner_projections[4][2];
+	int i;
+	for(i = 0; i < 4; i++)
+	{
+		int offset = tile_positions[i][Y] % 2;
+		int tile_index = context->width * tile_positions[i][Y] + tile_positions[i][X];
+		corner_projections[i][X] = tile_positions[i][X] + offset/2.f + ((i - 1) % 2)/2.f;
+		corner_projections[i][Y] = context->projection[tile_index][i];
+	}
+	Sprite *sprite = init_sprite(NULL, corner_projections, texture_index, 0, transforms[0], transforms[1], transforms[2]);
+	context->objects[object_index].area = init_area(NULL, sprite, tile_positions);
+}
+
 void load_level(char *filename, Context *context)
 {
 	FILE *file = fopen(filename, "rb");
@@ -33,13 +56,16 @@ void load_level(char *filename, Context *context)
 	unsigned char marble_color[3] = {0, 255, 0};
 	context->objects[ID_PLAYER_MARBLE].marble = init_marble(context, marble_color);
 
-	int area_texture_index;
-	assert(fread(&area_texture_index, sizeof(int), 1, file) == 1);
-	short tile_positions[4][2];
-	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
-	bool transforms[3];
-	assert(fread(transforms, sizeof(bool), 3, file) == 3);
-	context->objects[ID_GOAL].area = init_area(context, area_texture_index, tile_positions, transforms[0], transforms[1], transforms[2]);
+	read_area(context, file, ID_GOAL);
+
+	//TODO: INCLUDE POINTS IN level.txt
+	float positions_2[][2] = {{4.5,0},{4.5,1},{5.5,1},{5.5,0}};
+	Sprite *sprite2 = init_sprite(physics_process_animated_sprite, positions_2, T_FLAG_RED, 15, false, false, false);
+	context->objects[2].point = init_point(physics_process_point, sprite2, 115);
+
+	float positions_3[][2] = {{2.5,0},{2.5,1},{3.5,1},{3.5,0}};
+	Sprite *sprite3 = init_sprite(physics_process_animated_sprite, positions_3, T_FLAG_RED, 15, false, false, false);
+	context->objects[3].point = init_point(physics_process_point, sprite3, 114);
 
 	fclose(file);
 }

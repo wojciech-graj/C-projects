@@ -15,17 +15,21 @@
 void write_array_line(char *buffer, FILE *output_file, int num_elems, size_t size)
 {
 	int cur_num = 0;
+	int sign = 1;
 	int num_cols = 0;
 	int i;
 	for(i = 0; buffer[i] != '\0'; i++)
 	{
-		if(isdigit(buffer[i])) {
+		if(buffer[i] == '-') {
+			sign = -1;
+		}else if(isdigit(buffer[i])) {
 			if(buffer[i] == '0' && cur_num == 0) goto WRITE;
 			cur_num = 10 * cur_num + buffer[i] - '0';
 		} else if(cur_num != 0) {
 			WRITE:
 			fwrite(&cur_num, size, 1, output_file);
 			cur_num = 0;
+			sign = 1;
 			num_cols++;
 		}
 	}
@@ -118,7 +122,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			write_array_line(buffer, output_file, 3, sizeof(unsigned char));
-		} else if(area) { //TODO: add assertions
+		} else if(area) {
 			if(! strncmp("TEXTURE", buffer, 7)) {
 				assert(num_rows++ == 0);
 				write_array_line(buffer, output_file, 1, sizeof(int));

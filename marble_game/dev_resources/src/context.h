@@ -1,8 +1,8 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "global.h"
 #include "object.h"
@@ -12,6 +12,7 @@ typedef struct Context {
 	short width;
 	float (*level)[5];
 	float (*projection)[4];
+	int timer;
 	bool can_control;
 	float scroll_offset[2];
 	bool scroll;

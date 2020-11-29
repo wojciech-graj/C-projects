@@ -5,6 +5,7 @@ Context *init_context(void)
 	Context *context = malloc(sizeof(Context));
 	context->level = NULL;
 	context->projection = NULL;
+	context->timer = 0;
 	context->floor_colors = NULL;
 	context->can_control = true;
 	context->scroll = true;

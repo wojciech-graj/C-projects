@@ -1,1 +1,2 @@
 dev_resources/textures/goal_texture.bmp
+dev_resources/textures/flag_red_texture.bmp

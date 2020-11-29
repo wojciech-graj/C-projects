@@ -1,23 +1,19 @@
 #include "area.h"
-#include <stdio.h>
 
-Area *init_area(Context *context, int texture_index, short tile_positions[4][2], bool rotate, bool flip_x, bool flip_y)
+Area *init_area(void (*physics_process)(Context*, Object), Sprite *sprite, short tile_positions[4][2])
 {
 	Area *area = malloc(sizeof(Area));
-	area->texture_index = texture_index;
-	area->physics_process = NULL;
-	area->rotate = rotate;
-	area->flip_x = flip_x;
-	area->flip_y = flip_y;
+	area->physics_process = physics_process;
+	area->type = AREA;
+	area->delete = &delete_area;
+	area->sprite = sprite;
+
 	int i;
 	for(i = 0; i < 4; i++)
 	{
 		int offset = tile_positions[i][Y] % 2;
 		area->corner_positions[i][X] = tile_positions[i][X] + offset/2.f + ((i - 1) % 2)/2.f;
 		area->corner_positions[i][Y] = tile_positions[i][Y]/2.f + ((i - 2) % 2)/2.f;
-
-		int tile_index = context->width * tile_positions[i][Y] + tile_positions[i][X];
-		area->corner_projections[i] = context->projection[tile_index][i];
 	}
 
 	float side_lengths[2] = {round(distance(area->corner_positions[L], area->corner_positions[T]) * (float) sqrt(2)),
@@ -54,4 +50,11 @@ bool in_area(Area *area, float *position, float *area_position)
 		area_position[Y] = 2 * dot_trtp / area->side_lengths_sqr[Y];
 	}
 	return inside;
+}
+
+void delete_area(Object object)
+{
+	Area *area = object.area;
+	free(area->sprite);
+	free(area);
 }

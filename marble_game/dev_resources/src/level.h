@@ -1,16 +1,18 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 
-#include <math.h>
-#include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "global.h"
-#include "context.h"
-#include "object.h"
-#include "marble.h"
 #include "area.h"
+#include "context.h"
+#include "global.h"
+#include "marble.h"
+#include "object.h"
+#include "point.h"
+#include "sprite.h"
 
 void load_level(char *filename, Context *context);
 void calculate_tile(float *position, int *tile_index, float *tile_position, Context *context);

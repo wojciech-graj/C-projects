@@ -5,17 +5,18 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include <SDL2/SDL.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <SDL2/SDL.h>
 
-#include "global.h"
-#include "context.h"
-#include "object.h"
-#include "marble.h"
-#include "level.h"
 #include "area.h"
+#include "context.h"
+#include "global.h"
+#include "level.h"
+#include "marble.h"
+#include "object.h"
 #include "renderer.h"
+#include "sprite.h"
 #include "texture.h"
 
 #define WINDOW_WIDTH 640

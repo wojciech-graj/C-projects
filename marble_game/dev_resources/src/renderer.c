@@ -47,33 +47,60 @@ static void draw_tile_outline(float x_l, float x_m, float x_r, float *tile)
 }
 
 //TODO: optimize
-static void draw_flat_area(Area *area, float *tile, float *sub_texture, float x_l, float x_m, float x_r) {
-	int mul_flip_x = 1 - area->flip_x * 2;
-	int mul_flip_y = 1 - area->flip_y * 2;
+static void draw_area(Area *area, float *tile, float *sub_texture, float x_l, float x_m, float x_r) {
+	Sprite *sprite = area->sprite;
+	int mul_flip_x = 1 - area->sprite->flip_x * 2;
+	int mul_flip_y = 1 - area->sprite->flip_y * 2;
+	float width = 1.f / num_texture_frames[area->sprite->texture_index];
+	float x_offset = area->sprite->frame * width;
 
-	float tex_x[4] = {mul_flip_x * (sub_texture[X] - area->half_tile_side_lengths[X]) + area->flip_x,
-		mul_flip_x * (sub_texture[X] + area->half_tile_side_lengths[X]) + area->flip_x,
-		mul_flip_x * (sub_texture[X] + area->half_tile_side_lengths[X]) + area->flip_x,
-		mul_flip_x * (sub_texture[X] - area->half_tile_side_lengths[X]) + area->flip_x};
+	float tex_x[4] = {mul_flip_x * (sub_texture[X] - area->half_tile_side_lengths[X]) + sprite->flip_x,
+		mul_flip_x * (sub_texture[X] + area->half_tile_side_lengths[X]) + sprite->flip_x,
+		mul_flip_x * (sub_texture[X] + area->half_tile_side_lengths[X]) + sprite->flip_x,
+		mul_flip_x * (sub_texture[X] - area->half_tile_side_lengths[X]) + sprite->flip_x};
 
-	float tex_y[4] = {mul_flip_y * (sub_texture[Y] - area->half_tile_side_lengths[Y]) + area->flip_y,
-		mul_flip_y * (sub_texture[Y] - area->half_tile_side_lengths[Y]) + area->flip_y,
-		mul_flip_y * (sub_texture[Y] + area->half_tile_side_lengths[Y]) + area->flip_y,
-		mul_flip_y * (sub_texture[Y] + area->half_tile_side_lengths[Y]) + area->flip_y};
+	float tex_y[4] = {mul_flip_y * (sub_texture[Y] - area->half_tile_side_lengths[Y]) + sprite->flip_y,
+		mul_flip_y * (sub_texture[Y] - area->half_tile_side_lengths[Y]) + sprite->flip_y,
+		mul_flip_y * (sub_texture[Y] + area->half_tile_side_lengths[Y]) + sprite->flip_y,
+		mul_flip_y * (sub_texture[Y] + area->half_tile_side_lengths[Y]) + sprite->flip_y};
 
 	float xpos[4] = {x_l, x_m, x_r, x_m};
 	int i;
 	for(i = 0; i < 4; i++)
 	{
-		switch(area->rotate)
+		switch(sprite->rotate)
 		{
 			case false:
-				glTexCoord2f(tex_x[i], tex_y[i]);
+				glTexCoord2f(x_offset + tex_x[i] * width, tex_y[i]);
 				break;
 			case true:
-				glTexCoord2f(tex_y[i], tex_x[i]);
+				glTexCoord2f(x_offset + tex_y[i] * width, tex_x[i]);
 		}
 		glVertex2f(xpos[i], tile[i]);
+	}
+}
+
+static void draw_sprite(Sprite *sprite)
+{
+	float width = 1.f / num_texture_frames[sprite->texture_index];
+	float x_offset = sprite->frame * width;
+
+	float tex_x[4] = {sprite->flip_x, sprite->flip_x, !sprite->flip_x, !sprite->flip_x};
+
+	float tex_y[4] = {!sprite->flip_y, sprite->flip_y, sprite->flip_y, !sprite->flip_y};
+
+	int i;
+	for(i = 0; i < 4; i++)
+	{
+		switch(sprite->rotate)
+		{
+			case false:
+				glTexCoord2f(x_offset + tex_x[i] * width, tex_y[i]);
+				break;
+			case true:
+				glTexCoord2f(x_offset + tex_y[i] * width, tex_x[i]);
+		}
+		glVertex2f(sprite->corner_projections[i][X], -sprite->corner_projections[i][Y]);
 	}
 }
 
@@ -140,27 +167,42 @@ void draw(SDL_Context *sdl_context, Context *context)
 					((tile_position[X] == context->width - 1 && offset) || tile_position[Y] == context->height - 1),
 					context->right_color); //draw right side fill
 				draw_tile_outline(x_l, x_m, x_r, tile);
-			}
 
-			Area *goal = context->objects[ID_GOAL].area;
-			if((ON_SCREEN_X(goal->corner_positions[L][X], context->scroll_offset)
-			|| ON_SCREEN_X(goal->corner_positions[R][X], context->scroll_offset))
-			&& (ON_SCREEN_Y(goal->corner_projections[T], context->scroll_offset)
-			|| ON_SCREEN_Y(goal->corner_projections[B], context->scroll_offset))) {//draw goal
-				float position[2] = {tile_position[X] + offset/2.f, tile_position[Y]/2.f};
-				float area_position[2];
-				if(in_area(goal, position, area_position)) {
-					glBindTexture(GL_TEXTURE_2D, context->textures[goal->texture_index]);
-					glEnable(GL_TEXTURE_2D);
-					glBegin(GL_QUADS);
-					draw_flat_area(goal, tile, area_position, x_l, x_m, x_r);
-					glEnd();
-					glDisable(GL_TEXTURE_2D);
+				int i;
+				for(i = NUM_OBJECTS - 1; i >= 0; i--)
+				{
+					Object object = context->objects[i];
+					switch(object.common->type)
+					{
+						case MARBLE: ;
+						Marble *marble = object.marble;
+						if(tile_index == marble->tile_index) { //draw marble
+							draw_marble(marble);
+						}
+						break;
+						case AREA: ;
+						Area *area = object.area;
+						if(ON_SCREEN_X(area->corner_positions[L][X], context->scroll_offset)
+						|| ON_SCREEN_X(area->corner_positions[R][X], context->scroll_offset)) {//draw goal
+							float position[2] = {tile_position[X] + offset/2.f, tile_position[Y]/2.f};
+							float area_position[2];
+							if(in_area(area, position, area_position)) {
+								START_TEXTURE(context->textures[area->sprite->texture_index]);
+								draw_area(area, tile, area_position, x_l, x_m, x_r);
+								END_TEXTURE();
+							}
+						}
+						break;
+						case POINT: ;
+						Point *point = object.point;
+						if(tile_index == point->tile_index) { //draw marble
+							START_TEXTURE(context->textures[point->sprite->texture_index]);
+							draw_sprite(point->sprite);
+							END_TEXTURE();
+						}
+						break;
+					}
 				}
-			}
-
-			if(tile_index == context->objects[ID_PLAYER_MARBLE].marble->tile_index) { //draw ball
-				draw_marble(context->objects[ID_PLAYER_MARBLE].marble);
 			}
 		}
 	}

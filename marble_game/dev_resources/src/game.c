@@ -84,14 +84,16 @@ int main(int argc, char *argv[])
 		for(i = 0; i < NUM_OBJECTS; i++)
 		{
 			if(context->objects[i].common->physics_process) {
-				context->objects[i].common->physics_process(context, &(context->objects[i]));
+				context->objects[i].common->physics_process(context, context->objects[i]);
 			}
 		}
 
 		draw(sdl_context, context);
+		context->timer++;
 
 		Uint32 frame_time = SDL_GetTicks() - frame_start;
 		SDL_Delay(FRAMETIME - frame_time);
+		//printf("%d\n", frame_time);
 	}
 
 	quit(sdl_context, context);

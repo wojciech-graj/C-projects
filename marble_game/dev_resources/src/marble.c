@@ -4,6 +4,8 @@ Marble *init_marble(Context *context, unsigned char color[3])
 {
 	Marble *marble = malloc(sizeof(Marble));
 	marble->physics_process = &physics_process_marble;
+	marble->type = MARBLE;
+	marble->delete = &delete_object;
 	marble->position[X] = 0;
 	marble->position[Y] = 0;
 	calculate_tile(marble->position, &(marble->tile_index), marble->tile_position, context);
@@ -17,9 +19,9 @@ Marble *init_marble(Context *context, unsigned char color[3])
 	return marble;
 }
 
-void physics_process_marble(Context *context, Object *object)
+void physics_process_marble(Context *context, Object object)
 {
-	Marble *marble = object->marble;
+	Marble *marble = object.marble;
 	//calculate marble->velocity
 	float *tile = context->level[marble->tile_index];
 	float tb_avg = (tile[T] + tile[B])/2.f;

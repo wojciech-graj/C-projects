@@ -66,9 +66,9 @@ int main(int argc, char *argv[])
 		int i;
 		for(i = 0; i < image_dimensions[0] * image_dimensions[1]; i++)
 		{
-			unsigned char pixel_argb[4];
-			fread(pixel_argb, sizeof(unsigned char), 4, bmp_file);
-			unsigned char pixel_rgba[4] = {pixel_argb[1], pixel_argb[2], pixel_argb[3], pixel_argb[0]};
+			unsigned char pixel_raw[4];
+			fread(pixel_raw, sizeof(unsigned char), 4, bmp_file);
+			unsigned char pixel_rgba[4] = {pixel_raw[2], pixel_raw[1], pixel_raw[0], pixel_raw[3]};
 			fwrite(pixel_rgba, sizeof(unsigned char), 4, output_file);
 		}
 
