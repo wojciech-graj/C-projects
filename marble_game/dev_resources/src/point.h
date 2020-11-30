@@ -11,9 +11,10 @@ typedef struct Point {
 	int type;
 	Sprite *sprite;
 	int tile_index;
+	float z;
 } Point;
 
-Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int tile_index);
+Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int tile_index, float z);
 void physics_process_point(Context *context, Object object);
 void delete_point(Object object);
 

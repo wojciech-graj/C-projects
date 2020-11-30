@@ -21,6 +21,7 @@ void delete_context(Context *context)
 	free(context->level);
 	free(context->projection);
 	free(context->floor_colors);
+	free(context->on_screen);
 	delete_objectlist(context->objects, NUM_OBJECTS);
 	free(context);
 }

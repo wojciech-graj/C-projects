@@ -12,6 +12,7 @@ typedef struct Context {
 	short width;
 	float (*level)[5];
 	float (*projection)[4];
+	bool *on_screen;
 	int timer;
 	bool can_control;
 	float scroll_offset[2];

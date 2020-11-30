@@ -1,6 +1,6 @@
 #include "point.h"
 
-Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int tile_index)
+Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int tile_index, float z)
 {
 	Point *point = malloc(sizeof(Point));
 	point->physics_process = physics_process;
@@ -8,6 +8,7 @@ Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int
 	point->delete = &delete_point;
 	point->sprite = sprite;
 	point->tile_index = tile_index;
+	point->z = z;
 	return point;
 }
 

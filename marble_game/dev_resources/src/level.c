@@ -20,7 +20,7 @@ static void read_area(Context *context, FILE *file, int object_index)
 		corner_projections[i][Y] = context->projection[tile_index][i];
 	}
 	Sprite *sprite = init_sprite(NULL, corner_projections, texture_index, 0, transforms[0], transforms[1], transforms[2]);
-	context->objects[object_index].area = init_area(NULL, sprite, tile_positions);
+	context->objects[object_index].area = init_area(context, NULL, sprite, tile_positions);
 }
 
 void load_level(char *filename, Context *context)
@@ -32,6 +32,7 @@ void load_level(char *filename, Context *context)
 	assert(fread(&(context->width), sizeof(short), 1, file) == 1);
 	assert(fread(&(context->height), sizeof(short), 1, file) == 1);
 	int level_size = context->height * context->width;
+	context->on_screen = malloc(sizeof(bool) * level_size);
 
 	context->level = malloc(sizeof(float) * level_size * 5);
 	int i;
@@ -61,11 +62,11 @@ void load_level(char *filename, Context *context)
 	//TODO: INCLUDE POINTS IN level.txt
 	float positions_2[][2] = {{4.5,0},{4.5,1},{5.5,1},{5.5,0}};
 	Sprite *sprite2 = init_sprite(physics_process_animated_sprite, positions_2, T_FLAG_RED, 15, false, false, false);
-	context->objects[2].point = init_point(physics_process_point, sprite2, 115);
+	context->objects[2].point = init_point(physics_process_point, sprite2, 115, 10.5f / context->height);
 
 	float positions_3[][2] = {{2.5,0},{2.5,1},{3.5,1},{3.5,0}};
 	Sprite *sprite3 = init_sprite(physics_process_animated_sprite, positions_3, T_FLAG_RED, 15, false, false, false);
-	context->objects[3].point = init_point(physics_process_point, sprite3, 114);
+	context->objects[3].point = init_point(physics_process_point, sprite3, 113, 10.5f / context->height);
 
 	fclose(file);
 }
@@ -88,10 +89,12 @@ void calculate_tile(float *position, int *tile_index, float *tile_position, Cont
 
 	*tile_index = context->width * (posy - posx) + posx + floor((posy - posx)/2.);
 
-	float offset = .5 * ((abs(posx) + abs(posy)) % 2 == 0);
-	double i;
-	tile_position[X] = modf(position[X] + offset, &i);
-	tile_position[Y] = modf(position[Y] + offset, &i);
+	if(tile_position) {
+		float offset = .5 * ((abs(posx) + abs(posy)) % 2 == 0);
+		double i;
+		tile_position[X] = modf(position[X] + offset, &i);
+		tile_position[Y] = modf(position[Y] + offset, &i);
+	}
 }
 
 void calculate_level_projection(Context *context)

@@ -5,6 +5,11 @@ SDL_Context *init_sdl(void)
     assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
 	SDL_Context *context =  malloc(sizeof(SDL_Context));
 
+	assert(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == 0);
+	assert(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == 0);
+
+	assert(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16) == 0);
+
 	context->window = SDL_CreateWindow("MARBLE GAME",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
@@ -18,8 +23,9 @@ SDL_Context *init_sdl(void)
 	context->keystates = SDL_GetKeyboardState(NULL);
 	assert(context->keystates);
 
-	assert(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == 0);
-	assert(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == 0);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(-1, 1);
 
 	glEnable(GL_BLEND);
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -68,6 +74,8 @@ int input_process(SDL_Context *sdl_context, Context *context)
 
 int main(int argc, char *argv[])
 {
+	(void)argc;
+	(void)argv;
 	SDL_Context *sdl_context = init_sdl();
 	Context *context = init_context();
 
