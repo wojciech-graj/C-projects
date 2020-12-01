@@ -1,10 +1,12 @@
 #include "collision_area.h"
 
-CollisionArea *init_collision_area(void (*physics_process)(Context*, Object), float corner_positions[4][2])
+CollisionArea *init_collision_area(void (*physics_process)(Context*, Object), float corner_positions[4][2], bool can_move_over)
 {
 	CollisionArea *collision_area = malloc(sizeof(CollisionArea));
 	collision_area->physics_process = physics_process;
 	collision_area->type = COLLISIONAREA;
+	collision_area->colliding = false;
+	collision_area->can_move_over = can_move_over;
 
 	memcpy(collision_area->corner_positions, corner_positions, sizeof(float) * 8);
 

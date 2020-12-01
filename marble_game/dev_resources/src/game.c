@@ -45,7 +45,7 @@ void quit(SDL_Context *sdl_context, Context *context)
 	exit(0);
 }
 
-int input_process(SDL_Context *sdl_context, Context *context)
+int input_process_game(SDL_Context *sdl_context, Context *context)
 {
 	SDL_Event event;
 
@@ -55,18 +55,20 @@ int input_process(SDL_Context *sdl_context, Context *context)
 			return 1;
 		}
 	}
+	context->input[X] = 0;
+	context->input[Y] = 0;
 	if(context->can_control) {
 		if(sdl_context->keystates[SDL_SCANCODE_LEFT]) {
-			context->objects[ID_PLAYER_MARBLE].marble->velocity[X] -= MARBLE_ACCELERATION;
+			context->input[X] -= 1.f;
 	    }
 	    if(sdl_context->keystates[SDL_SCANCODE_RIGHT]) {
-			context->objects[ID_PLAYER_MARBLE].marble->velocity[X] += MARBLE_ACCELERATION;
+			context->input[X] += 1.f;
 	    }
 	    if(sdl_context->keystates[SDL_SCANCODE_UP]) {
-			context->objects[ID_PLAYER_MARBLE].marble->velocity[Y] -= MARBLE_ACCELERATION;
+			context->input[Y] -= 1.f;
 	    }
 	    if(sdl_context->keystates[SDL_SCANCODE_DOWN]) {
-			context->objects[ID_PLAYER_MARBLE].marble->velocity[Y] += MARBLE_ACCELERATION;
+			context->input[Y] += 1.f;
 	    }
 	}
 	return 0;
@@ -86,22 +88,23 @@ int main(int argc, char *argv[])
 	{
 		Uint32 frame_start = SDL_GetTicks();
 
-		if(input_process(sdl_context, context) == 1) break;
+		if(input_process_game(sdl_context, context) == 1) break;
 
 		int i;
-		for(i = 0; i < NUM_OBJECTS; i++)
+		for(i = 0; i < context->num_objects; i++)
 		{
 			if(context->objects[i].common->physics_process) {
 				context->objects[i].common->physics_process(context, context->objects[i]);
 			}
 		}
 
-		draw(sdl_context, context);
+		draw_game(sdl_context, context);
+
 		context->timer++;
 
 		Uint32 frame_time = SDL_GetTicks() - frame_start;
 		SDL_Delay(FRAMETIME - frame_time);
-		DBG_LOG("FRAMETIME: %d\n", frame_time);
+		//DBG_LOG("FRAMETIME: %d\n", frame_time);
 	}
 
 	quit(sdl_context, context);

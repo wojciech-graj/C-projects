@@ -14,6 +14,7 @@ typedef struct Context {
 	float (*projection)[4];
 	bool *on_screen;
 	int timer;
+	float input[2];
 	bool can_control;
 	float scroll_offset[2];
 	bool scroll;
@@ -21,6 +22,7 @@ typedef struct Context {
 	unsigned char left_color[3];
 	unsigned char right_color[3];
 	unsigned int textures[NUM_TEXTURES];
+	short num_objects;
 	Object *objects;
 } Context;
 

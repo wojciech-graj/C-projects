@@ -119,10 +119,6 @@ void draw_tiles(Context *context)
 	glBegin(GL_TRIANGLES);
 	START_FOR_EACH_TILE_ON_SCREEN
 	{
-		float *tile = context->projection[tile_index];
-		float x_l = tile_position[X] - .5f + offset/2.f;
-		float x_m = tile_position[X] + offset/2.f;
-		float x_r = tile_position[X] + .5f + offset/2.f;
 		float tb_avg = (tile[B] + tile[T])/2.f;
 		TILE_TRIANGLE(x_m, x_l, tile[B], tile[L], tile[T], z, (1 + tb_avg - tile[L]), context->floor_colors[tile_index]); //draw left triangle
 		TILE_TRIANGLE(x_m, x_r, tile[B], tile[R], tile[T], z, (1 + tile[R] - tb_avg), context->floor_colors[tile_index]); //draw right triangle
@@ -136,10 +132,6 @@ void draw_tile_sides(Context *context)
 	glBegin(GL_QUADS);
 	START_FOR_EACH_TILE_ON_SCREEN
 	{
-		float *tile = context->projection[tile_index];
-		float x_l = tile_position[X] - .5f + offset/2.f;
-		float x_m = tile_position[X] + offset/2.f;
-		float x_r = tile_position[X] + .5f + offset/2.f;
 		calculate_tile_side(x_m, x_l, z,
 			tile[B], tile[L],
 			context->level[tile_index][D],
@@ -162,10 +154,6 @@ void draw_tile_outlines(Context *context)
 	glColor3f(1, 1, 1);
 	START_FOR_EACH_TILE_ON_SCREEN
 	{
-		float *tile = context->projection[tile_index];
-		float x_l = tile_position[X] - .5f + offset/2.f;
-		float x_m = tile_position[X] + offset/2.f;
-		float x_r = tile_position[X] + .5f + offset/2.f;
 		glBegin(GL_LINE_LOOP);
 		TILE_OUTLINE(x_l, x_m, x_r, z, tile);
 		glEnd();
@@ -176,7 +164,7 @@ void draw_tile_outlines(Context *context)
 static void draw_objects(Context *context)
 {
 	int i;
-	for(i = 0; i < NUM_OBJECTS; i++)
+	for(i = 0; i < context->num_objects; i++)
 	{
 		Object object = context->objects[i];
 		switch(object.common->type)
@@ -221,13 +209,14 @@ static void draw_objects(Context *context)
 	}
 }
 
-void draw(SDL_Context *sdl_context, Context *context)
+void draw_game(SDL_Context *sdl_context, Context *context)
 {
 	if(context->scroll) {
 		context->scroll = false;
 		scroll_screen(context);
 		calculate_on_screen(context);
 	}
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	draw_tiles(context);

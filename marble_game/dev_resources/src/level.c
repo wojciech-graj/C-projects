@@ -1,36 +1,61 @@
 #include "level.h"
 
-//TODO: MAKE PROPER FUNCTIONS FOR MAKING VARIOUS OBJECTS
+static void read_marble(Context *context, FILE *file, int object_index)
+{
+	unsigned char color[3];
+	assert(fread(color, sizeof(unsigned char), 3, file) == 3);
+	context->objects[object_index].marble = init_marble(context, color);
+}
 
-static void read_area(Context *context, FILE *file, int object_index)
+static void read_sprite(Context *context, FILE *file, int object_index)
 {
 	int texture_index;
 	assert(fread(&texture_index, sizeof(int), 1, file) == 1);
-	short tile_positions[4][2];
-	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
+	int frame_time;
+	assert(fread(&frame_time, sizeof(int), 1, file) == 1);
 	bool transforms[3];
 	assert(fread(transforms, sizeof(bool), 3, file) == 3);
 	float corner_projections[4][2];
-	int i;
-	for(i = 0; i < 4; i++)
-	{
-		int offset = tile_positions[i][Y] % 2;
-		int tile_index = context->width * tile_positions[i][Y] + tile_positions[i][X];
-		corner_projections[i][X] = tile_positions[i][X] + offset/2.f + ((i - 1) % 2)/2.f;
-		corner_projections[i][Y] = context->projection[tile_index][i];
-	}
-	Sprite *sprite = init_sprite(NULL, corner_projections, texture_index, 0, transforms[0], transforms[1], transforms[2]);
+	assert(fread(corner_projections, sizeof(float), 8, file) == 8);
+	//TODO: ADD PHYSICS PROCESS TO LEVEL FILE
+	context->objects[object_index].sprite = init_sprite((frame_time == 0) ? NULL : &physics_process_animated_sprite,
+		corner_projections, texture_index, frame_time, transforms[0], transforms[1], transforms[2]);
+}
+
+static void read_collision_area(Context *context, FILE *file, int object_index)
+{
+	bool can_move_over;
+	assert(fread(&can_move_over, sizeof(bool), 1, file) == 1);
 	float corner_positions[4][2];
-	for(i = 0; i < 4; i++)
-	{
-		int offset = tile_positions[i][Y] % 2;
-		corner_positions[i][X] = tile_positions[i][X] + offset/2.f + ((i - 1) % 2)/2.f;
-		corner_positions[i][Y] = tile_positions[i][Y]/2.f + ((i - 2) % 2)/2.f;
-	}
-	CollisionArea *collision_area = init_collision_area(NULL, corner_positions);
+	assert(fread(corner_positions, sizeof(float), 8, file) == 8);
+	context->objects[object_index].collision_area = init_collision_area(NULL, corner_positions, can_move_over);
+}
+
+static void read_area(Context *context, FILE *file, int object_index)
+{
+	short tile_positions[4][2];
+	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
+	int sprite_index;
+	assert(fread(&sprite_index, sizeof(int), 1, file) == 1);
+	Sprite *sprite = (sprite_index != -1) ? context->objects[sprite_index].sprite : NULL;
+	int collision_area_index;
+	assert(fread(&collision_area_index, sizeof(int), 1, file) == 1);
+	CollisionArea *collision_area = (collision_area_index != -1) ? context->objects[sprite_index].collision_area : NULL;
 	context->objects[object_index].area = init_area(context, NULL, sprite, collision_area, tile_positions);
-	context->objects[2].sprite = sprite;
-	context->objects[3].collision_area = collision_area;
+}
+
+static void read_point(Context *context, FILE *file, int object_index)
+{
+	int sprite_index;
+	assert(fread(&sprite_index, sizeof(int), 1, file) == 1);
+	Sprite *sprite = (sprite_index != -1) ? context->objects[sprite_index].sprite : NULL;
+	short tile_position[2];
+	assert(fread(tile_position, sizeof(short), 2, file) == 2);
+	int tile_index = tile_position[X] + tile_position[Y] * context->width;
+	float y;
+	assert(fread(&y, sizeof(float), 1, file) == 1);
+	float z = y / context->height;
+	context->objects[object_index].point = init_point(NULL, sprite, tile_index, z);
 }
 
 void load_level(char *filename, Context *context)
@@ -62,23 +87,32 @@ void load_level(char *filename, Context *context)
 	assert(fread(context->left_color, sizeof(unsigned char), 3, file) == 3);
 	assert(fread(context->right_color, sizeof(unsigned char), 3, file) == 3);
 
-	context->objects = init_objectlist(NUM_OBJECTS);
+	assert(fread(&(context->num_objects), sizeof(int), 1, file) == 1);
+	context->objects = init_objectlist(context->num_objects);
 
-	unsigned char marble_color[3] = {0, 255, 0};
-	context->objects[ID_PLAYER_MARBLE].marble = init_marble(context, marble_color);
-
-	read_area(context, file, ID_GOAL);
-
-	//TODO: INCLUDE POINTS IN level.txt
-	float positions_2[][2] = {{4.5,0},{4.5,1},{5.5,1},{5.5,0}};
-	Sprite *sprite2 = init_sprite(physics_process_animated_sprite, positions_2, T_FLAG_RED, 15, false, false, false);
-	context->objects[4].point = init_point(physics_process_point, sprite2, 115, 10.5f / context->height);
-	context->objects[5].sprite = sprite2;
-
-	float positions_3[][2] = {{2.5,0},{2.5,1},{3.5,1},{3.5,0}};
-	Sprite *sprite3 = init_sprite(physics_process_animated_sprite, positions_3, T_FLAG_RED, 15, false, false, false);
-	context->objects[6].point = init_point(physics_process_point, sprite3, 113, 10.5f / context->height);
-	context->objects[7].sprite = sprite3;
+	for(i = 0; i < context->num_objects; i++) //TODO: CHANGE
+	{
+		int type;
+		assert(fread(&type, sizeof(int), 1, file) == 1);
+		switch(type)
+		{
+			case MARBLE:
+			read_marble(context, file, i);
+			break;
+			case SPRITE:
+			read_sprite(context, file, i);
+			break;
+			case COLLISIONAREA:
+			read_collision_area(context, file, i);
+			break;
+			case AREA:
+			read_area(context, file, i);
+			break;
+			case POINT:
+			read_point(context, file, i);
+			break;
+		}
+	}
 
 	fclose(file);
 }

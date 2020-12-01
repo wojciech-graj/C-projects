@@ -28,8 +28,12 @@
 		float z = tile_position[Y] / (float) context->height;\
 		for(tile_position[X] = 0; tile_position[X] < context->width; tile_position[X]++) {\
 			int tile_index = tile_position[Y] * context->width + tile_position[X];\
-			if(context->on_screen[tile_index])
-#define END_FOR_EACH_TILE_ON_SCREEN }}
+			if(context->on_screen[tile_index]) {\
+				float *tile = context->projection[tile_index];\
+				float x_l = tile_position[X] - .5f + offset/2.f;\
+				float x_m = tile_position[X] + offset/2.f;\
+				float x_r = tile_position[X] + .5f + offset/2.f;
+#define END_FOR_EACH_TILE_ON_SCREEN }}}
 
 typedef struct SDL_Context {
 	const Uint8 *keystates;
@@ -37,7 +41,7 @@ typedef struct SDL_Context {
 	SDL_GLContext main_context;
 } SDL_Context;
 
-void draw(SDL_Context *sdl_context, Context *context);
+void draw_game(SDL_Context *sdl_context, Context *context);
 
 static inline void START_TEXTURE(int texture)
 {

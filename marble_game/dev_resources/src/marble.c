@@ -22,6 +22,8 @@ void physics_process_marble(Context *context, Object object)
 {
 	Marble *marble = object.marble;
 	//calculate marble->velocity
+	marble->velocity[X] += context->input[X] * MARBLE_ACCELERATION;
+	marble->velocity[Y] += context->input[Y] * MARBLE_ACCELERATION;
 	float *tile = context->level[marble->tile_index];
 	float tb_avg = (tile[T] + tile[B])/2.f;
 	if(! marble->in_air) {
@@ -46,7 +48,7 @@ void physics_process_marble(Context *context, Object object)
 	future_position[Y] = marble->position[Y] + marble->velocity[Y];
 
 	int i;
-	for(i = 0; i < NUM_OBJECTS; i++)
+	for(i = 0; i < context->num_objects; i++)
 	{
 		object = context->objects[i];
 		switch(object.common->type)
@@ -54,7 +56,10 @@ void physics_process_marble(Context *context, Object object)
 			case COLLISIONAREA: ;
 			CollisionArea *collision_area = object.collision_area;
 			if(in_collision_area(collision_area, future_position)) {
-				goto COLLIDED;
+				collision_area->colliding = true;
+				if(!collision_area->can_move_over) {
+					goto COLLIDED;
+				}
 			}
 		}
 	}

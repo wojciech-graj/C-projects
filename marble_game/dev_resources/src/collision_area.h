@@ -14,13 +14,14 @@
 typedef struct Context Context;
 typedef struct CollisionArea {
 	DEFAULT_OBJECT_PARAMS
+	bool colliding;
+	bool can_move_over;
 	float corner_positions[4][2];
 	float vectors[2][2]; //LT, TR
 	float dot_products[2]; //dot(LT, LT), dot(TR, TR)
 } CollisionArea;
 
-CollisionArea *init_collision_area(void (*physics_process)(Context*, Object), float corner_positions[4][2]);
+CollisionArea *init_collision_area(void (*physics_process)(Context*, Object), float corner_positions[4][2], bool can_move_over);
 bool in_collision_area(CollisionArea *collision_area, float *position);
-void physics_process_collision(Context *context, Object object);
 
 #endif
