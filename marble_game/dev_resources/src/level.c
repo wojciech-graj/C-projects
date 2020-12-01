@@ -20,7 +20,17 @@ static void read_area(Context *context, FILE *file, int object_index)
 		corner_projections[i][Y] = context->projection[tile_index][i];
 	}
 	Sprite *sprite = init_sprite(NULL, corner_projections, texture_index, 0, transforms[0], transforms[1], transforms[2]);
-	context->objects[object_index].area = init_area(context, NULL, sprite, tile_positions);
+	float corner_positions[4][2];
+	for(i = 0; i < 4; i++)
+	{
+		int offset = tile_positions[i][Y] % 2;
+		corner_positions[i][X] = tile_positions[i][X] + offset/2.f + ((i - 1) % 2)/2.f;
+		corner_positions[i][Y] = tile_positions[i][Y]/2.f + ((i - 2) % 2)/2.f;
+	}
+	CollisionArea *collision_area = init_collision_area(NULL, corner_positions);
+	context->objects[object_index].area = init_area(context, NULL, sprite, collision_area, tile_positions);
+	context->objects[2].sprite = sprite;
+	context->objects[3].collision_area = collision_area;
 }
 
 void load_level(char *filename, Context *context)
@@ -62,11 +72,13 @@ void load_level(char *filename, Context *context)
 	//TODO: INCLUDE POINTS IN level.txt
 	float positions_2[][2] = {{4.5,0},{4.5,1},{5.5,1},{5.5,0}};
 	Sprite *sprite2 = init_sprite(physics_process_animated_sprite, positions_2, T_FLAG_RED, 15, false, false, false);
-	context->objects[2].point = init_point(physics_process_point, sprite2, 115, 10.5f / context->height);
+	context->objects[4].point = init_point(physics_process_point, sprite2, 115, 10.5f / context->height);
+	context->objects[5].sprite = sprite2;
 
 	float positions_3[][2] = {{2.5,0},{2.5,1},{3.5,1},{3.5,0}};
 	Sprite *sprite3 = init_sprite(physics_process_animated_sprite, positions_3, T_FLAG_RED, 15, false, false, false);
-	context->objects[3].point = init_point(physics_process_point, sprite3, 113, 10.5f / context->height);
+	context->objects[6].point = init_point(physics_process_point, sprite3, 113, 10.5f / context->height);
+	context->objects[7].sprite = sprite3;
 
 	fclose(file);
 }

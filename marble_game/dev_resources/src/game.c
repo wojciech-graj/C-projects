@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
 		Uint32 frame_time = SDL_GetTicks() - frame_start;
 		SDL_Delay(FRAMETIME - frame_time);
-		//printf("%d\n", frame_time);
+		DBG_LOG("FRAMETIME: %d\n", frame_time);
 	}
 
 	quit(sdl_context, context);

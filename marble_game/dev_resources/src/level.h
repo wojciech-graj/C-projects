@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "area.h"
+#include "collision_area.h"
 #include "context.h"
 #include "global.h"
 #include "marble.h"

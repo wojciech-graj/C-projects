@@ -1,12 +1,12 @@
 #include "area.h"
 
-Area *init_area(Context *context, void (*physics_process)(Context*, Object), Sprite *sprite, short tile_positions[4][2])
+Area *init_area(Context *context, void (*physics_process)(Context*, Object), Sprite *sprite, CollisionArea *collision_area, short tile_positions[4][2])
 {
 	Area *area = malloc(sizeof(Area));
 	area->physics_process = physics_process;
 	area->type = AREA;
-	area->delete = &delete_area;
 	area->sprite = sprite;
+	area->collision_area = collision_area;
 
 	int i;
 	for(i = 0; i < 4; i++)
@@ -23,31 +23,5 @@ Area *init_area(Context *context, void (*physics_process)(Context*, Object), Spr
 	area->tile_side_lengths[X] = 1.f / area->side_lengths[X];
 	area->tile_side_lengths[Y] = 1.f / area->side_lengths[Y];
 
-	area->vectors[0][X] = area->corner_positions[T][X] - area->corner_positions[L][X];
-	area->vectors[0][Y] = area->corner_positions[T][Y] - area->corner_positions[L][Y];
-	area->vectors[1][X] = area->corner_positions[R][X] - area->corner_positions[T][X];
-	area->vectors[1][Y] = area->corner_positions[R][Y] - area->corner_positions[T][Y];
-
-	area->dot_products[0] = dot_product(area->vectors[0], area->vectors[0]);
-	area->dot_products[1] = dot_product(area->vectors[1], area->vectors[1]);
-
 	return area;
-}
-
-bool in_area(Area *area, float *position)
-{
-	float vec_lp[2] = {position[X] - area->corner_positions[L][X],
-		position[Y] - area->corner_positions[L][Y]};
-	float vec_tp[2] = {position[X] - area->corner_positions[T][X],
-		position[Y] - area->corner_positions[T][Y]};
-	float dot_ltlp = dot_product(area->vectors[0], vec_lp);
-	float dot_trtp = dot_product(area->vectors[1], vec_tp);
-	return (0 <= dot_ltlp && dot_ltlp <= area->dot_products[0] && 0 <= dot_trtp && dot_trtp <= area->dot_products[1]);
-}
-
-void delete_area(Object object)
-{
-	Area *area = object.area;
-	free(area->sprite);
-	free(area);
 }

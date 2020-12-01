@@ -22,6 +22,14 @@
 	&& posy <= TILES_ON_SCREEN - scroll_offset[Y]/2.f + Y_PADDING)
 #define ON_SCREEN_X(posx, scroll_offset) (posx >= scroll_offset[X]\
 	&& posx <= TILES_ON_SCREEN + scroll_offset[X])
+#define START_FOR_EACH_TILE_ON_SCREEN int tile_position[2];\
+	for(tile_position[Y] = 0; tile_position[Y] < context->height; tile_position[Y]++) {\
+		int offset = tile_position[Y] % 2;\
+		float z = tile_position[Y] / (float) context->height;\
+		for(tile_position[X] = 0; tile_position[X] < context->width; tile_position[X]++) {\
+			int tile_index = tile_position[Y] * context->width + tile_position[X];\
+			if(context->on_screen[tile_index])
+#define END_FOR_EACH_TILE_ON_SCREEN }}
 
 typedef struct SDL_Context {
 	const Uint8 *keystates;

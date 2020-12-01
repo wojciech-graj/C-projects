@@ -4,18 +4,17 @@
 #include "context.h"
 #include "global.h"
 #include "sprite.h"
+#include "collision_area.h"
 
 typedef struct Point {
-	void (*physics_process)(Context*, Object);
-	void (*delete)(Object);
-	int type;
+	DEFAULT_OBJECT_PARAMS
 	Sprite *sprite;
+	CollisionArea *collision_area;
 	int tile_index;
 	float z;
 } Point;
 
 Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int tile_index, float z);
 void physics_process_point(Context *context, Object object);
-void delete_point(Object object);
 
 #endif

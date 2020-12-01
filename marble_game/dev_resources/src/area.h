@@ -1,30 +1,25 @@
 #ifndef AREA_H
 #define AREA_H
 
-#include <math.h>
 #include <stdbool.h>
 
 #include "context.h"
 #include "global.h"
 #include "math_functions.h"
 #include "object.h"
-#include "sprite.h"
 
+typedef struct Sprite Sprite;
+typedef struct CollisionArea CollisionArea;
 typedef struct Area {
-	void (*physics_process)(Context*, Object);
-	void (*delete)(Object);
-	int type;
+	DEFAULT_OBJECT_PARAMS
 	Sprite *sprite;
+	CollisionArea *collision_area;
 	int corner_tile_indexes[4];
 	float corner_positions[4][2];
-	float vectors[2][2]; //LT, TR
-	float dot_products[2]; //dot(LT, LT), dot(TR, TR)
 	int side_lengths[2];
-	float tile_side_lengths[2]; //fraction of side which a tile would take up
+	float tile_side_lengths[2]; //fraction of side which a tile takes up
 } Area;
 
-Area *init_area(Context *context, void (*physics_process)(Context*, Object), Sprite *sprite, short tile_positions[4][2]);
-bool in_area(Area *area, float *position);
-void delete_area(Object object);
+Area *init_area(Context *context, void (*physics_process)(Context*, Object), Sprite *sprite, CollisionArea *collision_area, short tile_positions[4][2]);
 
 #endif

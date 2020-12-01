@@ -8,9 +8,7 @@
 #include "global.h"
 
 typedef struct Sprite {
-	void (*physics_process)(Context*, Object*);
-	void (*delete)(Object*);
-	int type;
+	DEFAULT_OBJECT_PARAMS
 	int texture_index;
 	int frame;
 	int frame_time;
@@ -21,7 +19,7 @@ typedef struct Sprite {
 	float corner_projections[4][2];
 } Sprite;
 
-Sprite *init_sprite(void (*physics_process)(Context*, Object*), float corner_projections[4][2], int texture_index, int frame_time, bool rotate, bool flip_x, bool flip_y);
-void physics_process_animated_sprite(Context *context, Object *object);
+Sprite *init_sprite(void (*physics_process)(Context*, Object), float corner_projections[4][2], int texture_index, int frame_time, bool rotate, bool flip_x, bool flip_y);
+void physics_process_animated_sprite(Context *context, Object object);
 
 #endif
