@@ -12,6 +12,8 @@
 #define DBG_LOG(format, val)
 #endif
 
+#define M_TAU 6.28318531f
+
 #define DEFAULT_OBJECT_PARAMS void (*physics_process)(Context*, Object);\
 	int type;
 
@@ -20,6 +22,8 @@ enum object_types{MARBLE, AREA, POINT, SPRITE, COLLISIONAREA};
 enum coordinates{X, Y, Z};
 enum tile_directions{L, T, R, B, D};
 
-extern int num_texture_frames[NUM_TEXTURES];
+
+extern float ORIGIN[2];
+extern int NUM_TEXTURE_FRAMES[NUM_TEXTURES];
 
 #endif

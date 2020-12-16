@@ -26,16 +26,24 @@ static inline float distance(float *p1, float *p2)
 	return sqrt(pow(p2[X] - p1[X], 2) + pow(p2[Y] - p1[Y], 2));
 }
 
-static inline int imin(int a, int b) {
+static inline int mini(int a, int b)
+{
 	return ((a < b) ? a : b);
 }
 
-static inline int imax(int a, int b) {
+static inline int maxi(int a, int b)
+{
 	return ((a > b) ? a : b);
 }
 
-static inline int isqr(int a) {
+static inline int sqri(int a)
+{
 	return (a * a);
+}
+
+static inline bool equalf(float a, float b, float epsilon)
+{
+	return (float) fabs(a - b) < epsilon;
 }
 
 #endif

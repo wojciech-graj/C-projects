@@ -1,5 +1,7 @@
 #include "renderer.h"
 
+//TODO: individual z values for each point
+
 static void calculate_tile_side(float x_m, float x_s, float z, float tile_b, float tile_s, float tile_d, int bottom_tile_index, int side, float (*level_projection)[4], bool on_edge, unsigned char *color)
 {
 	if(on_edge && tile_d == 0) {
@@ -18,7 +20,7 @@ static void AREA_TILE_PROJECTION(Area *area, float *tile, float *sub_texture, fl
 	Sprite *sprite = area->sprite;
 	int mul_flip_x = 1 - sprite->flip_x * 2;
 	int mul_flip_y = 1 - sprite->flip_y * 2;
-	float width = 1.f / num_texture_frames[sprite->texture_index];
+	float width = 1.f / NUM_TEXTURE_FRAMES[sprite->texture_index];
 	float x_offset = sprite->frame * width;
 
 	float tex_x[4] = {mul_flip_x * (sub_texture[X] + area->tile_side_lengths[X]) + sprite->flip_x,
@@ -49,7 +51,7 @@ static void AREA_TILE_PROJECTION(Area *area, float *tile, float *sub_texture, fl
 
 static void draw_sprite(Sprite *sprite, float z) //TODO: optimize
 {
-	float width = 1.f / num_texture_frames[sprite->texture_index];
+	float width = 1.f / NUM_TEXTURE_FRAMES[sprite->texture_index];
 	float x_offset = sprite->frame * width;
 
 	float tex_x[4] = {sprite->flip_x, sprite->flip_x, !sprite->flip_x, !sprite->flip_x};
@@ -75,10 +77,10 @@ static void draw_marble(Marble *marble, float z)
 	glColor3ubv(marble->color);
 	glBegin(GL_POLYGON);
 	float angle;
-	for(angle = 0; angle < M_TAO; angle += M_TAO / NUM_CIRCLE_POINTS)
+	for(angle = 0; angle < M_TAU; angle += M_TAU / NUM_CIRCLE_POINTS)
 	{
-		glVertex3f(marble->radius * (float) cos(angle) + marble->position[X],
-			marble->radius * (float) sin(angle) + marble->radius + (marble->position[Z] - marble->position[Y])/2.f, z);
+		glVertex3f(marble->radius * cosf(angle) + marble->position[X],
+			marble->radius * sinf(angle) + marble->radius + (marble->position[Z] - marble->position[Y])/2.f, z);
 	}
 	glEnd();
 }

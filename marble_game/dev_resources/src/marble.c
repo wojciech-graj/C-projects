@@ -1,18 +1,19 @@
 #include "marble.h"
 
-Marble *init_marble(Context *context, unsigned char color[3])
+Marble *init_marble(Context *context, unsigned char color[3], float radius, int num_collision_points)
 {
 	Marble *marble = malloc(sizeof(Marble));
 	marble->physics_process = &physics_process_marble;
 	marble->type = MARBLE;
 	marble->position[X] = 0;
 	marble->position[Y] = 0;
+	marble->num_collision_points = num_collision_points;
 	calculate_tile(marble->position, &(marble->tile_index), marble->tile_frac_position, context);
 	float *tile = context->level[marble->tile_index];
 	marble->position[Z] = (tile[T] + tile[B])/2.f; //assume that x is in middle of tile
 	marble->velocity[X] = 0;
 	marble->velocity[Y] = 0;
-	marble->radius = .2;
+	marble->radius = radius;
 	marble->in_air = false;
 	memcpy(marble->color, color, sizeof(unsigned char) * 3);
 	return marble;
@@ -47,7 +48,35 @@ void physics_process_marble(Context *context, Object object)
 	future_position[X] = marble->position[X] + marble->velocity[X];
 	future_position[Y] = marble->position[Y] + marble->velocity[Y];
 
+	//calculate marble->tile_index and marble->tile_frac_position
+	int future_tile_index;
+	float future_tile_frac_position[2];
+	calculate_tile(future_position, &future_tile_index, future_tile_frac_position, context);
+	float *future_tile = context->level[future_tile_index];
+
+	//calculate marble->position
+	int future_tile_frac_position_x_rounded = round(future_tile_frac_position[X]);
+	future_position[Z] = calculate_z_on_plane(
+		future_tile_frac_position_x_rounded, .5f, future_tile[future_tile_frac_position_x_rounded ? R : L],
+		.5f, 0, future_tile[T],
+		.5f, 1, future_tile[B],
+		future_tile_frac_position[X], future_tile_frac_position[Y]);
+
+	//calculate collision_positions
+	float velocity_angle = atan2(marble->velocity[Y], marble->velocity[X]);
+	float angle = velocity_angle + COLLISION_ANGLE_PADDING - M_TAU / 4.f;
+	float dangle = (M_TAU - 2 * COLLISION_ANGLE_PADDING) / marble->num_collision_points;
+	float collision_positions[marble->num_collision_points][2];
 	int i;
+	for(i = 0; i < marble->num_collision_points; i++)
+	{
+		collision_positions[i][X] = future_position[X] + marble->radius * cosf(angle);
+		collision_positions[i][Y] = future_position[Y] + marble->radius * sinf(angle);
+		angle += dangle;
+	}
+
+	//collision with CollisionObjects
+	bool collided = false;
 	for(i = 0; i < context->num_objects; i++)
 	{
 		object = context->objects[i];
@@ -55,45 +84,54 @@ void physics_process_marble(Context *context, Object object)
 		{
 			case COLLISIONAREA: ;
 			CollisionArea *collision_area = object.collision_area;
-			if(in_collision_area(collision_area, future_position)) {
-				collision_area->colliding = true;
-				if(!collision_area->can_move_over) {
-					goto COLLIDED;
+			int j;
+			for(j = 0; j < marble->num_collision_points; j++)
+			{
+				if(in_collision_area(collision_area, collision_positions[j])) {
+					collision_area->colliding = true;
+					if(!collision_area->can_move_over) {
+						collided = true;
+					}
 				}
 			}
 		}
 	}
 
-	//calculate marble->tile_index and marble->tile_frac_position
-	int future_tile_index;
-	float future_tile_frac_position[2];
-	calculate_tile(future_position, &future_tile_index, future_tile_frac_position, context);
+	bool future_in_air = marble->position[Z] - future_position[Z] > MAX_DELTA_Z;
 
-	float *future_tile = context->level[future_tile_index];
-	tb_avg = (future_tile[T] + future_tile[B])/2.f;
+	//collision with level
+	if(!collided) {
+		if(!future_in_air) {
 
-	//calculate marble->position and collision
-	future_position[Z] = calculate_z_on_plane(
-		round(future_tile_frac_position[X]), .5f, future_tile[(future_tile_frac_position[X] < .5f) ? L : R],
-		.5f, 0, future_tile[T],
-		.5f, 1, future_tile[B],
-		future_tile_frac_position[X], future_tile_frac_position[Y]);
-	if(future_position[Z] - marble->position[Z] > MAX_DELTA_Z) {
-		COLLIDED:
+			for(i = 0; i < marble->num_collision_points; i++)
+			{
+				if(colliding_with_level(context, collision_positions[i], future_position[Z] + MAX_DELTA_Z, marble->radius, future_tile_index)) {
+					collided = true;
+					break;
+				}
+			}
+		} else {//only check collision with point directly ahead if in air
+			float collision_position[2] = {future_position[X] + marble->radius * cosf(velocity_angle),
+				future_position[Y] + marble->radius * sinf(velocity_angle)};
+			if(colliding_with_level(context, collision_position, future_position[Z] + MAX_DELTA_Z, marble->radius, future_tile_index)) {
+				collided = true;
+			}
+		}
+	}
+
+	if(collided) {
 		marble->velocity[X] = 0;
 		marble->velocity[Y] = 0;
 	} else {
 		marble->tile_index = future_tile_index;
 		marble->tile_frac_position[X] = future_tile_frac_position[X];
 		marble->tile_frac_position[Y] = future_tile_frac_position[Y];
-		marble->position[X] = future_position[X];
-		marble->position[Y] = future_position[Y];
-		if(marble->position[Z] - future_position[Z] > MAX_DELTA_Z) {
-			if(!marble->in_air) marble->in_air = true;
-		} else {
-			if(marble->in_air) marble->in_air = false;
+		marble->in_air = future_in_air;
+		if(!marble->in_air) {
 			marble->velocity[Z] = future_position[Z] - marble->position[Z];
 		}
+		marble->position[X] = future_position[X];
+		marble->position[Y] = future_position[Y];
 		marble->position[Z] += marble->velocity[Z];
 	}
 

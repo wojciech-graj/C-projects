@@ -19,6 +19,6 @@ void physics_process_animated_sprite(Context *context, Object object)
 {
 	Sprite *sprite = object.sprite;
 	if(context->timer % sprite->frame_time == 0) {
-		 sprite->frame = (sprite->frame + 1) % num_texture_frames[sprite->texture_index];
+		 sprite->frame = (sprite->frame + 1) % NUM_TEXTURE_FRAMES[sprite->texture_index];
 	}
 }

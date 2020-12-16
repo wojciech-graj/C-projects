@@ -5,6 +5,8 @@ Context *init_context(void)
 	Context *context = malloc(sizeof(Context));
 	context->level = NULL;
 	context->projection = NULL;
+	context->flat = NULL;
+	context->on_screen = NULL;
 	context->timer = 0;
 	context->floor_colors = NULL;
 	context->can_control = true;
@@ -21,6 +23,7 @@ void delete_context(Context *context)
 	free(context->level);
 	free(context->projection);
 	free(context->floor_colors);
+	free(context->flat);
 	free(context->on_screen);
 	delete_objectlist(context->objects, context->num_objects);
 	free(context);

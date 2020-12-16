@@ -15,7 +15,6 @@
 
 #define Y_PADDING 2
 #define EDGE_HEIGHT 8
-#define M_TAO 6.28318531f
 #define NUM_CIRCLE_POINTS 12
 
 #define ON_SCREEN_Y(posy, scroll_offset) (posy >= -scroll_offset[Y]/2.f - Y_PADDING\
@@ -58,9 +57,9 @@ static inline void END_TEXTURE(void)
 
 static inline void TILE_TRIANGLE(float x_m, float x_s, float tile_b, float tile_s, float tile_t, float z, float cmul, unsigned char *floor_color)
 {
-	glColor3ub(imin(imax(0, floor_color[0] * cmul), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
-		imin(imax(0, floor_color[1] * cmul), 255),
-		imin(imax(0, floor_color[2] * cmul), 255));
+	glColor3ub(mini(maxi(0, floor_color[0] * cmul), 255), //floor_color does not have to be converted to int to prevent overflow because of integer promotion
+		mini(maxi(0, floor_color[1] * cmul), 255),
+		mini(maxi(0, floor_color[2] * cmul), 255));
 	glVertex3f(x_m, tile_b, z);
 	glVertex3f(x_s, tile_s, z);
 	glVertex3f(x_m, tile_t, z);

@@ -152,6 +152,18 @@ void write_tile_positions_as_corner_positions(char *buffer, FILE *output_file, f
 
 //TODO FUNCTION: INDEX IN STRING ARRAY
 
+int index_in_string_array(char *string, char *array[], int array_length)
+{
+	int string_length = strlen(string);
+	int i;
+	for(i = 0; i < array_length; i++)
+	{
+		if(! strncmp(array[i], string, string_length)) {
+			return i;
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	assert(argc == 3);

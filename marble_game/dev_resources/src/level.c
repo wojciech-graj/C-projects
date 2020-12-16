@@ -4,7 +4,7 @@ static void read_marble(Context *context, FILE *file, int object_index)
 {
 	unsigned char color[3];
 	assert(fread(color, sizeof(unsigned char), 3, file) == 3);
-	context->objects[object_index].marble = init_marble(context, color);
+	context->objects[object_index].marble = init_marble(context, color, 0.2f, 4);
 }
 
 static void read_sprite(Context *context, FILE *file, int object_index)
@@ -58,39 +58,21 @@ static void read_point(Context *context, FILE *file, int object_index)
 	context->objects[object_index].point = init_point(NULL, sprite, tile_index, z);
 }
 
-void load_level(char *filename, Context *context)
+static void read_colors(Context *context, FILE *file, int level_size)
 {
-	FILE *file = fopen(filename, "rb");
-	assert(file);
-	short buffer;
-
-	assert(fread(&(context->width), sizeof(short), 1, file) == 1);
-	assert(fread(&(context->height), sizeof(short), 1, file) == 1);
-	int level_size = context->height * context->width;
-	context->on_screen = malloc(sizeof(bool) * level_size);
-
-	context->level = malloc(sizeof(float) * level_size * 5);
-	int i;
-	for(i = 0; i < level_size; i++)
-	{
-		int j;
-		for(j = 0; j < 5; j++)
-		{
-			assert(fread(&buffer, sizeof(short), 1, file) == 1);
-			context->level[i][j] = buffer/2.f;
-		}
-	}
-	calculate_level_projection(context);
-
 	context->floor_colors = malloc(sizeof(unsigned char) * level_size * 3);
 	assert(fread(context->floor_colors, sizeof(unsigned char), level_size * 3, file) == (size_t) (level_size * 3));
 	assert(fread(context->left_color, sizeof(unsigned char), 3, file) == 3);
 	assert(fread(context->right_color, sizeof(unsigned char), 3, file) == 3);
+}
 
+static void read_objects(Context *context, FILE *file)
+{
 	assert(fread(&(context->num_objects), sizeof(int), 1, file) == 1);
 	context->objects = init_objectlist(context->num_objects);
 
-	for(i = 0; i < context->num_objects; i++) //TODO: CHANGE
+	int i;
+	for(i = 0; i < context->num_objects; i++)
 	{
 		int type;
 		assert(fread(&type, sizeof(int), 1, file) == 1);
@@ -113,6 +95,40 @@ void load_level(char *filename, Context *context)
 			break;
 		}
 	}
+}
+
+void load_level(char *filename, Context *context)
+{
+	FILE *file = fopen(filename, "rb");
+	assert(file);
+	short buffer;
+
+	assert(fread(&(context->width), sizeof(short), 1, file) == 1);
+	assert(fread(&(context->height), sizeof(short), 1, file) == 1);
+	int level_size = context->height * context->width;
+	context->on_screen = malloc(sizeof(bool) * level_size);
+	context->flat = malloc(sizeof(bool) * level_size * 2);
+
+	context->level = malloc(sizeof(float) * level_size * 5);
+	int i;
+	for(i = 0; i < level_size; i++)
+	{
+		int j;
+		for(j = 0; j < 5; j++)
+		{
+			assert(fread(&buffer, sizeof(short), 1, file) == 1);
+			context->level[i][j] = buffer/2.f;
+		}
+		float tb_avg = (context->level[i][T] + context->level[i][B])/2.f;
+		bool t_equals_b = equalf(context->level[i][T], context->level[i][B], .1f);
+		context->flat[i][0] = t_equals_b && equalf(context->level[i][L], tb_avg, .1f);
+		context->flat[i][1] = t_equals_b && equalf(context->level[i][R], tb_avg, .1f);
+	}
+	calculate_level_projection(context);
+
+	read_colors(context, file, level_size);
+
+	read_objects(context, file);
 
 	fclose(file);
 }
@@ -158,4 +174,31 @@ void calculate_level_projection(Context *context)
 			context->projection[i][B] = context->level[i][B]/2.f - tile_position[Y]/4.f - .25f;
 		}
 	}
+}
+
+bool colliding_with_level(Context *context, float *position, float max_z, float height, int unconsidered_tile_index)
+{
+	int tile_index;
+	float tile_frac_position[2];
+	calculate_tile(position, &tile_index, tile_frac_position, context);
+	if(unconsidered_tile_index != tile_index) {
+		float *tile = context->level[tile_index];
+		int tile_frac_position_x_rounded = round(tile_frac_position[X]);
+		float tile_side_z = tile[tile_frac_position_x_rounded ? R : L];
+		if(context->flat[tile_index][tile_frac_position_x_rounded]) {
+			if(tile_side_z > max_z) {
+				return true;
+			}
+		} else {
+			float z = calculate_z_on_plane(
+				tile_frac_position_x_rounded, .5f, tile_side_z,
+				.5f, 0, tile[T],
+				.5f, 1, tile[B],
+				tile_frac_position[X], tile_frac_position[Y]);
+			if(z > max_z + height) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
