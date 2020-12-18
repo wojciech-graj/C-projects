@@ -3,11 +3,12 @@
 Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int tile_index, float z)
 {
 	Point *point = malloc(sizeof(Point));
-	point->physics_process = physics_process;
-	point->type = POINT;
-	point->sprite = sprite;
-	point->tile_index = tile_index;
-	point->z = z;
+	*point = (Point) {
+		.physics_process = physics_process,
+		.type = POINT,
+		.sprite = sprite,
+		.tile_index = tile_index,
+		.z = z};
 	return point;
 }
 

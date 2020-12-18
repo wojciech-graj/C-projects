@@ -150,8 +150,6 @@ void write_tile_positions_as_corner_positions(char *buffer, FILE *output_file, f
 	fwrite(positions, sizeof(float), 8, output_file);
 }
 
-//TODO FUNCTION: INDEX IN STRING ARRAY
-
 int index_in_string_array(char *string, char *array[], int array_length)
 {
 	int string_length = strlen(string);
@@ -177,12 +175,12 @@ int main(int argc, char *argv[])
 	int cur_item = NO_ITEM;
 	int element_num = 0;
 
-	short object_num_rows[5];
-	object_num_rows[MARBLE] = 1;
-	object_num_rows[AREA] = 3;
-	object_num_rows[POINT] = 3;
-	object_num_rows[SPRITE] = 6;
-	object_num_rows[COLLISIONAREA] = 2;
+	short object_num_rows[5] = {
+		[MARBLE] = 1,
+		[AREA] = 3,
+		[POINT] = 3,
+		[SPRITE] = 6,
+		[COLLISIONAREA] = 2};
 
 	while (fgets(buffer, 254, input_file))
     {

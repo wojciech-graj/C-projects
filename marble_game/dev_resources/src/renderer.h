@@ -12,6 +12,7 @@
 #include "marble.h"
 #include "math_functions.h"
 #include "menu.h"
+#include "sdl_context.h"
 #include "sprite.h"
 
 #define Y_PADDING 2

@@ -1,9 +1,9 @@
 //creates a binary file which contains data obtained from images
 //each line of the input file contains the filename of a .bmp image
-//the images are read in order, and must have 32 bits, with 8 bits for each of A, R, G, B
+//the images are read in order, and must have 32 bits per pixel, with 8 bits for each of A, R, G, B
 //the blank output file is created, then image width, image height, pixel colors are appended to the file for each image
 //data types:
-//	short: image width, image height
+//	short: number of textures, image width, image height
 //	unsigned char: pixel color [4] : {R, G, B, A}
 //output file contains(in order): image width, image height, pixel colors
 //usage: ./texture_serializer input.txt output
@@ -47,8 +47,17 @@ int main(int argc, char *argv[])
 	FILE *output_file = fopen(argv[2], "w+b");
 	assert(output_file);
 
+	short num_textures = 0;
 	char buffer[255];
-	while (fgets(buffer, 254, input_file))
+	while(fgets(buffer, 254, input_file))
+    {
+		if(buffer[0] != '\n' && buffer[0] != '\0' && buffer[0] != ' ') {
+			num_textures++;
+		}
+	}
+	fwrite(&num_textures, sizeof(short), 1, output_file);
+	rewind(input_file);
+	while(fgets(buffer, 254, input_file))
     {
 		buffer[strcspn(buffer, "\n")] = '\0';
 		FILE *bmp_file = fopen(buffer, "r");

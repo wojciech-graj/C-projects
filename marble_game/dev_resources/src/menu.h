@@ -6,7 +6,12 @@
 
 #include "global.h"
 #include "context.h"
-#include "sprite.h"
+
+#define NUM_MENUS 2
+#define MENU_MAIN_NUM_BUTTONS 3
+#define MENU_OPTIONS_NUM_BUTTONS 1
+
+enum menu_presets{MENU_MAIN, MENU_OPTIONS};
 
 typedef struct MenuContext MenuContext;
 typedef struct Menu Menu;
@@ -32,31 +37,13 @@ typedef struct Menu {
 	const MenuButton *buttons;
 } Menu;
 
-MenuContext *init_menu_context(int menu_context_preset);
-Menu *init_menu(int menu_preset);
+MenuContext *init_menu_context(int menu_index);
 void delete_menu_context(MenuContext *menu_context);
 
 void on_pressed_exit(Context *context, MenuContext *menu_context, const void *data);
 void on_pressed_quit(Context *context, MenuContext *menu_context, const void *data);
 void on_pressed_change_menu(Context *context, MenuContext *menu_context, const void *data);
 
-enum menu_presets{MENU_MAIN, MENU_OPTIONS};
-
-#define NUM_MENUS 2
-#define MENU_MAIN_NUM_BUTTONS 3
-#define MENU_OPTIONS_NUM_BUTTONS 1
-
-static const int REWORK_THIS_PART_OF_THE_CODE = 1;
-
-static const MenuButton MENU_MAIN_BUTTONS[MENU_MAIN_NUM_BUTTONS] = {
-	{{.25f, .25f}, {.5f, .15f}, "START", &on_pressed_exit, NULL},
-	{{.25f, .4f}, {.5f, .15f}, "OPTIONS", &on_pressed_change_menu, &REWORK_THIS_PART_OF_THE_CODE},
-	{{.25f, .65f}, {.5f, .15f}, "QUIT", &on_pressed_quit, NULL}};
-static const MenuButton MENU_OPTIONS_MENUS[MENU_OPTIONS_NUM_BUTTONS] = {
-	{{.25f, .25f}, {.5f, .25f}, "RESOLUTION", NULL, NULL}};
-
-static const Menu MENUS[NUM_MENUS] = {
-	{MENU_MAIN_NUM_BUTTONS, MENU_MAIN_BUTTONS},
-	{MENU_OPTIONS_NUM_BUTTONS, MENU_OPTIONS_MENUS}};
+extern const Menu MENUS[NUM_MENUS];
 
 #endif

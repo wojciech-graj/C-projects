@@ -11,10 +11,10 @@
 #include "context.h"
 #include "global.h"
 #include "marble.h"
+#include "math_functions.h"
 #include "object.h"
 #include "point.h"
 #include "sprite.h"
-#include "math_functions.h"
 
 void load_level(char *filename, Context *context);
 void calculate_tile(float *position, int *tile_index, float *tile_position, Context *context);

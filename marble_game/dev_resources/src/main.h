@@ -14,10 +14,11 @@
 #include "global.h"
 #include "level.h"
 #include "marble.h"
+#include "menu.h"
 #include "object.h"
 #include "renderer.h"
+#include "sdl_context.h"
 #include "sprite.h"
 #include "texture.h"
-#include "menu.h"
 
 #endif

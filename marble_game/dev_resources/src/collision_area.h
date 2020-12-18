@@ -3,9 +3,9 @@
 
 //TODO:ALPHABETICAL INCLUDE TOOL
 #include <math.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "global.h"
 #include "math_functions.h"

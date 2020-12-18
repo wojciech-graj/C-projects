@@ -80,8 +80,6 @@ static void resize(SDLContext *sdl_context, Context *context)
 	SDL_SetWindowSize(sdl_context->window, resolution[X], resolution[Y]);
 }
 
-//TODO: USE STRUCT DESIGNATED INITIALIZERS
-
 static void menu_input_process(SDLContext *sdl_context, Context *context, MenuContext *menu_context)
 {
 	(void) sdl_context;
@@ -120,7 +118,7 @@ int main(int argc, char *argv[])
 	(void)argv;
 	SDLContext *sdl_context = init_sdl();
 	Context *context = init_context();
-	MenuContext *menu_context = init_menu_context(MENU_CONTEXT_MAIN);
+	MenuContext *menu_context = init_menu_context(MENU_MAIN);
 
 	load_textures("resources/textures", context);
 

@@ -238,15 +238,15 @@ void draw_menu(SDLContext *sdl_context, Context *context, MenuContext *menu_cont
 		MenuButton button = menu.buttons[i];
 		const float *position = button.position;
 		const float *size = button.size;
-		float letter_width = size[Y];
+		const char *text = button.text;
+		int text_length = strlen(text);
+		float letter_width = size[X] / text_length;//TODO: rework
 		float corner_positions[4][2] = {{position[X], position[Y]},
 			{position[X] + letter_width, position[Y]},
 			{position[X] + letter_width, position[Y] + size[Y]},
 			{position[X], position[Y] + size[Y]}};
 		int j;
 		START_TEXTURE(context->textures[T_TEXT]);
-		const char *text = button.text;
-		int text_length = strlen(text);
 		for(j = 0; j < text_length; j++)
 		{
 			draw_char(corner_positions, text[j], 0.f);
