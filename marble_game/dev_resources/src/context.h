@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <SDL2/SDL.h>
 
 #include "global.h"
 #include "object.h"
@@ -10,6 +11,7 @@
 typedef struct Context {
 	short height;
 	short width;
+	int gamestate;
 	float (*level)[5];
 	float (*projection)[4];
 	bool (*flat)[2];
@@ -26,6 +28,12 @@ typedef struct Context {
 	short num_objects;
 	Object *objects;
 } Context;
+
+typedef struct SDL_Context {
+	const Uint8 *keystates;
+	SDL_Window *window;
+	SDL_GLContext main_context;
+} SDL_Context;
 
 Context *init_context(void);
 void delete_context(Context *context);

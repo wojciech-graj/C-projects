@@ -1,4 +1,4 @@
-#include "game.h"
+#include "main.h"
 
 SDL_Context *init_sdl(void)
 {
@@ -31,7 +31,6 @@ SDL_Context *init_sdl(void)
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	gluOrtho2D(0, TILES_ON_SCREEN, 0, TILES_ON_SCREEN);
 	return context;
 }
 
@@ -45,7 +44,7 @@ void quit(SDL_Context *sdl_context, Context *context)
 	exit(0);
 }
 
-int input_process_game(SDL_Context *sdl_context, Context *context)
+static int game_input_process(SDL_Context *sdl_context, Context *context)
 {
 	SDL_Event event;
 
@@ -74,38 +73,85 @@ int input_process_game(SDL_Context *sdl_context, Context *context)
 	return 0;
 }
 
+static int menu_input_process(MenuContext *menu_context)
+{
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event) > 0)
+	{
+		switch(event.type)
+		{
+			case SDL_QUIT:
+			return 1;
+			case SDL_KEYDOWN:
+			switch(event.key.keysym.sym)
+			{
+				case SDLK_RETURN:
+				menu_context->menus[menu_context->selected_menu]->buttons[menu_context->selected_button]->on_pressed(menu_context);
+				break;
+			}
+		}
+	}
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	(void)argc;
 	(void)argv;
 	SDL_Context *sdl_context = init_sdl();
 	Context *context = init_context();
+	MenuContext *menu_context = init_menu_context(MENU_CONTEXT_MAIN);
 
-	load_level("resources/level1", context);
 	load_textures("resources/textures", context);
 
+	load_level("resources/level1", context);
+
+	glLoadIdentity();
+	gluOrtho2D(0, 1, 1, 0);
+
+	int i;
 	while(true)
 	{
 		Uint32 frame_start = SDL_GetTicks();
 
-		if(input_process_game(sdl_context, context) == 1) break;
-
-		int i;
-		for(i = 0; i < context->num_objects; i++)
+		switch(context->gamestate)
 		{
-			if(context->objects[i].common->physics_process) {
-				context->objects[i].common->physics_process(context, context->objects[i]);
+			case GAME:
+			if(game_input_process(sdl_context, context) == 1) goto QUIT_GAME;
+
+			for(i = 0; i < context->num_objects; i++)
+			{
+				if(context->objects[i].common->physics_process) {
+					context->objects[i].common->physics_process(context, context->objects[i]);
+				}
 			}
+
+			draw_game(sdl_context, context);
+			break;
+			case MENU:
+			if(menu_input_process(menu_context) == 1) {
+				delete_menu_context(menu_context);
+				goto QUIT_GAME;
+			}
+			if(menu_context->exit == true) {
+				delete_menu_context(menu_context);
+				context->gamestate = GAME;
+			} else {
+				Menu *menu = menu_context->menus[menu_context->selected_menu];
+
+				draw_menu(sdl_context, context, menu);
+			}
+			break;
 		}
-
-		draw_game(sdl_context, context);
-
 		context->timer++;
 
 		Uint32 frame_time = SDL_GetTicks() - frame_start;
 		SDL_Delay(FRAMETIME - frame_time);
 		DBG_LOG("FRAMETIME: %d\n", frame_time);
 	}
+
+	QUIT_GAME:
 
 	quit(sdl_context, context);
 	return 0;

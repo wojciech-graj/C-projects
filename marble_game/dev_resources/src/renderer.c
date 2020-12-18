@@ -211,6 +211,60 @@ static void draw_objects(Context *context)
 	}
 }
 
+static void draw_char(float corner_positions[4][2], char letter, float z)
+{
+	float width = 1.f / NUM_TEXTURE_FRAMES[T_TEXT];
+	float x_offset = (letter - 33) * width;
+
+	const float tex_x[4] = {1.f, 1.f, 0.f, 0.f};
+	const float tex_y[4] = {0.f, 1.f, 1.f, 0.f};
+
+	int i;
+	for(i = 0; i < 4; i++)
+	{
+		glTexCoord2f(x_offset + tex_y[i] * width, tex_x[i]);
+		glVertex3f(corner_positions[i][X], corner_positions[i][Y], z);
+	}
+}
+
+void draw_menu(SDL_Context *sdl_context, Context *context, Menu *menu)
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	int i;
+	for(i = 0; i < menu->num_sprites; i++)
+	{
+		draw_sprite(menu->sprites[i], 1.f);
+	}
+
+	for(i = 0; i < menu->num_buttons; i++)
+	{
+		MenuButton *button = menu->buttons[i];
+		if(button->background) {
+			START_TEXTURE(context->textures[button->background->texture_index]);
+			draw_sprite(button->background, 1.f);
+			END_TEXTURE();
+		}
+		float letter_width = button->size[X] / button->text_length;
+		float corner_positions[4][2] = {{button->position[X], button->position[Y]},
+			{button->position[X] + letter_width, button->position[Y]},
+			{button->position[X] + letter_width, button->position[Y] + button->size[Y]},
+			{button->position[X], button->position[Y] + button->size[Y]}};
+		int j;
+		START_TEXTURE(context->textures[T_TEXT]);
+		for(j = 0; j < button->text_length; j++)
+		{
+			draw_char(corner_positions, button->text[j], 0.f);
+			int k;
+			for(k = 0; k < 4; k++)
+			{
+				corner_positions[k][X] += letter_width;
+			}
+		}
+		END_TEXTURE();
+	}
+	SDL_GL_SwapWindow(sdl_context->window);
+}
+
 void draw_game(SDL_Context *sdl_context, Context *context)
 {
 	if(context->scroll) {

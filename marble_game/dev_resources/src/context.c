@@ -4,6 +4,7 @@ Context *init_context(void)
 {
 	Context *context = malloc(sizeof(Context));
 	context->level = NULL;
+	context->gamestate = MENU;
 	context->projection = NULL;
 	context->flat = NULL;
 	context->on_screen = NULL;

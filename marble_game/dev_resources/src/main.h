@@ -1,5 +1,5 @@
-#ifndef GAME_H
-#define GAME_H
+#ifndef MAIN_H
+#define MAIN_H
 
 #include <assert.h>
 #include <stdbool.h>
@@ -18,10 +18,6 @@
 #include "renderer.h"
 #include "sprite.h"
 #include "texture.h"
-
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 640
-#define FPS 30
-#define FRAMETIME (1000 / FPS)
+#include "menu.h"
 
 #endif
