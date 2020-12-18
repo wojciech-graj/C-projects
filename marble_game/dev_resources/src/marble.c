@@ -142,12 +142,12 @@ void physics_process_marble(Context *context, Object object)
 		context->scroll_offset[Y] = marble->position[Y] - marble->position[Z] + SCROLL_BORDER;
 		context->scroll = true;
 	}
-	if(marble_screen_pos[Y] >= TILES_ON_SCREEN * 2 - SCROLL_BORDER) {
-		context->scroll_offset[Y] = marble->position[Y] - marble->position[Z] - SCROLL_BORDER + TILES_ON_SCREEN * 2;
+	if(marble_screen_pos[Y] >= TILES_ON_SCREEN_Y * 2 - SCROLL_BORDER) {
+		context->scroll_offset[Y] = marble->position[Y] - marble->position[Z] - SCROLL_BORDER + TILES_ON_SCREEN_Y * 2;
 		context->scroll = true;
 	}
-	if(marble_screen_pos[X] >= TILES_ON_SCREEN - SCROLL_BORDER) {
-		context->scroll_offset[X] = marble->position[X] + SCROLL_BORDER - TILES_ON_SCREEN;
+	if(marble_screen_pos[X] >= TILES_ON_SCREEN_X - SCROLL_BORDER) {
+		context->scroll_offset[X] = marble->position[X] + SCROLL_BORDER - TILES_ON_SCREEN_X;
 		context->scroll = true;
 	}
 	if(marble_screen_pos[X] <= SCROLL_BORDER) {

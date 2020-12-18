@@ -88,8 +88,8 @@ static void draw_marble(Marble *marble, float z)
 static void scroll_screen(Context *context)
 {
 	glLoadIdentity();
-	gluOrtho2D(0 + context->scroll_offset[X], TILES_ON_SCREEN + context->scroll_offset[X],
-		0 - context->scroll_offset[Y]/2.f, TILES_ON_SCREEN - context->scroll_offset[Y]/2.f);
+	gluOrtho2D(0 + context->scroll_offset[X], TILES_ON_SCREEN_X + context->scroll_offset[X],
+		0 - context->scroll_offset[Y]/2.f, TILES_ON_SCREEN_Y - context->scroll_offset[Y]/2.f);
 }
 
 static void calculate_on_screen(Context *context)
@@ -227,33 +227,29 @@ static void draw_char(float corner_positions[4][2], char letter, float z)
 	}
 }
 
-void draw_menu(SDL_Context *sdl_context, Context *context, Menu *menu)
+void draw_menu(SDLContext *sdl_context, Context *context, MenuContext *menu_context)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	int i;
-	for(i = 0; i < menu->num_sprites; i++)
-	{
-		draw_sprite(menu->sprites[i], 1.f);
-	}
 
-	for(i = 0; i < menu->num_buttons; i++)
+	Menu menu = MENUS[menu_context->selected_menu];
+	int i;
+	for(i = 0; i < menu.num_buttons; i++)
 	{
-		MenuButton *button = menu->buttons[i];
-		if(button->background) {
-			START_TEXTURE(context->textures[button->background->texture_index]);
-			draw_sprite(button->background, 1.f);
-			END_TEXTURE();
-		}
-		float letter_width = button->size[X] / button->text_length;
-		float corner_positions[4][2] = {{button->position[X], button->position[Y]},
-			{button->position[X] + letter_width, button->position[Y]},
-			{button->position[X] + letter_width, button->position[Y] + button->size[Y]},
-			{button->position[X], button->position[Y] + button->size[Y]}};
+		MenuButton button = menu.buttons[i];
+		const float *position = button.position;
+		const float *size = button.size;
+		float letter_width = size[Y];
+		float corner_positions[4][2] = {{position[X], position[Y]},
+			{position[X] + letter_width, position[Y]},
+			{position[X] + letter_width, position[Y] + size[Y]},
+			{position[X], position[Y] + size[Y]}};
 		int j;
 		START_TEXTURE(context->textures[T_TEXT]);
-		for(j = 0; j < button->text_length; j++)
+		const char *text = button.text;
+		int text_length = strlen(text);
+		for(j = 0; j < text_length; j++)
 		{
-			draw_char(corner_positions, button->text[j], 0.f);
+			draw_char(corner_positions, text[j], 0.f);
 			int k;
 			for(k = 0; k < 4; k++)
 			{
@@ -265,7 +261,7 @@ void draw_menu(SDL_Context *sdl_context, Context *context, Menu *menu)
 	SDL_GL_SwapWindow(sdl_context->window);
 }
 
-void draw_game(SDL_Context *sdl_context, Context *context)
+void draw_game(SDLContext *sdl_context, Context *context)
 {
 	if(context->scroll) {
 		context->scroll = false;

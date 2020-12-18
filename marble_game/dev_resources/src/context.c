@@ -3,8 +3,11 @@
 Context *init_context(void)
 {
 	Context *context = malloc(sizeof(Context));
+	context->resolution_index = DEFAULT_RESOLUTION_INDEX;
 	context->level = NULL;
 	context->gamestate = MENU;
+	context->quit = false;
+	context->resize = false;
 	context->projection = NULL;
 	context->flat = NULL;
 	context->on_screen = NULL;

@@ -16,12 +16,12 @@
 
 #define Y_PADDING 2
 #define EDGE_HEIGHT 8
-#define NUM_CIRCLE_POINTS 12
+#define NUM_CIRCLE_POINTS 16
 
 #define ON_SCREEN_Y(posy, scroll_offset) (posy >= -scroll_offset[Y]/2.f - Y_PADDING\
-	&& posy <= TILES_ON_SCREEN - scroll_offset[Y]/2.f + Y_PADDING)
+	&& posy <= TILES_ON_SCREEN_Y - scroll_offset[Y]/2.f + Y_PADDING)
 #define ON_SCREEN_X(posx, scroll_offset) (posx >= scroll_offset[X]\
-	&& posx <= TILES_ON_SCREEN + scroll_offset[X])
+	&& posx <= TILES_ON_SCREEN_X + scroll_offset[X])
 #define START_FOR_EACH_TILE_ON_SCREEN int tile_position[2];\
 	for(tile_position[Y] = 0; tile_position[Y] < context->height; tile_position[Y]++) {\
 		int offset = tile_position[Y] % 2;\
@@ -35,8 +35,8 @@
 				float x_r = tile_position[X] + .5f + offset/2.f;
 #define END_FOR_EACH_TILE_ON_SCREEN }}}
 
-void draw_game(SDL_Context *sdl_context, Context *context);
-void draw_menu(SDL_Context *sdl_context, Context *context, Menu *menu);
+void draw_game(SDLContext *sdl_context, Context *context);
+void draw_menu(SDLContext *sdl_context, Context *context, MenuContext *menu_context);
 
 static inline void START_TEXTURE(int texture)
 {
