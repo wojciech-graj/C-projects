@@ -12,7 +12,6 @@
 #include "marble.h"
 #include "math_functions.h"
 #include "menu.h"
-#include "sdl_context.h"
 #include "sprite.h"
 
 #define Y_PADDING 2
@@ -36,8 +35,9 @@
 				float x_r = tile_position[X] + .5f + offset/2.f;
 #define END_FOR_EACH_TILE_ON_SCREEN }}}
 
-void draw_game(SDLContext *sdl_context, Context *context);
-void draw_menu(SDLContext *sdl_context, Context *context, MenuContext *menu_context);
+void calculate_on_screen(Context *context);
+void draw_game(Context *context);
+void draw_menu(Context *context, MenuContext *menu_context);
 
 static inline void START_TEXTURE(int texture)
 {

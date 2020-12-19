@@ -12,6 +12,7 @@
 #include "area.h"
 #include "context.h"
 #include "global.h"
+#include "input.h"
 #include "level.h"
 #include "marble.h"
 #include "menu.h"

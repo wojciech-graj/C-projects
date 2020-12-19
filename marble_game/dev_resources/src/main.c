@@ -10,7 +10,7 @@ SDLContext *init_sdl(void)
 
 	assert(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16) == 0);
 
-	int *resolution = RESOLUTIONS[DEFAULT_RESOLUTION_INDEX];
+	const int *resolution = RESOLUTIONS[DEFAULT_RESOLUTION_INDEX];
 	context->window = SDL_CreateWindow("MARBLE GAME",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
@@ -45,71 +45,12 @@ void quit(SDLContext *sdl_context, Context *context)
 	exit(0);
 }
 
-static void game_input_process(SDLContext *sdl_context, Context *context)
-{
-	SDL_Event event;
-
-	while (SDL_PollEvent(&event) > 0)
-	{
-		if (event.type == SDL_QUIT) {
-			context->quit = true;
-		}
-	}
-	context->input[X] = 0;
-	context->input[Y] = 0;
-	if(context->can_control) {
-		if(sdl_context->keystates[SDL_SCANCODE_LEFT]) {
-			context->input[X] -= 1.f;
-	    }
-	    if(sdl_context->keystates[SDL_SCANCODE_RIGHT]) {
-			context->input[X] += 1.f;
-	    }
-	    if(sdl_context->keystates[SDL_SCANCODE_UP]) {
-			context->input[Y] -= 1.f;
-	    }
-	    if(sdl_context->keystates[SDL_SCANCODE_DOWN]) {
-			context->input[Y] += 1.f;
-	    }
-	}
-}
-
 static void resize(SDLContext *sdl_context, Context *context)
 {
 	context->resize = false;
-	int *resolution = RESOLUTIONS[context->resolution_index];
+	const int *resolution = RESOLUTIONS[context->resolution_index];
 	SDL_SetWindowSize(sdl_context->window, resolution[X], resolution[Y]);
-}
-
-static void menu_input_process(SDLContext *sdl_context, Context *context, MenuContext *menu_context)
-{
-	(void) sdl_context;
-	SDL_Event event;
-
-	while (SDL_PollEvent(&event) > 0)
-	{
-		switch(event.type)
-		{
-			case SDL_QUIT:
-			context->quit = true;
-			break;
-			case SDL_KEYDOWN: ;
-			Menu menu = MENUS[menu_context->selected_menu];
-			switch(event.key.keysym.sym)
-			{
-				case SDLK_RETURN: ;
-				MenuButton menu_button = menu.buttons[menu_context->selected_button];
-				menu_button.function(context, menu_context, menu_button.data);
-				break;
-				case SDLK_UP:
-				menu_context->selected_button = (menu_context->selected_button - 1) % menu.num_buttons;
-				break;
-				case SDLK_DOWN:
-				menu_context->selected_button = (menu_context->selected_button + 1) % menu.num_buttons;
-				break;
-			}
-			break;
-		}
-	}
+	glViewport(0, 0, resolution[X], resolution[Y]);
 }
 
 int main(int argc, char *argv[])
@@ -124,14 +65,24 @@ int main(int argc, char *argv[])
 
 	load_level("resources/level1", context);
 
-	glLoadIdentity();
-	gluOrtho2D(0.f, 1.f, 1.f, 0.f); //menu layout
-
 	int i;
 	while(true)
 	{
 		Uint32 frame_start = SDL_GetTicks();
 
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if(context->resize) {//TODO: change
+			resize(sdl_context, context);
+		}
+		if(context->scroll) {
+			context->scroll = false;
+			calculate_on_screen(context);
+		}
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		draw_game(context);
 		switch(context->gamestate)
 		{
 			case GAME:
@@ -145,7 +96,6 @@ int main(int argc, char *argv[])
 					context->objects[i].common->physics_process(context, context->objects[i]);
 				}
 			}
-			draw_game(sdl_context, context);
 			break;
 			case MENU:
 			menu_input_process(sdl_context, context, menu_context);
@@ -157,14 +107,12 @@ int main(int argc, char *argv[])
 				delete_menu_context(menu_context);
 				context->gamestate = GAME;
 			} else {
-				draw_menu(sdl_context, context, menu_context);
+				draw_menu(context, menu_context);
 			}
 			break;
 		}
 
-		if(context->resize) {
-			resize(sdl_context, context);
-		}
+		SDL_GL_SwapWindow(sdl_context->window);
 
 		context->timer++;
 		Uint32 frame_time = SDL_GetTicks() - frame_start;

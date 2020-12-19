@@ -85,14 +85,7 @@ static void draw_marble(Marble *marble, float z)
 	glEnd();
 }
 
-static void scroll_screen(Context *context)
-{
-	glLoadIdentity();
-	gluOrtho2D(0 + context->scroll_offset[X], TILES_ON_SCREEN_X + context->scroll_offset[X],
-		0 - context->scroll_offset[Y]/2.f, TILES_ON_SCREEN_Y - context->scroll_offset[Y]/2.f);
-}
-
-static void calculate_on_screen(Context *context)
+void calculate_on_screen(Context *context)
 {
 	int tile_position[2];
 	for(tile_position[Y] = 0; tile_position[Y] < context->height; tile_position[Y]++)
@@ -211,70 +204,60 @@ static void draw_objects(Context *context)
 	}
 }
 
-static void draw_char(float corner_positions[4][2], char letter, float z)
+static void draw_string(const float position[2], const float size[2], const char *text)
 {
+	int text_length = strlen(text);
+	float letter_width = size[X] / text_length;//TODO: rework
+	float corner_positions[4][2] = {{position[X], position[Y]},
+		{position[X] + letter_width, position[Y]},
+		{position[X] + letter_width, position[Y] + size[Y]},
+		{position[X], position[Y] + size[Y]}};
 	float width = 1.f / NUM_TEXTURE_FRAMES[T_TEXT];
-	float x_offset = (letter - 33) * width;
 
 	const float tex_x[4] = {1.f, 1.f, 0.f, 0.f};
 	const float tex_y[4] = {0.f, 1.f, 1.f, 0.f};
 
 	int i;
-	for(i = 0; i < 4; i++)
+	for(i = 0; i < text_length; i++)
 	{
-		glTexCoord2f(x_offset + tex_y[i] * width, tex_x[i]);
-		glVertex3f(corner_positions[i][X], corner_positions[i][Y], z);
+		float x_offset = (text[i] - 32) * width;
+		int j;
+		for(j = 0; j < 4; j++)
+		{
+			glTexCoord2f(x_offset + tex_y[j] * width, tex_x[j]);
+			glVertex3f(corner_positions[j][X], -corner_positions[j][Y], 1.f);
+			corner_positions[j][X] += letter_width;
+		}
 	}
 }
 
-void draw_menu(SDLContext *sdl_context, Context *context, MenuContext *menu_context)
+void draw_menu(Context *context, MenuContext *menu_context)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	glLoadIdentity();
+	gluOrtho2D(0, 1, -1, 0);
 	Menu menu = MENUS[menu_context->selected_menu];
 	int i;
+	START_TEXTURE(context->textures[T_TEXT]);
 	for(i = 0; i < menu.num_buttons; i++)
 	{
 		MenuButton button = menu.buttons[i];
-		const float *position = button.position;
-		const float *size = button.size;
-		const char *text = button.text;
-		int text_length = strlen(text);
-		float letter_width = size[X] / text_length;//TODO: rework
-		float corner_positions[4][2] = {{position[X], position[Y]},
-			{position[X] + letter_width, position[Y]},
-			{position[X] + letter_width, position[Y] + size[Y]},
-			{position[X], position[Y] + size[Y]}};
-		int j;
-		START_TEXTURE(context->textures[T_TEXT]);
-		for(j = 0; j < text_length; j++)
-		{
-			draw_char(corner_positions, text[j], 0.f);
-			int k;
-			for(k = 0; k < 4; k++)
-			{
-				corner_positions[k][X] += letter_width;
-			}
-		}
-		END_TEXTURE();
+		draw_string(button.position, button.size, button.text);
 	}
-	SDL_GL_SwapWindow(sdl_context->window);
+	for(i = 0; i < menu.num_dynamic_texts; i++)
+	{
+		MenuDynamicText dynamic_text = menu.dynamic_texts[i];
+		draw_string(dynamic_text.position, dynamic_text.size, get_dynamic_text(context, menu_context, dynamic_text.text_type));
+	}
+	END_TEXTURE();
 }
 
-void draw_game(SDLContext *sdl_context, Context *context)
+void draw_game(Context *context)
 {
-	if(context->scroll) {
-		context->scroll = false;
-		scroll_screen(context);
-		calculate_on_screen(context);
-	}
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	glLoadIdentity();
+	gluOrtho2D(context->scroll_offset[X], TILES_ON_SCREEN_X + context->scroll_offset[X],
+		-context->scroll_offset[Y]/2.f, TILES_ON_SCREEN_Y - context->scroll_offset[Y]/2.f);
 	draw_tiles(context);
 	draw_tile_sides(context);
 	draw_tile_outlines(context);
 	draw_objects(context);
-
-	SDL_GL_SwapWindow(sdl_context->window);
 }
