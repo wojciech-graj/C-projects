@@ -207,7 +207,7 @@ static void draw_objects(Context *context)
 static void draw_string(const float position[2], const float size[2], const char *text)
 {
 	int text_length = strlen(text);
-	float letter_width = size[X] / text_length;//TODO: rework
+	float letter_width = size[Y] / 2.f;//TODO: rework
 	float corner_positions[4][2] = {{position[X], position[Y]},
 		{position[X] + letter_width, position[Y]},
 		{position[X] + letter_width, position[Y] + size[Y]},
@@ -246,9 +246,17 @@ void draw_menu(Context *context, MenuContext *menu_context)
 	for(i = 0; i < menu.num_dynamic_texts; i++)
 	{
 		MenuDynamicText dynamic_text = menu.dynamic_texts[i];
-		draw_string(dynamic_text.position, dynamic_text.size, get_dynamic_text(context, menu_context, dynamic_text.text_type));
+		draw_string(dynamic_text.position, dynamic_text.size, get_dynamic_text(context, menu_context, dynamic_text));
 	}
 	END_TEXTURE();
+	MenuButton button = menu.buttons[menu_context->selected_button];
+	glColor4f(.5f, .5f, .5f, .5f);
+	glBegin(GL_QUADS); //TODO: CREATE A PROPER FUNCTION
+	glVertex3f(button.position[X], -button.position[Y], 1.f);
+	glVertex3f(button.position[X] + button.size[X], -button.position[Y], 1.f);
+	glVertex3f(button.position[X] + button.size[X], -button.position[Y] - button.size[Y], 1.f);
+	glVertex3f(button.position[X], -button.position[Y] - button.size[Y], 1.f);
+	glEnd();
 }
 
 void draw_game(Context *context)

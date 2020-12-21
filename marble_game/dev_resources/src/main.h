@@ -21,5 +21,6 @@
 #include "sdl_context.h"
 #include "sprite.h"
 #include "texture.h"
+#include "config.h"
 
 #endif

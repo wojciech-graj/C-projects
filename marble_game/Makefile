@@ -1,4 +1,4 @@
-GAME_FILES := main.c area.c context.c texture.c level.c marble.c renderer.c object.c global.c sprite.c point.c collision_area.c menu.c input.c
+GAME_FILES := main.c area.c context.c texture.c level.c marble.c renderer.c object.c global.c sprite.c point.c collision_area.c menu.c input.c config.c
 LINUX_CFLAGS := -lm `sdl2-config --libs --cflags` -lGL -lGLU -std=c11
 WINDOWS_CFLAGS := -LC:\MinGW\lib -IC:\MinGW\include -mwindows -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lglu32
 RELEASE_CFLAGS := -O3

@@ -1,6 +1,6 @@
 #include "main.h"
 
-SDLContext *init_sdl(void)
+static SDLContext *init_sdl(Config *config)
 {
     assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
 	SDLContext *context =  malloc(sizeof(SDLContext));
@@ -10,7 +10,7 @@ SDLContext *init_sdl(void)
 
 	assert(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16) == 0);
 
-	const int *resolution = RESOLUTIONS[DEFAULT_RESOLUTION_INDEX];
+	const int *resolution = RESOLUTIONS[config->resolution_index];
 	context->window = SDL_CreateWindow("MARBLE GAME",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
@@ -35,7 +35,7 @@ SDLContext *init_sdl(void)
 	return context;
 }
 
-void quit(SDLContext *sdl_context, Context *context)
+static void quit(SDLContext *sdl_context, Context *context)
 {
 	delete_context(context);
 	SDL_GL_DeleteContext(sdl_context->main_context);
@@ -47,8 +47,7 @@ void quit(SDLContext *sdl_context, Context *context)
 
 static void resize(SDLContext *sdl_context, Context *context)
 {
-	context->resize = false;
-	const int *resolution = RESOLUTIONS[context->resolution_index];
+	const int *resolution = RESOLUTIONS[context->config->resolution_index];
 	SDL_SetWindowSize(sdl_context->window, resolution[X], resolution[Y]);
 	glViewport(0, 0, resolution[X], resolution[Y]);
 }
@@ -57,8 +56,9 @@ int main(int argc, char *argv[])
 {
 	(void)argc;
 	(void)argv;
-	SDLContext *sdl_context = init_sdl();
-	Context *context = init_context();
+	Config *config = load_config("config");
+	SDLContext *sdl_context = init_sdl(config);
+	Context *context = init_context(config);
 	MenuContext *menu_context = init_menu_context(MENU_MAIN);
 
 	load_textures("resources/textures", context);
@@ -70,9 +70,8 @@ int main(int argc, char *argv[])
 	{
 		Uint32 frame_start = SDL_GetTicks();
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		if(context->resize) {//TODO: change
+		if(context->resize) {
+			context->resize = false;
 			resize(sdl_context, context);
 		}
 		if(context->scroll) {
@@ -80,16 +79,31 @@ int main(int argc, char *argv[])
 			calculate_on_screen(context);
 		}
 
+		switch(context->gamestate)
+		{
+			case STATE_GAME:
+			game_input_process(sdl_context, context);
+			break;
+			case STATE_MENU:
+			menu_input_process(sdl_context, context, menu_context);
+			break;
+			case STATE_KEYBIND:
+			keybind_input_process(sdl_context, context, menu_context);
+			break;
+		}
+		if(context->quit) {
+			if(menu_context) {
+				delete_menu_context(menu_context);
+			}
+			goto QUIT_GAME;
+		}
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		draw_game(context);
 		switch(context->gamestate)
 		{
-			case GAME:
-			game_input_process(sdl_context, context);
-			if(context->quit) {
-				goto QUIT_GAME;
-			}
+			case STATE_GAME:
 			for(i = 0; i < context->num_objects; i++)
 			{
 				if(context->objects[i].common->physics_process) {
@@ -97,18 +111,16 @@ int main(int argc, char *argv[])
 				}
 			}
 			break;
-			case MENU:
-			menu_input_process(sdl_context, context, menu_context);
-			if(context->quit) {
-				delete_menu_context(menu_context);
-				goto QUIT_GAME;
-			}
+			case STATE_MENU:
+			draw_menu(context, menu_context);
 			if(menu_context->exit == true) {
 				delete_menu_context(menu_context);
-				context->gamestate = GAME;
-			} else {
-				draw_menu(context, menu_context);
+				menu_context = NULL;
+				context->gamestate = STATE_GAME;
 			}
+			break;
+			case STATE_KEYBIND:
+			draw_menu(context, menu_context);
 			break;
 		}
 

@@ -46,4 +46,10 @@ static inline bool equalf(float a, float b, float epsilon)
 	return (float) fabs(a - b) < epsilon;
 }
 
+//euclidean modulo
+static inline int eucmod(const int a, const int b)
+{
+    return (a < 0 ? (((a % b) + b) % b) : (a % b));
+}
+
 #endif

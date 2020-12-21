@@ -6,6 +6,7 @@
 
 #include "global.h"
 #include "object.h"
+#include "config.h"
 
 typedef struct Context {
 	int resolution_index;
@@ -37,9 +38,11 @@ typedef struct Context {
 
 	short num_objects;
 	Object *objects;
+
+	Config *config;
 } Context;
 
-Context *init_context(void);
+Context *init_context(Config *config);
 void delete_context(Context *context);
 
 #endif

@@ -1,12 +1,12 @@
 #include "context.h"
 
-Context *init_context(void)
+Context *init_context(Config *config)
 {
 	Context *context = malloc(sizeof(Context));
 	*context = (Context) {
 		.resolution_index = DEFAULT_RESOLUTION_INDEX,
 		.level = NULL,
-		.gamestate = MENU,
+		.gamestate = STATE_MENU,
 		.quit = false,
 		.resize = false,
 		.projection = NULL,
@@ -18,7 +18,8 @@ Context *init_context(void)
 		.scroll = true,
 		.scroll_offset[X] = 0,
 		.scroll_offset[Y] = 0,
-		.objects = NULL};
+		.objects = NULL,
+		.config = config};
 	return context;
 }
 
@@ -31,5 +32,6 @@ void delete_context(Context *context)
 	free(context->on_screen);
 	free(context->textures);
 	delete_objectlist(context->objects, context->num_objects);
+	free(context->config);
 	free(context);
 }
