@@ -86,66 +86,42 @@ void draw_marble(Marble *marble, float z)
 	glEnd();
 }
 
-void calculate_on_screen(Context *context)
-{
-	int tile_position[2];
-	for(tile_position[Y] = 0; tile_position[Y] < context->height; tile_position[Y]++)
-	{
-		int offset = tile_position[Y] % 2;
-		for(tile_position[X] = 0; tile_position[X] < context->width; tile_position[X]++)
-		{
-			int tile_index = tile_position[Y] * context->width + tile_position[X];
-			float *tile = context->projection[tile_index];
-			float x_l = tile_position[X] - .5f + offset/2.f;
-			float x_r = tile_position[X] + .5f + offset/2.f;
-			if((ON_SCREEN_Y(tile[T], context->scroll_offset)
-				|| ON_SCREEN_Y(tile[B], context->scroll_offset))
-				&& (ON_SCREEN_X(x_l, context->scroll_offset)
-				|| ON_SCREEN_X(x_r, context->scroll_offset))) {
-				context->on_screen[tile_index] = true;
-			} else {
-				context->on_screen[tile_index] = false;
-			}
-		}
-	}
-}
-
-void draw_tiles(Context *context)
+void draw_tiles(Level *level)
 {
 	glBegin(GL_TRIANGLES);
 	START_FOR_EACH_TILE_ON_SCREEN
 	{
 		float tb_avg = (tile[B] + tile[T])/2.f;
-		TILE_TRIANGLE(x_m, x_l, tile[B], tile[L], tile[T], z, (1 + tb_avg - tile[L]), context->floor_colors[tile_index]); //draw left triangle
-		TILE_TRIANGLE(x_m, x_r, tile[B], tile[R], tile[T], z, (1 + tile[R] - tb_avg), context->floor_colors[tile_index]); //draw right triangle
+		TILE_TRIANGLE(x_m, x_l, tile[B], tile[L], tile[T], z, (1 + tb_avg - tile[L]), level->floor_colors[tile_index]); //draw left triangle
+		TILE_TRIANGLE(x_m, x_r, tile[B], tile[R], tile[T], z, (1 + tile[R] - tb_avg), level->floor_colors[tile_index]); //draw right triangle
 	}
 	END_FOR_EACH_TILE_ON_SCREEN
 	glEnd();
 }
 
-void draw_tile_sides(Context *context)
+void draw_tile_sides(Level *level)
 {
 	glBegin(GL_QUADS);
 	START_FOR_EACH_TILE_ON_SCREEN
 	{
 		calculate_tile_side(x_m, x_l, z,
 			tile[B], tile[L],
-			context->level[tile_index][D],
-			((tile_position[Y] + 1) * context->width + tile_position[X] + offset - 1), R, context->projection,
-			((tile_position[X] == 0 && ! offset) || tile_position[Y] == context->height - 1),
-			context->left_color); //draw left side fill
+			level->tiles[tile_index][D],
+			((tile_position[Y] + 1) * level->width + tile_position[X] + offset - 1), R, level->projection,
+			((tile_position[X] == 0 && ! offset) || tile_position[Y] == level->height - 1),
+			level->left_color); //draw left side fill
 		calculate_tile_side(x_m, x_r, z,
 			tile[B], tile[R],
-			context->level[tile_index][D],
-			((tile_position[Y] + 1) * context->width + tile_position[X] + offset), L, context->projection,
-			((tile_position[X] == context->width - 1 && offset) || tile_position[Y] == context->height - 1),
-			context->right_color); //draw right side fill
+			level->tiles[tile_index][D],
+			((tile_position[Y] + 1) * level->width + tile_position[X] + offset), L, level->projection,
+			((tile_position[X] == level->width - 1 && offset) || tile_position[Y] == level->height - 1),
+			level->right_color); //draw right side fill
 	}
 	END_FOR_EACH_TILE_ON_SCREEN
 	glEnd();
 }
 
-void draw_tile_outlines(Context *context)
+void draw_tile_outlines(Level *level)
 {
 	glColor3f(1, 1, 1);
 	START_FOR_EACH_TILE_ON_SCREEN
@@ -159,22 +135,23 @@ void draw_tile_outlines(Context *context)
 
 void draw_objects(Context *context)
 {
+	Level *level = context->level;
 	int i;
-	for(i = 0; i < context->num_objects; i++)
+	for(i = 0; i < level->num_objects; i++)
 	{
-		Object object = context->objects[i];
+		Object object = level->objects[i];
 		switch(object.common->type)
 		{
 			case MARBLE: ;
 			Marble *marble = object.marble;
-			draw_marble(marble, (marble->tile_frac_position[Y] + marble->tile_index / context->width) / context->height);
+			draw_marble(marble, (marble->tile_frac_position[Y] + marble->tile_index / level->width) / level->height);
 			break;
 			case AREA: ;
 			Area *area = object.area;
-			if(context->on_screen[area->corner_tile_indexes[L]]
-				|| context->on_screen[area->corner_tile_indexes[T]]
-				|| context->on_screen[area->corner_tile_indexes[R]]
-				|| context->on_screen[area->corner_tile_indexes[B]]) {
+			if(level->on_screen[area->corner_tile_indexes[L]]
+				|| level->on_screen[area->corner_tile_indexes[T]]
+				|| level->on_screen[area->corner_tile_indexes[R]]
+				|| level->on_screen[area->corner_tile_indexes[B]]) {
 				START_TEXTURE(context->textures[area->sprite->texture_index]);
 				int texture_position[2];
 				for(texture_position[X] = 0; texture_position[X] < area->side_lengths[X]; texture_position[X]++)
@@ -186,8 +163,8 @@ void draw_objects(Context *context)
 						float position[2] = {area->corner_positions[T][X] - .5f*texture_position[X] + .5f*texture_position[Y],
 							area->corner_positions[T][Y] + .5f*texture_position[X] + .5f*texture_position[Y] + .5f};
 						int tile_index;
-						calculate_tile(position, &tile_index, NULL, context);
-						AREA_TILE_PROJECTION(area, context->projection[tile_index], area_subposition, position[X], tile_index / (float) (context->width * context->height));
+						calculate_tile(position, &tile_index, NULL, level);
+						AREA_TILE_PROJECTION(area, level->projection[tile_index], area_subposition, position[X], tile_index / (float) (level->width * level->height));
 					}
 				}
 				END_TEXTURE();
@@ -195,7 +172,7 @@ void draw_objects(Context *context)
 			break;
 			case POINT: ;
 			Point *point = object.point;
-			if(context->on_screen[point->tile_index]) {
+			if(level->on_screen[point->tile_index]) {
 				START_TEXTURE(context->textures[point->sprite->texture_index]);
 				draw_sprite(point->sprite, point->z);
 				END_TEXTURE();
@@ -232,6 +209,30 @@ void draw_string(const float position[2], const float size[2], const char *text)
 	}
 }
 
+void calculate_on_screen(Level *level)
+{
+	int tile_position[2];
+	for(tile_position[Y] = 0; tile_position[Y] < level->height; tile_position[Y]++)
+	{
+		int offset = tile_position[Y] % 2;
+		for(tile_position[X] = 0; tile_position[X] < level->width; tile_position[X]++)
+		{
+			int tile_index = tile_position[Y] * level->width + tile_position[X];
+			float *tile = level->projection[tile_index];
+			float x_l = tile_position[X] - .5f + offset/2.f;
+			float x_r = tile_position[X] + .5f + offset/2.f;
+			if((ON_SCREEN_Y(tile[T], level->scroll_offset)
+				|| ON_SCREEN_Y(tile[B], level->scroll_offset))
+				&& (ON_SCREEN_X(x_l, level->scroll_offset)
+				|| ON_SCREEN_X(x_r, level->scroll_offset))) {
+				level->on_screen[tile_index] = true;
+			} else {
+				level->on_screen[tile_index] = false;
+			}
+		}
+	}
+}
+
 void draw_menu(Context *context, MenuContext *menu_context)
 {
 	glLoadIdentity();
@@ -262,11 +263,12 @@ void draw_menu(Context *context, MenuContext *menu_context)
 
 void draw_game(Context *context)
 {
+	Level *level = context->level;
 	glLoadIdentity();
-	gluOrtho2D(context->scroll_offset[X], TILES_ON_SCREEN_X + context->scroll_offset[X],
-		-context->scroll_offset[Y]/2.f, TILES_ON_SCREEN_Y - context->scroll_offset[Y]/2.f);
-	draw_tiles(context);
-	draw_tile_sides(context);
-	draw_tile_outlines(context);
+	gluOrtho2D(level->scroll_offset[X], TILES_ON_SCREEN_X + level->scroll_offset[X],
+		-level->scroll_offset[Y]/2.f, TILES_ON_SCREEN_Y - level->scroll_offset[Y]/2.f);
+	draw_tiles(level);
+	draw_tile_sides(level);
+	draw_tile_outlines(level);
 	draw_objects(context);
 }

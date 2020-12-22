@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "inc/config.h"
-#include "inc/object.h"
+#include "inc/context.h"
+#include "inc/level.h"
 
 #endif

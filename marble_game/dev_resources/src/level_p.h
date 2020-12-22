@@ -16,12 +16,12 @@
 #include "inc/point.h"
 #include "inc/sprite.h"
 
-void read_marble(Context *context, FILE *file, int object_index);
-void read_sprite(Context *context, FILE *file, int object_index);
-void read_collision_area(Context *context, FILE *file, int object_index);
-void read_area(Context *context, FILE *file, int object_index);
-void read_point(Context *context, FILE *file, int object_index);
-void read_colors(Context *context, FILE *file, int level_size);
-void read_objects(Context *context, FILE *file);
+void read_marble(Level *level, FILE *file, int object_index);
+void read_sprite(Level *level, FILE *file, int object_index);
+void read_collision_area(Level *level, FILE *file, int object_index);
+void read_area(Level *level, FILE *file, int object_index);
+void read_point(Level *level, FILE *file, int object_index);
+void read_colors(Level *level, FILE *file, int level_size);
+void read_objects(Level *level, FILE *file);
 
 #endif

@@ -7,6 +7,7 @@
 #include "object.h"
 
 typedef struct Context Context;
+typedef struct Level Level;
 
 typedef struct Marble Marble;
 
@@ -22,7 +23,7 @@ typedef struct Marble {
 	unsigned char color[3];
 } Marble;
 
-Marble *init_marble(Context *context, unsigned char color[3], float radius, int num_collision_points);
+Marble *init_marble(Level *level, unsigned char color[3], float radius, int num_collision_points);
 void physics_process_marble(Context *context, Object object);
 
 #endif

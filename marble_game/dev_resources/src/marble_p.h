@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "inc/level.h"
 #include "inc/context.h"
 #include "inc/level.h"
 #include "inc/math_functions.h"

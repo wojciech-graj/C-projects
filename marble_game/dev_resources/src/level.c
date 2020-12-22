@@ -1,14 +1,14 @@
 #include "inc/level.h"
 #include "level_p.h"
 
-void read_marble(Context *context, FILE *file, int object_index)
+void read_marble(Level *level, FILE *file, int object_index)
 {
 	unsigned char color[3];
 	assert(fread(color, sizeof(unsigned char), 3, file) == 3);
-	context->objects[object_index].marble = init_marble(context, color, 0.2f, 4);
+	level->objects[object_index].marble = init_marble(level, color, 0.2f, 4);
 }
 
-void read_sprite(Context *context, FILE *file, int object_index)
+void read_sprite(Level *level, FILE *file, int object_index)
 {
 	int texture_index;
 	assert(fread(&texture_index, sizeof(int), 1, file) == 1);
@@ -19,98 +19,104 @@ void read_sprite(Context *context, FILE *file, int object_index)
 	float corner_projections[4][2];
 	assert(fread(corner_projections, sizeof(float), 8, file) == 8);
 	//TODO: ADD PHYSICS PROCESS TO LEVEL FILE
-	context->objects[object_index].sprite = init_sprite((frame_time == 0) ? NULL : &physics_process_animated_sprite,
+	level->objects[object_index].sprite = init_sprite((frame_time == 0) ? NULL : &physics_process_animated_sprite,
 		corner_projections, texture_index, frame_time, transforms[0], transforms[1], transforms[2]);
 }
 
-void read_collision_area(Context *context, FILE *file, int object_index)
+void read_collision_area(Level *level, FILE *file, int object_index)
 {
 	bool can_move_over;
 	assert(fread(&can_move_over, sizeof(bool), 1, file) == 1);
 	float corner_positions[4][2];
 	assert(fread(corner_positions, sizeof(float), 8, file) == 8);
-	context->objects[object_index].collision_area = init_collision_area(NULL, corner_positions, can_move_over);
+	level->objects[object_index].collision_area = init_collision_area(NULL, corner_positions, can_move_over);
 }
 
-void read_area(Context *context, FILE *file, int object_index)
+void read_area(Level *level, FILE *file, int object_index)
 {
 	short tile_positions[4][2];
 	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
 	int sprite_index;
 	assert(fread(&sprite_index, sizeof(int), 1, file) == 1);
-	Sprite *sprite = (sprite_index != -1) ? context->objects[sprite_index].sprite : NULL;
+	Sprite *sprite = (sprite_index != -1) ? level->objects[sprite_index].sprite : NULL;
 	int collision_area_index;
 	assert(fread(&collision_area_index, sizeof(int), 1, file) == 1);
-	CollisionArea *collision_area = (collision_area_index != -1) ? context->objects[sprite_index].collision_area : NULL;
-	context->objects[object_index].area = init_area(context, NULL, sprite, collision_area, tile_positions);
+	CollisionArea *collision_area = (collision_area_index != -1) ? level->objects[sprite_index].collision_area : NULL;
+	level->objects[object_index].area = init_area(level, NULL, sprite, collision_area, tile_positions);
 }
 
-void read_point(Context *context, FILE *file, int object_index)
+void read_point(Level *level, FILE *file, int object_index)
 {
 	int sprite_index;
 	assert(fread(&sprite_index, sizeof(int), 1, file) == 1);
-	Sprite *sprite = (sprite_index != -1) ? context->objects[sprite_index].sprite : NULL;
+	Sprite *sprite = (sprite_index != -1) ? level->objects[sprite_index].sprite : NULL;
 	short tile_position[2];
 	assert(fread(tile_position, sizeof(short), 2, file) == 2);
-	int tile_index = tile_position[X] + tile_position[Y] * context->width;
+	int tile_index = tile_position[X] + tile_position[Y] * level->width;
 	float y;
 	assert(fread(&y, sizeof(float), 1, file) == 1);
-	float z = y / context->height;
-	context->objects[object_index].point = init_point(NULL, sprite, tile_index, z);
+	float z = y / level->height;
+	level->objects[object_index].point = init_point(NULL, sprite, tile_index, z);
 }
 
-void read_colors(Context *context, FILE *file, int level_size)
+void read_colors(Level *level, FILE *file, int level_size)
 {
-	context->floor_colors = malloc(sizeof(unsigned char) * level_size * 3);
-	assert(fread(context->floor_colors, sizeof(unsigned char), level_size * 3, file) == (size_t) (level_size * 3));
-	assert(fread(context->left_color, sizeof(unsigned char), 3, file) == 3);
-	assert(fread(context->right_color, sizeof(unsigned char), 3, file) == 3);
+	level->floor_colors = malloc(sizeof(unsigned char) * level_size * 3);
+	assert(fread(level->floor_colors, sizeof(unsigned char), level_size * 3, file) == (size_t) (level_size * 3));
+	assert(fread(level->left_color, sizeof(unsigned char), 3, file) == 3);
+	assert(fread(level->right_color, sizeof(unsigned char), 3, file) == 3);
 }
 
-void read_objects(Context *context, FILE *file)
+void read_objects(Level *level, FILE *file)
 {
-	assert(fread(&(context->num_objects), sizeof(int), 1, file) == 1);
-	context->objects = init_objectlist(context->num_objects);
+	assert(fread(&(level->num_objects), sizeof(int), 1, file) == 1);
+	level->objects = init_objectlist(level->num_objects);
 
 	int i;
-	for(i = 0; i < context->num_objects; i++)
+	for(i = 0; i < level->num_objects; i++)
 	{
 		int type;
 		assert(fread(&type, sizeof(int), 1, file) == 1);
 		switch(type) //TODO: optimize by making an array of functions
 		{
 			case MARBLE:
-			read_marble(context, file, i);
+			read_marble(level, file, i);
 			break;
 			case SPRITE:
-			read_sprite(context, file, i);
+			read_sprite(level, file, i);
 			break;
 			case COLLISIONAREA:
-			read_collision_area(context, file, i);
+			read_collision_area(level, file, i);
 			break;
 			case AREA:
-			read_area(context, file, i);
+			read_area(level, file, i);
 			break;
 			case POINT:
-			read_point(context, file, i);
+			read_point(level, file, i);
 			break;
 		}
 	}
 }
 
-void load_level(char *filename, Context *context)
+Level *load_level(char *filename)
 {
 	FILE *file = fopen(filename, "rb");
 	assert(file);
+
+	Level *level = malloc(sizeof(Level));
+	level->scroll = true;
+	level->scroll_offset[X] = 0;
+	level->scroll_offset[Y] = 0;
+
 	short buffer;
 
-	assert(fread(&(context->width), sizeof(short), 1, file) == 1);
-	assert(fread(&(context->height), sizeof(short), 1, file) == 1);
-	int level_size = context->height * context->width;
-	context->on_screen = malloc(sizeof(bool) * level_size);
-	context->flat = malloc(sizeof(bool) * level_size * 2);
+	assert(fread(&(level->width), sizeof(short), 1, file) == 1);
+	assert(fread(&(level->height), sizeof(short), 1, file) == 1);
+	int level_size = level->height * level->width;
+	level->on_screen = malloc(sizeof(bool) * level_size);
+	level->flat = malloc(sizeof(bool) * level_size * 2);
 
-	context->level = malloc(sizeof(float) * level_size * 5);
+	level->tiles = malloc(sizeof(float) * level_size * 5);
 	int i;
 	for(i = 0; i < level_size; i++)
 	{
@@ -118,20 +124,22 @@ void load_level(char *filename, Context *context)
 		for(j = 0; j < 5; j++)
 		{
 			assert(fread(&buffer, sizeof(short), 1, file) == 1);
-			context->level[i][j] = buffer/2.f;
+			level->tiles[i][j] = buffer/2.f;
 		}
-		float tb_avg = (context->level[i][T] + context->level[i][B])/2.f;
-		bool t_equals_b = equalf(context->level[i][T], context->level[i][B], .1f);
-		context->flat[i][0] = t_equals_b && equalf(context->level[i][L], tb_avg, .1f);
-		context->flat[i][1] = t_equals_b && equalf(context->level[i][R], tb_avg, .1f);
+		float tb_avg = (level->tiles[i][T] + level->tiles[i][B])/2.f;
+		bool t_equals_b = equalf(level->tiles[i][T], level->tiles[i][B], .1f);
+		level->flat[i][0] = t_equals_b && equalf(level->tiles[i][L], tb_avg, .1f);
+		level->flat[i][1] = t_equals_b && equalf(level->tiles[i][R], tb_avg, .1f);
 	}
-	calculate_level_projection(context);
+	calculate_level_projection(level);
 
-	read_colors(context, file, level_size);
+	read_colors(level, file, level_size);
 
-	read_objects(context, file);
+	read_objects(level, file);
 
 	fclose(file);
+
+	return level;
 }
 
 //calculates tile_index and tile_position
@@ -145,12 +153,12 @@ x
 -1   6
    0 1 2 3 y
 */
-void calculate_tile(float *position, int *tile_index, float *tile_position, Context *context)
+void calculate_tile(float *position, int *tile_index, float *tile_position, Level *level)
 {
 	int posx = floor(position[X] - position[Y] + .5f);
 	int posy = floor(position[X] + position[Y] + .5f);
 
-	*tile_index = context->width * (posy - posx) + posx + floor((posy - posx)/2.);
+	*tile_index = level->width * (posy - posx) + posx + floor((posy - posx)/2.);
 
 	if(tile_position) {
 		float offset = .5 * ((abs(posx) + abs(posy)) % 2 == 0);
@@ -160,33 +168,33 @@ void calculate_tile(float *position, int *tile_index, float *tile_position, Cont
 	}
 }
 
-void calculate_level_projection(Context *context)
+void calculate_level_projection(Level *level)
 {
-	context->projection = malloc(sizeof(float) * context->height * context->width * 4);
+	level->projection = malloc(sizeof(float) * level->height * level->width * 4);
 	int tile_position[2];
-	for(tile_position[Y] = 0; tile_position[Y] < context->height; tile_position[Y]++)
+	for(tile_position[Y] = 0; tile_position[Y] < level->height; tile_position[Y]++)
 	{
-		for(tile_position[X] = 0; tile_position[X] < context->width; tile_position[X]++)
+		for(tile_position[X] = 0; tile_position[X] < level->width; tile_position[X]++)
 		{
-			int i = tile_position[Y] * context->width + tile_position[X];
-			context->projection[i][L] = context->level[i][L]/2.f - tile_position[Y]/4.f;
-			context->projection[i][T] = context->level[i][T]/2.f - tile_position[Y]/4.f + .25f;
-			context->projection[i][R] = context->level[i][R]/2.f - tile_position[Y]/4.f;
-			context->projection[i][B] = context->level[i][B]/2.f - tile_position[Y]/4.f - .25f;
+			int i = tile_position[Y] * level->width + tile_position[X];
+			level->projection[i][L] = level->tiles[i][L]/2.f - tile_position[Y]/4.f;
+			level->projection[i][T] = level->tiles[i][T]/2.f - tile_position[Y]/4.f + .25f;
+			level->projection[i][R] = level->tiles[i][R]/2.f - tile_position[Y]/4.f;
+			level->projection[i][B] = level->tiles[i][B]/2.f - tile_position[Y]/4.f - .25f;
 		}
 	}
 }
 
-bool colliding_with_level(Context *context, float *position, float max_z, float height, int unconsidered_tile_index)
+bool colliding_with_level(Level *level, float *position, float max_z, float height, int unconsidered_tile_index)
 {
 	int tile_index;
 	float tile_frac_position[2];
-	calculate_tile(position, &tile_index, tile_frac_position, context);
+	calculate_tile(position, &tile_index, tile_frac_position, level);
 	if(unconsidered_tile_index != tile_index) {
-		float *tile = context->level[tile_index];
+		float *tile = level->tiles[tile_index];
 		int tile_frac_position_x_rounded = round(tile_frac_position[X]);
 		float tile_side_z = tile[tile_frac_position_x_rounded ? R : L];
-		if(context->flat[tile_index][tile_frac_position_x_rounded]) {
+		if(level->flat[tile_index][tile_frac_position_x_rounded]) {
 			if(tile_side_z > max_z) {
 				return true;
 			}
@@ -202,4 +210,15 @@ bool colliding_with_level(Context *context, float *position, float max_z, float 
 		}
 	}
 	return false;
+}
+
+void delete_level(Level *level)
+{
+	free(level->tiles);
+	free(level->projection);
+	free(level->floor_colors);
+	free(level->flat);
+	free(level->on_screen);
+	delete_objectlist(level->objects, level->num_objects);
+	free(level);
 }

@@ -1,6 +1,6 @@
 #include "main.h"
 
-static SDLContext *init_sdl(Config *config)
+SDLContext *init_sdl(Config *config)
 {
     assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
 	SDLContext *context =  malloc(sizeof(SDLContext));
@@ -35,7 +35,7 @@ static SDLContext *init_sdl(Config *config)
 	return context;
 }
 
-static void quit(SDLContext *sdl_context, Context *context)
+void quit(SDLContext *sdl_context, Context *context)
 {
 	delete_context(context);
 	SDL_GL_DeleteContext(sdl_context->main_context);
@@ -45,7 +45,7 @@ static void quit(SDLContext *sdl_context, Context *context)
 	exit(0);
 }
 
-static void resize(SDLContext *sdl_context, Context *context)
+void resize(SDLContext *sdl_context, Context *context)
 {
 	const int *resolution = RESOLUTIONS[context->config->resolution_index];
 	SDL_SetWindowSize(sdl_context->window, resolution[X], resolution[Y]);
@@ -63,7 +63,12 @@ int main(int argc, char *argv[])
 
 	load_textures("resources/textures", context);
 
-	load_level("resources/level1", context);
+	context->level = load_level("resources/level1");
+
+	#ifdef DEBUG
+	int num_frames = 0;
+	int total_frame_time = 0;
+	#endif
 
 	int i;
 	while(true)
@@ -74,9 +79,9 @@ int main(int argc, char *argv[])
 			context->resize = false;
 			resize(sdl_context, context);
 		}
-		if(context->scroll) {
-			context->scroll = false;
-			calculate_on_screen(context);
+		if(context->level->scroll) {
+			context->level->scroll = false;
+			calculate_on_screen(context->level);
 		}
 
 		switch(context->gamestate)
@@ -104,10 +109,10 @@ int main(int argc, char *argv[])
 		switch(context->gamestate)
 		{
 			case STATE_GAME:
-			for(i = 0; i < context->num_objects; i++)
+			for(i = 0; i < context->level->num_objects; i++)
 			{
-				if(context->objects[i].common->physics_process) {
-					context->objects[i].common->physics_process(context, context->objects[i]);
+				if(context->level->objects[i].common->physics_process) {
+					context->level->objects[i].common->physics_process(context, context->level->objects[i]);
 				}
 			}
 			break;
@@ -129,10 +134,14 @@ int main(int argc, char *argv[])
 		context->timer++;
 		Uint32 frame_time = SDL_GetTicks() - frame_start;
 		SDL_Delay(FRAMETIME - frame_time);
-		DBG_LOG("FRAMETIME: %d\n", frame_time);
+		#ifdef DEBUG
+		num_frames++;
+		total_frame_time += frame_time;
+		#endif
 	}
 
 	QUIT_GAME:
+	DBG_LOG("AVERAGE FRAMETIME: %f\n", (double) total_frame_time / num_frames);
 	quit(sdl_context, context);
 	return 0;
 }

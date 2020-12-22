@@ -23,13 +23,13 @@
 #define ON_SCREEN_X(posx, scroll_offset) (posx >= scroll_offset[X]\
 	&& posx <= TILES_ON_SCREEN_X + scroll_offset[X])
 #define START_FOR_EACH_TILE_ON_SCREEN int tile_position[2];\
-	for(tile_position[Y] = 0; tile_position[Y] < context->height; tile_position[Y]++) {\
+	for(tile_position[Y] = 0; tile_position[Y] < level->height; tile_position[Y]++) {\
 		int offset = tile_position[Y] % 2;\
-		float z = tile_position[Y] / (float) context->height;\
-		for(tile_position[X] = 0; tile_position[X] < context->width; tile_position[X]++) {\
-			int tile_index = tile_position[Y] * context->width + tile_position[X];\
-			if(context->on_screen[tile_index]) {\
-				float *tile = context->projection[tile_index];\
+		float z = tile_position[Y] / (float) level->height;\
+		for(tile_position[X] = 0; tile_position[X] < level->width; tile_position[X]++) {\
+			int tile_index = tile_position[Y] * level->width + tile_position[X];\
+			if(level->on_screen[tile_index]) {\
+				float *tile = level->projection[tile_index];\
 				float x_l = tile_position[X] - .5f + offset/2.f;\
 				float x_m = tile_position[X] + offset/2.f;\
 				float x_r = tile_position[X] + .5f + offset/2.f;
@@ -41,6 +41,9 @@ void draw_sprite(Sprite *sprite, float z);
 void draw_marble(Marble *marble, float z);
 void draw_objects(Context *context);
 void draw_string(const float position[2], const float size[2], const char *text);
+void draw_tiles(Level *level);
+void draw_tile_sides(Level *level);
+void draw_tile_outlines(Level *level);
 
 static inline void START_TEXTURE(int texture)
 {

@@ -4,7 +4,7 @@
 #include "global.h"
 #include "object.h"
 
-typedef struct Context Context;
+typedef struct Level Level;
 typedef struct Sprite Sprite;
 typedef struct CollisionArea CollisionArea;
 
@@ -20,6 +20,6 @@ typedef struct Area {
 	float tile_side_lengths[2]; //fraction of side which a tile takes up
 } Area;
 
-Area *init_area(Context *context, void (*physics_process)(Context*, Object), Sprite *sprite, CollisionArea *collision_area, short tile_positions[4][2]);
+Area *init_area(Level *level, void (*physics_process)(Context*, Object), Sprite *sprite, CollisionArea *collision_area, short tile_positions[4][2]);
 
 #endif

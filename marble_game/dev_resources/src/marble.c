@@ -1,7 +1,7 @@
 #include "inc/marble.h"
 #include "marble_p.h"
 
-Marble *init_marble(Context *context, unsigned char color[3], float radius, int num_collision_points)
+Marble *init_marble(Level *level, unsigned char color[3], float radius, int num_collision_points)
 {
 	Marble *marble = malloc(sizeof(Marble));
 	marble->physics_process = &physics_process_marble;
@@ -9,8 +9,8 @@ Marble *init_marble(Context *context, unsigned char color[3], float radius, int 
 	marble->position[X] = 0;
 	marble->position[Y] = 0;
 	marble->num_collision_points = num_collision_points;
-	calculate_tile(marble->position, &(marble->tile_index), marble->tile_frac_position, context);
-	float *tile = context->level[marble->tile_index];
+	calculate_tile(marble->position, &(marble->tile_index), marble->tile_frac_position, level);
+	float *tile = level->tiles[marble->tile_index];
 	marble->position[Z] = (tile[T] + tile[B])/2.f; //assume that x is in middle of tile
 	marble->velocity[X] = 0;
 	marble->velocity[Y] = 0;
@@ -23,10 +23,11 @@ Marble *init_marble(Context *context, unsigned char color[3], float radius, int 
 void physics_process_marble(Context *context, Object object)
 {
 	Marble *marble = object.marble;
+	Level *level = context->level;
 	//calculate marble->velocity
 	marble->velocity[X] += context->input[X] * MARBLE_ACCELERATION;
 	marble->velocity[Y] += context->input[Y] * MARBLE_ACCELERATION;
-	float *tile = context->level[marble->tile_index];
+	float *tile = level->tiles[marble->tile_index];
 	float tb_avg = (tile[T] + tile[B])/2.f;
 	if(! marble->in_air) {
 		context->can_control = true;
@@ -52,8 +53,8 @@ void physics_process_marble(Context *context, Object object)
 	//calculate marble->tile_index and marble->tile_frac_position
 	int future_tile_index;
 	float future_tile_frac_position[2];
-	calculate_tile(future_position, &future_tile_index, future_tile_frac_position, context);
-	float *future_tile = context->level[future_tile_index];
+	calculate_tile(future_position, &future_tile_index, future_tile_frac_position, level);
+	float *future_tile = level->tiles[future_tile_index];
 
 	//calculate marble->position
 	int future_tile_frac_position_x_rounded = round(future_tile_frac_position[X]);
@@ -78,9 +79,9 @@ void physics_process_marble(Context *context, Object object)
 
 	//collision with CollisionObjects
 	bool collided = false;
-	for(i = 0; i < context->num_objects; i++)
+	for(i = 0; i < level->num_objects; i++)
 	{
-		object = context->objects[i];
+		object = level->objects[i];
 		switch(object.common->type)
 		{
 			case COLLISIONAREA: ;
@@ -106,7 +107,7 @@ void physics_process_marble(Context *context, Object object)
 
 			for(i = 0; i < marble->num_collision_points; i++)
 			{
-				if(colliding_with_level(context, collision_positions[i], future_position[Z] + MAX_DELTA_Z, marble->radius, future_tile_index)) {
+				if(colliding_with_level(level, collision_positions[i], future_position[Z] + MAX_DELTA_Z, marble->radius, future_tile_index)) {
 					collided = true;
 					break;
 				}
@@ -114,7 +115,7 @@ void physics_process_marble(Context *context, Object object)
 		} else {//only check collision with point directly ahead if in air
 			float collision_position[2] = {future_position[X] + marble->radius * cosf(velocity_angle),
 				future_position[Y] + marble->radius * sinf(velocity_angle)};
-			if(colliding_with_level(context, collision_position, future_position[Z] + MAX_DELTA_Z, marble->radius, future_tile_index)) {
+			if(colliding_with_level(level, collision_position, future_position[Z] + MAX_DELTA_Z, marble->radius, future_tile_index)) {
 				collided = true;
 			}
 		}
@@ -137,22 +138,22 @@ void physics_process_marble(Context *context, Object object)
 	}
 
 	//scroll screen
-	float marble_screen_pos[2] = {marble->position[X] - context->scroll_offset[X],
-		marble->position[Z] - marble->position[Y] + context->scroll_offset[Y]};
+	float marble_screen_pos[2] = {marble->position[X] - level->scroll_offset[X],
+		marble->position[Z] - marble->position[Y] + level->scroll_offset[Y]};
 	if(marble_screen_pos[Y] <= SCROLL_BORDER) {
-		context->scroll_offset[Y] = marble->position[Y] - marble->position[Z] + SCROLL_BORDER;
-		context->scroll = true;
+		level->scroll_offset[Y] = marble->position[Y] - marble->position[Z] + SCROLL_BORDER;
+		level->scroll = true;
 	}
 	if(marble_screen_pos[Y] >= TILES_ON_SCREEN_Y * 2 - SCROLL_BORDER) {
-		context->scroll_offset[Y] = marble->position[Y] - marble->position[Z] - SCROLL_BORDER + TILES_ON_SCREEN_Y * 2;
-		context->scroll = true;
+		level->scroll_offset[Y] = marble->position[Y] - marble->position[Z] - SCROLL_BORDER + TILES_ON_SCREEN_Y * 2;
+		level->scroll = true;
 	}
 	if(marble_screen_pos[X] >= TILES_ON_SCREEN_X - SCROLL_BORDER) {
-		context->scroll_offset[X] = marble->position[X] + SCROLL_BORDER - TILES_ON_SCREEN_X;
-		context->scroll = true;
+		level->scroll_offset[X] = marble->position[X] + SCROLL_BORDER - TILES_ON_SCREEN_X;
+		level->scroll = true;
 	}
 	if(marble_screen_pos[X] <= SCROLL_BORDER) {
-		context->scroll_offset[X] = marble->position[X] - SCROLL_BORDER;
-		context->scroll = true;
+		level->scroll_offset[X] = marble->position[X] - SCROLL_BORDER;
+		level->scroll = true;
 	}
 }
