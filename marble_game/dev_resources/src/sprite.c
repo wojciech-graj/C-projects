@@ -1,4 +1,5 @@
-#include "sprite.h"
+#include "inc/sprite.h"
+#include "sprite_p.h"
 
 Sprite *init_sprite(void (*physics_process)(Context*, Object), float corner_projections[4][2], int texture_index, int frame_time, bool rotate, bool flip_x, bool flip_y)
 {

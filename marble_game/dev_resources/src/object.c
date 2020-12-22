@@ -1,4 +1,5 @@
-#include "object.h"
+#include "inc/object.h"
+#include "object_p.h"
 
 Object *init_objectlist(int num_objects)
 {

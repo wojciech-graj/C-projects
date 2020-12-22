@@ -1,8 +1,9 @@
-#include "renderer.h"
+#include "inc/renderer.h"
+#include "renderer_p.h"
 
 //TODO: individual z values for each point
 
-static void calculate_tile_side(float x_m, float x_s, float z, float tile_b, float tile_s, float tile_d, int bottom_tile_index, int side, float (*level_projection)[4], bool on_edge, unsigned char *color)
+void calculate_tile_side(float x_m, float x_s, float z, float tile_b, float tile_s, float tile_d, int bottom_tile_index, int side, float (*level_projection)[4], bool on_edge, unsigned char *color)
 {
 	if(on_edge && tile_d == 0) {
 		TILE_SIDE(x_m, x_s, z, tile_b, tile_s, tile_b - EDGE_HEIGHT, tile_s - EDGE_HEIGHT, color);
@@ -16,7 +17,7 @@ static void calculate_tile_side(float x_m, float x_s, float z, float tile_b, flo
 	}
 }
 
-static void AREA_TILE_PROJECTION(Area *area, float *tile, float *sub_texture, float x_m, float z) {//TODO: optimize
+void AREA_TILE_PROJECTION(Area *area, float *tile, float *sub_texture, float x_m, float z) {//TODO: optimize
 	Sprite *sprite = area->sprite;
 	int mul_flip_x = 1 - sprite->flip_x * 2;
 	int mul_flip_y = 1 - sprite->flip_y * 2;
@@ -49,7 +50,7 @@ static void AREA_TILE_PROJECTION(Area *area, float *tile, float *sub_texture, fl
 	}
 }
 
-static void draw_sprite(Sprite *sprite, float z) //TODO: optimize
+void draw_sprite(Sprite *sprite, float z) //TODO: optimize
 {
 	float width = 1.f / NUM_TEXTURE_FRAMES[sprite->texture_index];
 	float x_offset = sprite->frame * width;
@@ -72,7 +73,7 @@ static void draw_sprite(Sprite *sprite, float z) //TODO: optimize
 	}
 }
 
-static void draw_marble(Marble *marble, float z)
+void draw_marble(Marble *marble, float z)
 {
 	glColor3ubv(marble->color);
 	glBegin(GL_POLYGON);
@@ -156,7 +157,7 @@ void draw_tile_outlines(Context *context)
 	END_FOR_EACH_TILE_ON_SCREEN
 }
 
-static void draw_objects(Context *context)
+void draw_objects(Context *context)
 {
 	int i;
 	for(i = 0; i < context->num_objects; i++)
@@ -204,7 +205,7 @@ static void draw_objects(Context *context)
 	}
 }
 
-static void draw_string(const float position[2], const float size[2], const char *text)
+void draw_string(const float position[2], const float size[2], const char *text)
 {
 	int text_length = strlen(text);
 	float letter_width = size[Y] / 2.f;//TODO: rework

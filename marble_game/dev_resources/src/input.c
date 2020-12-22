@@ -1,4 +1,5 @@
-#include "input.h"
+#include "inc/input.h"
+#include "input_p.h"
 
 void game_input_process(SDLContext *sdl_context, Context *context)
 {

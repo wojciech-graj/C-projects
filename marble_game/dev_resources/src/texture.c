@@ -1,4 +1,5 @@
-#include "texture.h"
+#include "inc/texture.h"
+#include "texture_p.h"
 
 void init_texture(unsigned char (*image)[4], short *dimensions, unsigned int texture_id)
 {

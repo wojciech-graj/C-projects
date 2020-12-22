@@ -1,4 +1,5 @@
-#include "point.h"
+#include "inc/point.h"
+#include "point_p.h"
 
 Point *init_point(void (*physics_process)(Context*, Object), Sprite *sprite, int tile_index, float z)
 {

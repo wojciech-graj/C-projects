@@ -1,18 +1,18 @@
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef RENDERER_P_H
+#define RENDERER_P_H
 
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
 
-#include "area.h"
-#include "context.h"
-#include "global.h"
-#include "level.h"
-#include "marble.h"
-#include "math_functions.h"
-#include "menu.h"
-#include "sprite.h"
+#include "inc/context.h"
+#include "inc/math_functions.h"
+#include "inc/area.h"
+#include "inc/level.h"
+#include "inc/marble.h"
+#include "inc/menu.h"
+#include "inc/sprite.h"
+#include "inc/point.h"
 
 #define Y_PADDING 2
 #define EDGE_HEIGHT 8
@@ -35,9 +35,12 @@
 				float x_r = tile_position[X] + .5f + offset/2.f;
 #define END_FOR_EACH_TILE_ON_SCREEN }}}
 
-void calculate_on_screen(Context *context);
-void draw_game(Context *context);
-void draw_menu(Context *context, MenuContext *menu_context);
+void calculate_tile_side(float x_m, float x_s, float z, float tile_b, float tile_s, float tile_d, int bottom_tile_index, int side, float (*level_projection)[4], bool on_edge, unsigned char *color);
+void AREA_TILE_PROJECTION(Area *area, float *tile, float *sub_texture, float x_m, float z); //MAKE INLINE?
+void draw_sprite(Sprite *sprite, float z);
+void draw_marble(Marble *marble, float z);
+void draw_objects(Context *context);
+void draw_string(const float position[2], const float size[2], const char *text);
 
 static inline void START_TEXTURE(int texture)
 {

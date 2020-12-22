@@ -2,10 +2,13 @@
 #define SPRITE_H
 
 #include <stdbool.h>
-#include <string.h>
 
-#include "context.h"
+#include "object.h"
 #include "global.h"
+
+typedef struct Context Context;
+
+typedef struct Sprite Sprite;
 
 typedef struct Sprite {
 	DEFAULT_OBJECT_PARAMS

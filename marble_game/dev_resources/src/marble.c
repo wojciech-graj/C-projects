@@ -1,4 +1,5 @@
-#include "marble.h"
+#include "inc/marble.h"
+#include "marble_p.h"
 
 Marble *init_marble(Context *context, unsigned char color[3], float radius, int num_collision_points)
 {

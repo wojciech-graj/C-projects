@@ -2,11 +2,12 @@
 #define CONTEXT_H
 
 #include <stdbool.h>
-#include <stdlib.h>
 
 #include "global.h"
-#include "object.h"
-#include "config.h"
+
+typedef struct Context Context;
+typedef struct Config Config;
+typedef union Object Object;
 
 typedef struct Context {
 	int resolution_index;

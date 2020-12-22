@@ -1,17 +1,15 @@
 #ifndef COLLISION_AREA_H
 #define COLLISION_AREA_H
 
-//TODO:ALPHABETICAL INCLUDE TOOL
-#include <math.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "global.h"
-#include "math_functions.h"
 #include "object.h"
 
 typedef struct Context Context;
+
+typedef struct CollisionArea CollisionArea;
+
 typedef struct CollisionArea {
 	DEFAULT_OBJECT_PARAMS
 	bool colliding;

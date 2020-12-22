@@ -1,12 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include <SDL2/SDL.h>
-
-#include "context.h"
-#include "sdl_context.h"
-#include "menu.h"
-#include "math_functions.h"
+typedef struct Context Context;
+typedef struct SDLContext SDLContext;
+typedef struct MenuContext MenuContext;
 
 void game_input_process(SDLContext *sdl_context, Context *context);
 void menu_input_process(SDLContext *sdl_context, Context *context, MenuContext *menu_context);

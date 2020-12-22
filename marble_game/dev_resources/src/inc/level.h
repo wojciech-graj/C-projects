@@ -1,20 +1,9 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdbool.h>
 
-#include "area.h"
-#include "collision_area.h"
-#include "context.h"
-#include "global.h"
-#include "marble.h"
-#include "math_functions.h"
-#include "object.h"
-#include "point.h"
-#include "sprite.h"
+typedef struct Context Context;
 
 void load_level(char *filename, Context *context);
 void calculate_tile(float *position, int *tile_index, float *tile_position, Context *context);

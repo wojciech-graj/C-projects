@@ -1,4 +1,5 @@
-#include "collision_area.h"
+#include "inc/collision_area.h"
+#include "collision_area_p.h"
 
 CollisionArea *init_collision_area(void (*physics_process)(Context*, Object), float corner_positions[4][2], bool can_move_over)
 {

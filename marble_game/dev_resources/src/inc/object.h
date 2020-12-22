@@ -6,12 +6,13 @@
 #include "global.h"
 
 typedef struct Context Context;
-typedef struct DefaultObject DefaultObject;
 typedef struct Marble Marble;
 typedef struct Area Area;
 typedef struct Point Point;
 typedef struct Sprite Sprite;
 typedef struct CollisionArea CollisionArea;
+
+typedef struct DefaultObject DefaultObject;
 typedef union Object Object;
 
 typedef struct DefaultObject {

@@ -1,15 +1,15 @@
 #ifndef AREA_H
 #define AREA_H
 
-#include <stdbool.h>
-
-#include "context.h"
 #include "global.h"
-#include "math_functions.h"
 #include "object.h"
 
+typedef struct Context Context;
 typedef struct Sprite Sprite;
 typedef struct CollisionArea CollisionArea;
+
+typedef struct Area Area;
+
 typedef struct Area {
 	DEFAULT_OBJECT_PARAMS
 	Sprite *sprite;

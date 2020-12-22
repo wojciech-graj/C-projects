@@ -9,18 +9,19 @@
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
 
-#include "area.h"
-#include "context.h"
-#include "global.h"
-#include "input.h"
-#include "level.h"
-#include "marble.h"
-#include "menu.h"
-#include "object.h"
-#include "renderer.h"
-#include "sdl_context.h"
-#include "sprite.h"
-#include "texture.h"
-#include "config.h"
+#include "inc/area.h"
+#include "inc/context.h"
+#include "inc/global.h"
+#include "inc/input.h"
+#include "inc/level.h"
+#include "inc/marble.h"
+#include "inc/menu.h"
+#include "inc/object.h"
+#include "inc/renderer.h"
+#include "inc/sdl_context.h"
+#include "inc/sprite.h"
+#include "inc/texture.h"
+#include "inc/config.h"
+#include "inc/sound.h"
 
 #endif

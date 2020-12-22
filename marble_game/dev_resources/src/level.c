@@ -1,13 +1,14 @@
-#include "level.h"
+#include "inc/level.h"
+#include "level_p.h"
 
-static void read_marble(Context *context, FILE *file, int object_index)
+void read_marble(Context *context, FILE *file, int object_index)
 {
 	unsigned char color[3];
 	assert(fread(color, sizeof(unsigned char), 3, file) == 3);
 	context->objects[object_index].marble = init_marble(context, color, 0.2f, 4);
 }
 
-static void read_sprite(Context *context, FILE *file, int object_index)
+void read_sprite(Context *context, FILE *file, int object_index)
 {
 	int texture_index;
 	assert(fread(&texture_index, sizeof(int), 1, file) == 1);
@@ -22,7 +23,7 @@ static void read_sprite(Context *context, FILE *file, int object_index)
 		corner_projections, texture_index, frame_time, transforms[0], transforms[1], transforms[2]);
 }
 
-static void read_collision_area(Context *context, FILE *file, int object_index)
+void read_collision_area(Context *context, FILE *file, int object_index)
 {
 	bool can_move_over;
 	assert(fread(&can_move_over, sizeof(bool), 1, file) == 1);
@@ -31,7 +32,7 @@ static void read_collision_area(Context *context, FILE *file, int object_index)
 	context->objects[object_index].collision_area = init_collision_area(NULL, corner_positions, can_move_over);
 }
 
-static void read_area(Context *context, FILE *file, int object_index)
+void read_area(Context *context, FILE *file, int object_index)
 {
 	short tile_positions[4][2];
 	assert(fread(tile_positions, sizeof(short), 8, file) == 8);
@@ -44,7 +45,7 @@ static void read_area(Context *context, FILE *file, int object_index)
 	context->objects[object_index].area = init_area(context, NULL, sprite, collision_area, tile_positions);
 }
 
-static void read_point(Context *context, FILE *file, int object_index)
+void read_point(Context *context, FILE *file, int object_index)
 {
 	int sprite_index;
 	assert(fread(&sprite_index, sizeof(int), 1, file) == 1);
@@ -58,7 +59,7 @@ static void read_point(Context *context, FILE *file, int object_index)
 	context->objects[object_index].point = init_point(NULL, sprite, tile_index, z);
 }
 
-static void read_colors(Context *context, FILE *file, int level_size)
+void read_colors(Context *context, FILE *file, int level_size)
 {
 	context->floor_colors = malloc(sizeof(unsigned char) * level_size * 3);
 	assert(fread(context->floor_colors, sizeof(unsigned char), level_size * 3, file) == (size_t) (level_size * 3));
@@ -66,7 +67,7 @@ static void read_colors(Context *context, FILE *file, int level_size)
 	assert(fread(context->right_color, sizeof(unsigned char), 3, file) == 3);
 }
 
-static void read_objects(Context *context, FILE *file)
+void read_objects(Context *context, FILE *file)
 {
 	assert(fread(&(context->num_objects), sizeof(int), 1, file) == 1);
 	context->objects = init_objectlist(context->num_objects);
@@ -76,7 +77,7 @@ static void read_objects(Context *context, FILE *file)
 	{
 		int type;
 		assert(fread(&type, sizeof(int), 1, file) == 1);
-		switch(type)
+		switch(type) //TODO: optimize by making an array of functions
 		{
 			case MARBLE:
 			read_marble(context, file, i);

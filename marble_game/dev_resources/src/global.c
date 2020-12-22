@@ -1,4 +1,4 @@
-#include "global.h"
+#include "inc/global.h"
 
 float ORIGIN[2] = {0.f, 0.f};
 const int NUM_TEXTURE_FRAMES[] = {

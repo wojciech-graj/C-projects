@@ -1,4 +1,5 @@
-#include "config.h"
+#include "inc/config.h"
+#include "config_p.h"
 
 Config *init_config(void)
 {

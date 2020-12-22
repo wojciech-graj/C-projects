@@ -1,4 +1,5 @@
-#include "context.h"
+#include "inc/context.h"
+#include "context_p.h"
 
 Context *init_context(Config *config)
 {

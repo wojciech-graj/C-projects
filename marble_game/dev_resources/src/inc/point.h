@@ -1,10 +1,14 @@
 #ifndef POINT_H
 #define POINT_H
 
-#include "collision_area.h"
-#include "context.h"
 #include "global.h"
-#include "sprite.h"
+#include "object.h"
+
+typedef struct Context Context;
+typedef struct Sprite Sprite;
+typedef struct CollisionArea CollisionArea;
+
+typedef struct Point Point;
 
 typedef struct Point {
 	DEFAULT_OBJECT_PARAMS

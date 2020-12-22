@@ -1,4 +1,5 @@
-#include "area.h"
+#include "inc/area.h"
+#include "area_p.h"
 
 Area *init_area(Context *context, void (*physics_process)(Context*, Object), Sprite *sprite, CollisionArea *collision_area, short tile_positions[4][2])
 {

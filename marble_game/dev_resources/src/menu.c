@@ -1,43 +1,5 @@
-#include "menu.h"
-
-const int MENU_MAIN_INDEX = MENU_MAIN;
-const int MENU_OPTIONS_INDEX = MENU_OPTIONS;
-const int MENU_KEYBINDS_INDEX = MENU_KEYBINDS;
-
-const int MENU_INPUT_KEY_INDEXES[NUM_INPUTS] = {
-	[I_LEFT] = I_LEFT,
-	[I_UP] = I_UP,
-	[I_RIGHT] = I_RIGHT,
-	[I_DOWN] = I_DOWN,
-	[I_RETURN] = I_RETURN,
-	[I_ESCAPE] = I_ESCAPE};
-
-const BoolChangeData MENU_BUTTON_PLAY_DATA = {CONTEXT_MENU, true, offsetof(MenuContext, exit)};
-const BoolChangeData MENU_BUTTON_QUIT_DATA = {CONTEXT, true, offsetof(Context, quit)};
-const BoolChangeData MENU_BUTTON_RESOLUTION_SUBDATA = {CONTEXT, true, offsetof(Context, resize)};
-
-const IncrementData MENU_BUTTON_RESOLUTION_DATA = {offsetof(Config, resolution_index), 0, NUM_RESOLUTIONS - 1, &MENU_BUTTON_RESOLUTION_SUBDATA};
-
-const MenuButton MENU_MAIN_BUTTONS[MENU_MAIN_NUM_BUTTONS] = {
-	{{.25f, .25f}, {.5f, .15f}, "PLAY", &on_pressed_change_bool, &MENU_BUTTON_PLAY_DATA},
-	{{.25f, .4f}, {.5f, .15f}, "OPTIONS", &on_pressed_change_menu, &MENU_OPTIONS_INDEX},
-	{{.25f, .55f}, {.5f, .15f}, "QUIT", &on_pressed_change_bool, &MENU_BUTTON_QUIT_DATA}};
-const MenuButton MENU_OPTIONS_BUTTONS[MENU_OPTIONS_NUM_BUTTONS] = {
-	{{.25f, .25f}, {.5f, .1f}, "RESOLUTION", &on_pressed_increment_config, &MENU_BUTTON_RESOLUTION_DATA},
-	{{.25f, .35f}, {.5f, .1f}, "KEYBINDS", &on_pressed_change_menu, &MENU_KEYBINDS_INDEX}};
-const MenuButton MENU_KEYBINDS_BUTTONS[MENU_KEYBINDS_NUM_BUTTONS] = {
-	{{.25f, .25f}, {.5f, .1f}, "LEFT", &on_pressed_rebind_key, &MENU_INPUT_KEY_INDEXES[I_LEFT]},
-	{{.25f, .35f}, {.5f, .1f}, "RIGHT", &on_pressed_rebind_key, &MENU_INPUT_KEY_INDEXES[I_RIGHT]},
-	{{.25f, .45f}, {.5f, .1f}, "UP", &on_pressed_rebind_key, &MENU_INPUT_KEY_INDEXES[I_UP]},
-	{{.25f, .55f}, {.5f, .1f}, "DOWN", &on_pressed_rebind_key, &MENU_INPUT_KEY_INDEXES[I_DOWN]},};
-
-const MenuDynamicText MENU_OPTIONS_DYNAMIC_TEXTS[MENU_OPTIONS_NUM_DYNAMIC_TEXTS] = {
-	{{.25f, .5f}, {.5f, .1f}, TEXT_RESOLUTION, NULL}};
-const MenuDynamicText MENU_KEYBINDS_DYNAMIC_TEXTS[MENU_KEYBINDS_NUM_DYNAMIC_TEXTS] = {
-	{{.5f, .25f}, {.5f, .1f}, TEXT_KEYBIND, &MENU_INPUT_KEY_INDEXES[I_LEFT]},
-	{{.5f, .35f}, {.5f, .1f}, TEXT_KEYBIND, &MENU_INPUT_KEY_INDEXES[I_RIGHT]},
-	{{.5f, .45f}, {.5f, .1f}, TEXT_KEYBIND, &MENU_INPUT_KEY_INDEXES[I_UP]},
-	{{.5f, .55f}, {.5f, .1f}, TEXT_KEYBIND, &MENU_INPUT_KEY_INDEXES[I_DOWN]}};
+#include "inc/menu.h"
+#include "menu_p.h"
 
 const Menu MENUS[NUM_MENUS] = {
 	[MENU_MAIN] = {
@@ -52,8 +14,6 @@ const Menu MENUS[NUM_MENUS] = {
 		&on_pressed_change_menu, &MENU_OPTIONS_INDEX,
 		MENU_KEYBINDS_NUM_BUTTONS, MENU_KEYBINDS_BUTTONS,
 		MENU_KEYBINDS_NUM_DYNAMIC_TEXTS, MENU_KEYBINDS_DYNAMIC_TEXTS}};
-
-char buffer[31];
 
 void on_pressed_rebind_key(Context *context, MenuContext *menu_context, const void *data, int input)
 {

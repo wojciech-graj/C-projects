@@ -3,6 +3,8 @@
 
 #include <SDL2/SDL.h>
 
+typedef struct SDLContext SDLContext;
+
 typedef struct SDLContext {
 	const Uint8 *keystates;
 	SDL_Window *window;
