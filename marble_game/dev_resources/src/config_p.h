@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 Config *init_config(void);
 

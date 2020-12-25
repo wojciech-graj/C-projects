@@ -1,20 +1,6 @@
 #include "inc/menu.h"
 #include "menu_p.h"
 
-const Menu MENUS[NUM_MENUS] = {
-	[MENU_MAIN] = {
-		&on_pressed_change_bool, &MENU_BUTTON_QUIT_DATA,
-		MENU_MAIN_NUM_BUTTONS, MENU_MAIN_BUTTONS,
-		MENU_MAIN_NUM_DYNAMIC_TEXTS, NULL},
-	[MENU_OPTIONS] = {
-		&on_pressed_exit_options, NULL,
-		MENU_OPTIONS_NUM_BUTTONS, MENU_OPTIONS_BUTTONS,
-		MENU_OPTIONS_NUM_DYNAMIC_TEXTS, MENU_OPTIONS_DYNAMIC_TEXTS},
-	[MENU_KEYBINDS] = {
-		&on_pressed_change_menu, &MENU_OPTIONS_INDEX,
-		MENU_KEYBINDS_NUM_BUTTONS, MENU_KEYBINDS_BUTTONS,
-		MENU_KEYBINDS_NUM_DYNAMIC_TEXTS, MENU_KEYBINDS_DYNAMIC_TEXTS}};
-
 void on_pressed_rebind_key(Context *context, MenuContext *menu_context, const void *data, int input)
 {
 	(void) input;
@@ -81,8 +67,12 @@ char *get_dynamic_text(Context *context, MenuContext *menu_context, const MenuDy
 		sprintf(buffer, "%d x %d", resolution[X], resolution[Y]);
 		return buffer;
 		break;
-		case TEXT_KEYBIND: ;
+		case TEXT_KEYBIND:
 		return (char*) SDL_GetKeyName(context->config->input_keycodes[*((int*) dynamic_text.data)]);
+		break;
+		case TEXT_VOLUME:
+		sprintf(buffer, "%d", context->config->volume);
+		return buffer;
 		break;
 	}
 	return "";

@@ -6,5 +6,6 @@
 #include "inc/config.h"
 #include "inc/context.h"
 #include "inc/level.h"
+#include "inc/sound.h"
 
 #endif

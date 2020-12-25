@@ -5,6 +5,7 @@ Config *init_config(void)
 {
 	Config *config = malloc(sizeof(Config));
 	*config = (Config) {
+		.volume = 10,
 		.resolution_index = DEFAULT_RESOLUTION_INDEX,
 		.input_keycodes = {
 		[I_LEFT] = SDLK_LEFT,

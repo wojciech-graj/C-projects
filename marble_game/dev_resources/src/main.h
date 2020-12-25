@@ -8,6 +8,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 
 #include "inc/area.h"
 #include "inc/context.h"

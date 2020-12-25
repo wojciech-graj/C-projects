@@ -1,6 +1,8 @@
 #ifndef RENDERER_P_H
 #define RENDERER_P_H
 
+#include <string.h>
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL2/SDL.h>

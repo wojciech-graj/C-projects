@@ -8,10 +8,11 @@
 typedef struct Context Context;
 typedef struct Config Config;
 typedef struct Level Level;
+typedef struct Sound Sound;
 
 typedef struct Context {
-	int resolution_index;
 	bool resize;
+	bool volume_change;
 
 	int gamestate;
 	int timer;
@@ -27,6 +28,8 @@ typedef struct Context {
 	Config *config;
 
 	Level *level;
+
+	Sound *sound;
 } Context;
 
 Context *init_context(Config *config);

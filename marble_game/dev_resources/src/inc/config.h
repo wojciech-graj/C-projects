@@ -8,6 +8,7 @@
 typedef struct Config Config;
 
 typedef struct Config {
+	int volume;
 	int resolution_index;
 	SDL_Keycode input_keycodes[NUM_INPUTS];
 	SDL_Scancode input_scancodes[NUM_INPUTS];

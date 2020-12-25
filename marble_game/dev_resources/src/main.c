@@ -24,6 +24,10 @@ SDLContext *init_sdl(Config *config)
 	context->keystates = SDL_GetKeyboardState(NULL);
 	assert(context->keystates);
 
+	assert(Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 512) == 0);
+
+	assert(Mix_AllocateChannels(2) == 2);
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(-1, 1);
@@ -41,6 +45,7 @@ void quit(SDLContext *sdl_context, Context *context)
 	SDL_GL_DeleteContext(sdl_context->main_context);
 	SDL_DestroyWindow(sdl_context->window);
 	free(sdl_context);
+	Mix_Quit();
 	SDL_Quit();
 	exit(0);
 }
@@ -50,6 +55,14 @@ void resize(SDLContext *sdl_context, Context *context)
 	const int *resolution = RESOLUTIONS[context->config->resolution_index];
 	SDL_SetWindowSize(sdl_context->window, resolution[X], resolution[Y]);
 	glViewport(0, 0, resolution[X], resolution[Y]);
+}
+
+void next_level(Context *context, char *level_filename, char *music_filename)
+{
+	delete_level(context->level);
+	Mix_FreeMusic(context->sound->music_level);
+	load_level(level_filename);
+	context->sound->music_level = Mix_LoadMUS(music_filename);
 }
 
 int main(int argc, char *argv[])
@@ -64,6 +77,9 @@ int main(int argc, char *argv[])
 	load_textures("resources/textures", context);
 
 	context->level = load_level("resources/level1");
+
+	context->sound = init_sound("resources/sound/menu.flac");
+	context->sound->music_level = Mix_LoadMUS("resources/sound/level1.flac");
 
 	#ifdef DEBUG
 	int num_frames = 0;
@@ -82,6 +98,15 @@ int main(int argc, char *argv[])
 		if(context->level->scroll) {
 			context->level->scroll = false;
 			calculate_on_screen(context->level);
+		}
+		if(context->gamestate != context->sound->musicstate) {//TODO: function
+			context->sound->musicstate = context->gamestate;
+			change_music(context->sound);
+
+		}
+		if(context->volume_change) {
+			context->volume_change = false;
+			Mix_VolumeMusic(context->config->volume * MIX_MAX_VOLUME / 10);
 		}
 
 		switch(context->gamestate)
